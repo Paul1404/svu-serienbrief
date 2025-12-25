@@ -161,7 +161,6 @@ export function renderDashboard(): string {
         .header-logo {
             width: 60px;
             height: auto;
-            filter: brightness(0) invert(1);
         }
         .header-text { flex: 1; }
         .header-left h1 { margin-bottom: 5px; }
@@ -250,12 +249,13 @@ export function renderDashboard(): string {
 
         async function init() {
             try {
-                const response = await fetch('/api/data?page=1&limit=10000');
+                // Initial load to get count
+                const response = await fetch('/api/data?page=1&limit=50');
                 if (!response.ok) throw new Error(await response.text());
                 const data = await response.json();
                 
                 document.getElementById('tableInfo').innerHTML = 
-                    '<strong>Mitgliederdatenbank</strong> — ' + data.data.length + ' Mitglieder';
+                    '<strong>Mitgliederdatenbank</strong> — Daten werden geladen...';
 
                 const columns = columnNames.map(col => ({
                     title: col,
@@ -273,6 +273,15 @@ export function renderDashboard(): string {
                     paginationSizeSelector: [25, 50, 100, 200],
                     movableColumns: true,
                     resizableColumns: true,
+                    progressiveLoad: "scroll",
+                    paginationMode: "local",
+                    ajaxURL: "/api/data",
+                    ajaxParams: { limit: 10000 },
+                    ajaxResponse: function(url, params, response) {
+                        document.getElementById('tableInfo').innerHTML = 
+                            '<strong>Mitgliederdatenbank</strong> — ' + response.data.length + ' Mitglieder';
+                        return response.data;
+                    },
                     langs: {
                         "de": {
                             "pagination": {
