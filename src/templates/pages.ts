@@ -5,7 +5,7 @@
 import { escapeHtml } from '../utils/helpers';
 
 export function renderLoginPage(error?: string): string {
-	return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -43,8 +43,10 @@ export function renderLoginPage(error?: string): string {
         .logo {
             text-align: center;
             margin-bottom: 20px;
-            font-size: 48px;
-            color: #CC0000;
+        }
+        .logo img {
+            max-width: 120px;
+            height: auto;
         }
         .form-group {
             margin-bottom: 20px;
@@ -96,7 +98,9 @@ export function renderLoginPage(error?: string): string {
 </head>
 <body>
     <div class="login-container">
-        <div class="logo">⚽</div>
+        <div class="logo">
+            <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SV Untereuerheim Logo" />
+        </div>
         <h1>SV 1945 Untereuerheim e.V.</h1>
         <div class="subtitle">Mitgliederverwaltung</div>
         

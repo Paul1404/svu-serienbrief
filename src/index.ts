@@ -13,11 +13,17 @@ import api from './routes/api';
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Public routes (no auth required)
-app.route('/', pages);
+// Public routes
+app.get('/login', (c) => pages.request('/login', c.req.raw, c.env));
+app.post('/login', (c) => pages.request('/login', c.req.raw, c.env));
+app.get('/logout', (c) => pages.request('/logout', c.req.raw, c.env));
+app.get('/logo.png', (c) => pages.request('/logo.png', c.req.raw, c.env));
 
-// Protected API routes (auth required)
-app.use('/api/*', authMiddleware);
+// Protected routes (require authentication)
+app.use('/*', authMiddleware);
+app.get('/', (c) => pages.request('/', c.req.raw, c.env));
+
+// Protected API routes
 app.route('/api', api);
 
 export default app;
