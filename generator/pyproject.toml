@@ -1,0 +1,14 @@
+[project]
+name = "generator"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "loguru>=0.7.3",
+    "pandas>=2.3.3",
+    "psycopg2-binary>=2.9.11",
+    "python-dotenv>=1.2.1",
+    "qrcode[pil]>=8.2",
+    "reportlab>=4.4.6",
+    "tenacity>=9.1.2",
+]

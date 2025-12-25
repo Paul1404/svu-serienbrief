@@ -1,0 +1,475 @@
+Status;Mitgl.Nr.;Vorname;Nachname;Firma;Spender;Strasse;PLZ;Ort;Telefon;E-Mail;Geburtstag;Sparte;Geschlecht;Ausgetreten
+;;Christian ;Brückner ;;N;Kirchenweg 5;97508;Untereuerheim;;;;;MÄNNLICH;N
+;;Wolfgang ;Dellinger ;;N;Obereuerheimer Str. 23;97508;Untereuerheim;;;;;MÄNNLICH;N
+;;Elke und Stefan ;Lommel ;;N;Ringstraße 22;97508;Untereuerheim;;;;;;N
+;;Elke ;Risling ;;N;Waldstrasse;97508;Untereuerheim;;;;;;N
+;;Martin ;Warmuth ;;N;Am Trieb 13;97508;Untereuerheim;;;;;;N
+;;Elisabeth ;Weber ;;N;Hintere Gasse 2;97508;Untereuerheim;;;;;;N
+;;Tanja ;Holzheimer ;;N;Ringstrasse 10;97508;Untereuerheim;;tholzheimer1108@gmail.com;;;;N
+;;Steffen ;Mangold ;;N;Baumgarten 9;97508;Untereuerheim;;steffenmangold@gmx.de;;;;N
+;;Andrea;Rottmann ;;N;Mainblick 9;97453;Schonungen;;anzimm@yahoo.com;;;;N
+;;Margowski;Stefan u. Marion;;N;Bachstraße 7;97508;Obereuerheim;;;;;;N
+;;Alexander und Nicole ;Dinkel ;;N;Schönbornstraße 6;97508;Obereuerheim;;;;;;N
+;;Ralf ;Lommel;;N;Wilhelm-Schröder-Straße 7;97508;Grettstadt;;;;;;N
+;;Yvonne;Brückner;;N;Kirchenweg 5;97508;Untereuerheim;;;;;WEIBLICH;N
+;;Elisabeth;Weber;;N;;;;;;;;;N
+;;Alexander;Metz;;N;Ringstraße 12;97508;Untereuerheim;;;;;;N
+;;Rainer ;Brand ;;N;Bachstraße 9;97508;Obereuerheim;;;;;MÄNNLICH;N
+;;Katja;Keller;;N;Ringstraße 24;97508;Untereuerheim;;;;;;N
+;;Andrea u. Matthias ;Kral ;;N;Dürrfelder Straße 5;97508;Obereuerheim;;;;;;N
+;;Dominik;Häring;;N;Freiherr-von-Bibrastraße 3;97508;Obereuerheim;;;;;;N
+;;Hannelore;Eller ;;N;Dornweg 4;97508;Obereuerheim;;;;;WEIBLICH;N
+;;Heinz-Peter;Weidinger ;;N;Bachstraße 18;97508;Obereuerheim;;;;;;N
+;;Melinda;Pfister;;N;Freiherr-von-Bibra-Str. 6;97508;Obereuerheim;;;;;;N
+;;Katja ;Huber;;N;Pfarrgasse 3;97508;Obereuerheim;;;;;WEIBLICH;N
+;;Angelika;Kritzner ;;N;;;;;;;;;N
+;;Madleen;Steglich;;N;Am Oberhohn 15;97508;Untereuerheim;;;;;;N
+;;Kerstin;Wehr;;N;Kastanienstr, 6;97453;Waldsachsen;;;;;;N
+;;Georgiy ;Ratner;;N;Hermann-Schumannstr. 4;97526;Sennfeld;;;;;MÄNNLICH;N
+;;Paola;Pfützner-Zjlstra;;N;Eichenweg 8;97508;Untereuerheim;;;;;;N
+;;Christian;Lutz;;N;Frühlingstr. 5;97508;Grettstadt;;chris.sabrina@online.de;;;;N
+;;Cei;Fu;;N;Rückertstr 32;97469;Gochsheim;;rawu2012@gmail.com;;;;N
+;;Hatice;Recberoglu;;N;Pfarrgasse 6A;97508;Obereuerheim;;;;;;N
+;;Gersthauer;Melanie;;N;Pfarrer-Oefteringstr. 19;97526;Sennfeld;;;;;;N
+;;Efstathia;Zorn;;N;Am Schmiedtor 9;97508;Untereuerheim;;;;;;N
+;;Rainer;Gock;;N;Am Gänswasen 13;97508;Obereuerheim;;hls-gock@t-online.de;;;;N
+;;Gabriele;Soukup-Frank;;N;Anton-Weber-Straße 42a;97453;Hausen;;;;;WEIBLICH;N
+;;Irmschler-Hänsch;Melanie;;N;Obereuerheimer Str. 10;97508;Untereuerheim;;;;;;N
+;;Bischoff;Oliver;;N;Waldstraße 9b;97508;Untereuerheim;;;;;;N
+;;Martina;Seufert;;N;Eichenweg 8;97508;Untereuerheim;;;;;;N
+;;Sabine;Chwola;;N;Kirchenweg 3;97508;Untereuerheim;;;;;;N
+;;Corinna;Pfrang;;N;Schulplatz 4;97508;Untereuerheim;;;;;;N
+;;Nadine;Götz;;N;Birkenstrasse 15;97469;Weyer;;;;;WEIBLICH;N
+;;Jonathan;Reichert;;N;Baumgarten 7;97508;Untereuerheim;;;;;;N
+;;Daniela;Six;;N;Hermann Schuhmann straße 22;97526;Sennfeld;;;;;;N
+;;Jessica;Goodmann;;N;Hermann Schumann Straße 12;97526;Sennfeld;;;;;;N
+;;Nico;Hofrichter;;N;Baumgarten 28;97508;Untereuerheim;;;;;;N
+;;Stephanie;Lechleitner;;N;Pusselsheimer Straße 3;97508;Dürrfeld;;;;;;N
+;;Larissa;Eckert;;N;Am Gänswasen 17;97508;Obereuerheim;;;;;;N
+;;Nadia;Alexandra Huff;;N;Fischgasse 5;97508;Untereuerheim;;;;;;N
+;;Elfert;Lisa;;N;Sandweg 9;97508;Obereuerheim;;;;;;N
+;;Weinberger;Lidia;;N;Am Oberhohn 1;97508;Untereuerheim;;;;;;N
+;;Piller;Martin;;N;Lindenstraße 3;97508;Untereuerheim;;martinpiller@gmx.net;;;;N
+;;Johanna;Wirsing;;N;Wilhelm-Schröder-Straße 11;97508;Grettstadt;;;;;;N
+;;Christine;Schömig;;N;Sonnenstraße 34;97508;Grettstadt;;;;;;N
+;;Brigitta;Kral;;N;Nordstraße 13;97508;Grettstadt;;;;;;N
+;;Michael;Stöhlein;;N;Mönchsgasse 35;97469;Gochsheim;;;;;;N
+;1382;Peter;Fischer;;N;Albrecht-Dürer-Straße 2a;97469;Gochsheim ;;;01.01;Fussball;MÄNNLICH;N
+;1417;Laura;Hutter;;N;Am Trieb 4;97508;Untereuerheim;;;01.01;;MÄNNLICH;N
+;1324;Birgit ;Reinhart ;;N;Mühlgasse 12 ;97508 ;Untereuerheim ;;bireinhart75@gmail.com;02.01;Gymnastik;WEIBLICH;N
+;0660;Alfred ;Weingärtner ;;N;Aschaffstr. 6;63741;Aschaffenburg;06021;;02.01;;MÄNNLICH;N
+;1502;Sofia;Eckert;;N;Am Gänswasen 17;97508;Obereuerheim;;;03.01;Kinderturnen;WEIBLICH;N
+;1478;Aurel;Wolf;;N;Falkenstein 16a;97499;Donnersdorf;09528233;;04.01;Tischtennis;MÄNNLICH;N
+;1268 ;Michael ;Troll ;;N;Triebweg 12 ;97508 ;Untereuerheim ;;;06.01;;MÄNNLICH;N
+;0399;Edwin ;Böhnlein ;;N;Kugelweide 17 ;97508;Untereuerheim ;09729;;07.01;;MÄNNLICH;N
+;1547;Alia;Pfrommer;;N;Baumgarten;97508;Untereuerheim;;;07.01;Kinderturnen;WEIBLICH;N
+;0752;Roland ;Götzendörfer ;;N;Am Trieb 7 ;97508;Grettstadt/Untereuerheim ;09729;;08.01;Tischtennis;MÄNNLICH;N
+;1128;Andreas ;Lindner ;;N;Waldstrasse ;97508;Untereuerheim ;09729;;08.01;Fussball;MÄNNLICH;N
+;0809;Stefan ;Orth ;;N;Waldstrasse 3;97508 ;Untereuerheim;;;09.01;;MÄNNLICH;N
+;0622;Helga ;Dellinger ;;N;Obereuerheimer Str. 23 ;97508 ;Untereuerheim ;;;12.01;;WEIBLICH;N
+;1224;Andreas ;Hänsch ;;N;Obereuerheimer Str. 10 ;97508;Untereuerheim ;09729;;14.01;Fussball;MÄNNLICH;N
+;1280 ;Raphael ;Kraut ;;N;Ringstraße 11 ;97508;Untereuerheim;09729;;14.01;;MÄNNLICH;N
+;1213;Niklas ;Wagner ;;N;Ringstraße 20;97508 ;Untereuerheim ;;;16.01;;MÄNNLICH;N
+;1508;Jerome;Bendia;;N;Schulplatz 5;97508;Untereuerheim;;;16.01;Fussball;MÄNNLICH;N
+;0976;Wolfgang ;Schmitt ;;N;Am Schmiedtor 1 ;97508 ;Untereuerheim ;;;17.01;;MÄNNLICH;N
+;1385;Sebastian;Löhr;;N;Am Trieb 5;97508;Untereuerheim;09729;loehr.untereuerheim@web.de;17.01;Fussball;MÄNNLICH;N
+;0739 ;Claudia ;Oberleitner ;;N;Kirchenweg 2 ;97508;Untereuerheim ;0972909729/907006;claudiaoberleitner@web.de;19.01;;WEIBLICH;N
+;1179;Marco ;Karch ;;N;Obereuerheimer Str. 4 ;97508 ;Untereuerheim ;;;20.01;Fussball;MÄNNLICH;N
+;1443;Sofie;Schneider;;N;Kirchenweg 11;97508;Untereuerheim;;;20.01;Kinderturnen;WEIBLICH;N
+;1457;Paul;Müller;;N;Eisengarten 3;97508;Untereuerheim;;;20.01;Kinderturnen;MÄNNLICH;N
+;1162;Peter;Birkmeyer;;N;Ringstraße 10 ;97508 ;Untereuerheim ;;;21.01;Fussball;MÄNNLICH;N
+;0271;Sieglinde ;Lösch ;;N;Schloßmühlenweg 3 ;97508;Untereuerheim ;09729;;21.01;Gymnastik;WEIBLICH;N
+;1541;Jaris;Wirsing;;N;Wilhelm-Schröder-Straße 11;97508;Grettstadt;;;23.01;Tischtennis;MÄNNLICH;N
+;1284;Josefin;Göb ;;N;Baumgarten 18 ;97508 ;Untereuerheim;;;25.01;Kinderturnen;WEIBLICH;N
+;0407;Rosa ;Wagner ;;N;Mühlgasse 6;97508;Untereuerheim ;09729;;25.01;;WEIBLICH;N
+;1237;Kerstin ;Stubenrauch ;;N;Am Setzen 120;97469;Gochsheim ;;;26.01;Korbball;WEIBLICH;N
+;1357;Marie ;Huber ;;N;Pfarrgasse 3;97508;Obereuerheim ;09729;;26.01;Korbball;WEIBLICH;N
+;0527;Petra;Baumann ;;N;Triebweg 7;97508;Untereuerheim ;09729;;28.01;Gymnastik;WEIBLICH;N
+;0696;Stephan ;Reinhart ;;N;Am Schmiedtor 6 ;97508 ;Untereuerheim ;;;28.01;;MÄNNLICH;N
+;0968;Konstantin ;Eckert;;N;Am Oberhohn 6 ;97508 ;Untereuerheim ;;;30.01;;MÄNNLICH;N
+;0808;Matthias ;Helbig ;;N;Triebweg 4;97508;Untereuerheim ;09729;;30.01;Fussball;MÄNNLICH;N
+;1274;Christoph ;Huppmann ;;N;Immenrot 12 ;97508;Untereuerheim ;09729;;03.02;Kinderturnen;MÄNNLICH;N
+;1343;Dirk ;Feineis ;;N;Ringstraße 14 ;97508 ;Untereuerheim ;09729/908007;feineisdirk@yahoo.de;03.02;Tischtennis;MÄNNLICH;N
+;1450;Paul;Bichert;;N;Waldstraße 10;97508;Untereuerheim;;Larjabichert@yahoo.de;03.02;Fussball;MÄNNLICH;N
+;1489;Katharina;Kuhn;;N;Am Trieb 8;97508;Untereuerheim;;;03.02;Combo;MÄNNLICH;N
+;1405;Selina;Hetz;;N;Am Oberhohn 8;97508;Untereuerheim;;;04.02;;WEIBLICH;N
+;1300 ;Martin ;Oberleitner ;;N;Kirchenweg 2 ;97508;Untereuerheim ;09729;claudiaoberleitner@web.de;05.02;Fussball;MÄNNLICH;N
+;1399;Tatjana;Pfützner;;N;Eichenweg 2;97508;Untereuerheim;09729097299099339;;05.02;;WEIBLICH;N
+;1407;Karina;Nikolaus;;N;Gutenbergstr. 7;97464;Niederwerrn;;karinanikolaus62@gmail.com;06.02;Korbball;WEIBLICH;N
+;1477;Christine ;Haas;;N;Triebweg 6;97508;Untereuerheim;;christineanna.haas@gmail.com;06.02;;WEIBLICH;N
+;1528;Lucas;Reinhart;;N;Am Schmiedtor 6;97508;Untereuerheim;07291608;;07.02;Fussball;MÄNNLICH;N
+;1445;Diana;Hänsch;;N;Obereuerheimer Str. 10;97508;Untereuerheim;;dianah0902@gmail.com;09.02;Korbball;WEIBLICH;N
+;0354;Herrmann ;Klaus ;;N;Schloßmühlenweg 1;97508;Untereuerheim ;09729;;10.02;Gymnastik;MÄNNLICH;N
+;1287;Julia ;Schneider;;N;Kirchenweg 11;97508 ;Untereuerheim ;;rudolphjulia@web.de;11.02;Korbball;WEIBLICH;N
+;1196;Andre ;Hau ;;N;Waldstraße 1 ;97508 ;Untereuerheim ;;;11.02;;MÄNNLICH;N
+;1451;Anton;Bichert;;N;Waldstraße 10;97508;Untereuerheim;;;11.02;Fussball;MÄNNLICH;N
+;1507;Anita;Ebert;;N;Altenbergstrasse 8;97422;Schweinfurt;;;11.02;Combo;WEIBLICH;N
+;1532;Julia;Schirmer;;N;Jonas-Wehner-Straße 34;97508;Untereuerheim;;;11.02;Tischtennis;MÄNNLICH;N
+;0810 ;Jürgen ;Schwarz ;;N;Am Unterhohn 9 ;97508 ;Untereuerheim ;;;12.02;;MÄNNLICH;N
+;1473;Fynn;Hänelt;;N;Brunnenstrasse 13;97508;Untereuerheim;;;12.02;Fussball;MÄNNLICH;N
+;1425;Waldemar;Karsten;;N;Am Unterhohn 2;97508;Untereuerheim;;waldemar.karsten@gmail.de;15.02;;MÄNNLICH;N
+;1531;Julia;Ludwig;;N;Baumgarten 2;97508;Untereuerheim;;;17.02;Gymnastik;WEIBLICH;N
+;1561;Markus;Piller;;N;Lindenstraße 3;97508;Untereuerheim;;;17.02;Fussball;MÄNNLICH;N
+;1319;Jan ;Schoeppe ;;N;Steigerwaldstraße 9a ;97508 ;Obereuerheim ;;;19.02;Tischtennis;MÄNNLICH;N
+;1455;Sophia;Pfrang;;N;Schulplatz 4;97508;Untereuerheim;;corinna.pfrang@onlein.de;19.02;Kinderturnen;WEIBLICH;N
+;1466;Jasmin;Krämer;;N;Hermann-Schuhmann-Straße 22;97526;Sennfeld;;DanielaSix@gmx.de;19.02;Combo;WEIBLICH;N
+;1467;Michelle;Goodmann;;N;Hermann-Schumann Straße 12;97526;Sennfeld;;konrad7756@gmail.de;19.02;Combo;WEIBLICH;N
+;1270;Achim ;Gärtner ;;N;Hadergasse 2 ;97469;Gochsheim ;;;20.02;Fussball;MÄNNLICH;N
+;0607 ;Peter ;Riegler ;;N;Am Schmiedtor 7 ;97508 ;Untereuerheim ;;;20.02;Fussball;MÄNNLICH;N
+;0443 ;Erika ;Schneider ;;N;Bachwingert 3;97508;Untereuerheim ;09729;;20.02;;WEIBLICH;N
+;1201;Julian ;Schwarz ;;N;Am Unterhohn 9;97508;Untereuerheim ;09729;;21.02;;MÄNNLICH;N
+;0859 ;Alexander ;Eckert ;;N;Am Oberhohn 6 ;97508;Untereuerheim ;09729;alex.eckert@hotmail.de;22.02;Fussball;MÄNNLICH;N
+;0833 ;Claus ;Glöckner ;;N;Kirchenweg 21 ;97508;Untereuerheim ;09729;;25.02;Fussball;MÄNNLICH;N
+;1293;Samuel ;Hümmer ;;N;Baumgarten 12 ;97508 ;Untereuerheim ;;;26.02;;MÄNNLICH;N
+;1558;Etienne;Reichel;;N;Fischgasse 4;97508;Untereuerheim;;;01.03;Fussball;WEIBLICH;N
+;1173;Romy ;Orth;;N;Waldstrasse 8;97508 ;Untereuerheim;;;07.03;Korbball;WEIBLICH;N
+;1505;Diana;Schubert;;N;Brunnenstrasse 1;97508;Untereuerheim;;;07.03;Gymnastik;WEIBLICH;N
+;1524;Sebastian;Nicklaus;;N;Am Oberhohn 12;97508;Untereuerheim;;;07.03;Tischtennis;MÄNNLICH;N
+;1235;Stefanie ;Kamm ;;N;Buchenstraße 27;97469 ;Weyer ;;;08.03;Korbball;WEIBLICH;N
+;1479;Sisarikorn;Kanokwan;;N;Ringstrasse 8;97508;Untereuerheim;;;09.03;Combo;WEIBLICH;N
+;1398;Leonie;Fuhl;;N;Georg-Ludwig-Str. 15;97526;Sennfeld;;;11.03;;WEIBLICH;N
+;1264;Julian ;Scherer;;N;Am Sandrot 3 ;97508 ;Untereuerheim ;;;12.03;;MÄNNLICH;N
+;1493;Gunter;Griethe;;N;Am Trieb 11;97508;Untereuerheim;;guntergriethe@gmx.de;12.03;Tischtennis;MÄNNLICH;N
+;1513;Bojan;Ludwig;;N;Baumgarten 6;97508;Untereuerheim;09729;;13.03;;MÄNNLICH;N
+;1535;Vanessa;Weinberger;;N;Am Oberhohn 1;97508;Untereuerheim;;weinberger-lidia@gmx.de;14.03;Kinderturnen;WEIBLICH;N
+;0814 ;Volker ;Götzendörfer ;;N;Kirchenweg 12 ;97508;Grettstadt/Untereuerheim ;09729;;15.03;Fussball;MÄNNLICH;N
+;0496;Norbert ;Jakob ;;N;Triebweg 5 ;97508;Untereuerheim ;09729;;15.03;;MÄNNLICH;N
+;1291;Christian ;Hümmer ;;N;Raiffeisenstraße 18;97508;Grettstadt;09729;christian.huemmer@gmx.de;15.03;Fussball;MÄNNLICH;N
+;0529 ;Gisela ;Treutlein ;;N;Kirchenweg;97508 ;Untereuerheim;09729;;15.03;;WEIBLICH;N
+;1526;Kerstin;Wittig;;N;Kugelweide 9;97508;Untereuerheim;;;15.03;Tischtennis;WEIBLICH;N
+;1480;Franziska;Jakob;;N;Bgm.-Weigand-Strasse 9;97447;Gerolzhofen;;franzi-jakob@web.de;16.03;;WEIBLICH;N
+;1430;Georgios;Argiropoulos;;N;Am Schmiedtor 9;97508;Untereuerheim;;;18.03;Gymnastik;MÄNNLICH;N
+;1464;Simon;Michalczyk;;N;Karl-Götz-Straße 22e;97424;Schweinfurt;;;18.03;Fussball;MÄNNLICH;N
+;1116;Patrick ;Dresch ;;N;Baumgarten 4;97508;Untereuerheim ;09729;;19.03;Fussball;MÄNNLICH;N
+;1277;Melitta ;Kramer ;;N;Bachwingert 4 ;97508;Untereuerheim ;09729;;19.03;;WEIBLICH;N
+;1286;David ;Greb ;;N;Baumgarten 14 ;97508;Untereuerheim ;09729;;19.03;Fussball;MÄNNLICH;N
+;0776;Bettina ;Glöckner ;;N;Kirchenweg 21 ;97508;Untereuerheim ;09729;;22.03;Gymnastik;WEIBLICH;N
+;0368;Clemens ;Ort ;;N;Kirchenweg 13 ;97508;Untereuerheim ;09729;;22.03;;MÄNNLICH;N
+;1560;Samuel;Amend;;N;Lärchenstraße 1;97469;Weyer;;;22.03;Kinderturnen;MÄNNLICH;N
+;1305;Christian ;Bienia;;N;Margarethe-Schreiber-Str. 18 ;97506 ;Grafenrheinfeld ;;christianbiena1@googlemail.com;23.03;Fussball;MÄNNLICH;N
+;0709;Andreas ;Hutter ;;N;Am Trieb 4 ;97508;Untereuerheim ;09729;;24.03;Fussball;MÄNNLICH;N
+;1302;Max;Oberleitner ;;N;Kirchenweg 2 ;97508 ;Untereuerheim ;;;25.03;Fussball;MÄNNLICH;N
+;1251;Tabea ;Schad ;;N;Triebweg 10;97508;Untereuerheim ;09729;;26.03;;WEIBLICH;N
+;1436;Darja;Bichert;;N;Waldstraße 10;97508;Untereuerheim;;darjabichert@yahoo.de;26.03;Combo;WEIBLICH;N
+;0492 ;Norbert ;Vollert ;;N;Triebweg 3 ;97508 ;Untereuerheim ;;;27.03;;MÄNNLICH;N
+;0804;Nadine ;Bähr ;;N;Am Unterhohn;97508 ;Untereuerheim ;;;28.03;Korbball;WEIBLICH;N
+;0528;Ingrid ;Kober ;;N;Obereuerheimer Str. 22 ;97508;Untereuerheim;09729;;28.03;Gymnastik;WEIBLICH;N
+;0852 ;Werner ;Weber ;;N;Hintere Straße 2 ;97508 ;Untereuerheim ;;;28.03;;MÄNNLICH;N
+;0795;Silvia ;Göb ;;N;Baumgarten 18 ;97508 ;Untereuerheim ;;;28.03;Korbball;WEIBLICH;N
+;1498;Regina;Wolf;;N;Falkenstein 16a;97499;Donnersdorf;;;28.03;Tischtennis;WEIBLICH;N
+;1282;Leonie ;Holzheimer ;;N;Ringstrasse 10;97508 ;Untereuerheim ;;;01.04;Korbball;WEIBLICH;N
+;0712;Rosalinde ;Herbert;;N;Obereuerheimer Str. 12 ;97508 ;Untereuerheim ;;;01.04;;WEIBLICH;N
+;0678;Heinrich ;Huppmann ;;N;Kugelweide 1 ;97508 ;Untereuerheim ;;;03.04;;MÄNNLICH;N
+;1555;Julian;Reichel;;N;Fischgasse 4;97508;Untereuerheim;;julian.reichel@gmx.de;04.04;Fussball;MÄNNLICH;N
+;0639;Edeltraud ;Fähr ;;N;Weyerer Str. 8 ;97508;Untereuerheim ;09729;;05.04;;WEIBLICH;N
+;1384;Manuel;Wehr;;N;Kastanienstr. 6;97453;Waldsachsen;09727907864;;06.04;Tischtennis;MÄNNLICH;N
+;1512;Hailey;Lechner;;N;Mühlgasse 8a;97508;Untereuerheim;;;06.04;Kinderturnen;MÄNNLICH;N
+;0753;Ralf ;Greb ;;N;Am Unterhohn 7 ;97508;Untereuerheim ;09729;;07.04;Fussball;MÄNNLICH;N
+;1404;Wolfgang;Schickerling;;N;Triebweg 8;97508;Unteuerheim;09729;;07.04;Gymnastik;MÄNNLICH;N
+;1556;Larissa;Reichel;;N;Fischgasse 4;97508;Untereuerheim;;;07.04;Fussball;WEIBLICH;N
+;1292;Melanie ;Hümmer ;;N;Baumgarten 12 ;97508 ;Untereuerheim ;;christian.huemmer@gmx.de;08.04;Gymnastik;WEIBLICH;N
+;1486;Daniel;Brand;;N;Baumgarten 31;97508;Grettstadt;09729/5928690;brand@didiwi-group.de;08.04;Fussball;MÄNNLICH;N
+;1159;Ute ;Gossmann ;;N;Sonnenblick 6 - 8 ;97453 ;Waldsachsen ;;;09.04;Gymnastik;WEIBLICH;N
+;1348;Leni ;Häring ;;N;Freiherr-von-Bibra-Straße 3 ;97508;Obereuerheim ;09729;;09.04;Korbball;WEIBLICH;N
+;1429;Arthur;Gossmann;;N;Sonnenblick 8;97453;Waldsachsen;;gossi2006@web,de;10.04;Gymnastik;MÄNNLICH;N
+;1476;Andreas;Graser;;N;Triebweg 6;97508;Grettstadt;;;10.04;;MÄNNLICH;N
+;0414;Hartmut ;Köhler ;;N;Am Unterhohn 4 ;97508 ;Untereuerheim;;;11.04;Fussball, Gymnastik;MÄNNLICH;N
+;1446;Luis;Feil;;N;Ringstr. 13;97508;Untereuerheim;;;11.04;Kinderturnen;MÄNNLICH;N
+;1219;Florian ;Ment;;N;Am Setzen 114 ;97469 ;Gochsheim ;;;12.04;;MÄNNLICH;N
+;1501;Lars;Schmitt;;N;Frühlingstrasse 6;97499;Donnersdorf;09528950431;;13.04;Tischtennis;MÄNNLICH;N
+;1552;Maja;Pajak;;N;Am Oberhohn 14;97508;Untereuerheim;;;13.04;Kinderturnen;WEIBLICH;N
+;0774;Gisela ;Gerber ;;N;Am Trieb 11 ;97508;Untereuerheim ;09729;;14.04;Gymnastik;WEIBLICH;N
+;1474;Maya;Hänelt;;N;Brunnenstrasse 13;97508;Untereuerheim;;;14.04;Korbball;WEIBLICH;N
+;1484;Paul;Dresch;;N;Schweinfurter Weg;97508;Untereuerheim;;paul.dresch@untereuerheim.com;14.04;Fussball;MÄNNLICH;N
+;0473;Rainer ;Kirchner ;;N;Eichenweg 4 ;97508;Untereuerheim;09729;;15.04;;MÄNNLICH;N
+;0935;Felix ;Schneider ;;N;Kirchenweg 9;97508 ;Untereuerheim ;;;15.04;Fussball;MÄNNLICH;N
+;1328;Martin ;Reinhart ;;N;Mühlgasse 12 ;97508 ;Untereuerheim ;09729908235;reinhartmartin@gmail.com;15.04;Fussball;MÄNNLICH;N
+;1519;Sergej;Oberdörfer;;N;Am Oberhohn 9;97508;Untereuerheim;;;15.04;Fussball;MÄNNLICH;N
+;1550;Michael;Pajak;;N;Am Oberhohn 14;97508;Untereuerheim;;pajak.michael@web.de;16.04;Fussball;MÄNNLICH;N
+;0894;Sandra ;Götzendörfer ;;N;Am Trieb 7 ;97508;Grettstadt/Untereuerheim ;09729;;17.04;Korbball;WEIBLICH;N
+;1448;Jordan;Gunsch;;N;Waldstraße 9b;97508;Untereuerheim;;pretorian72@web.de;18.04;Fussball;MÄNNLICH;N
+;1504;Paul;Hanne;;N;Schloßmühlenweg 4;97508;Untereuerheim;;hanne.paul@yahoo.de;19.04;Fussball;MÄNNLICH;N
+;1346;Leni ;Keller ;;N;Ringstraße 24 ;97508 ;Untereuerheim ;;;20.04;Korbball;WEIBLICH;N
+;0396;Margit ;Straub ;;N;Kirchenweg 17 ;97508;Untereuerheim ;09729;;22.04;;WEIBLICH;N
+;0799;Petra ;Müller;;N;Fischgasse 1;97508;Untereuerheim;09729;;23.04;Gymnastik;WEIBLICH;N
+;1463;Christina;Gläser;;N;Am Unterhohn 5a;97508;Untereuerheim;;christinaglaeser@yahoo.com;23.04;Gymnastik;WEIBLICH;N
+;0602;Ulrike ;Waas ;;N;Bachwingert 3 ;97508 ;Untereuerheim;;;24.04;;WEIBLICH;N
+;0620;Klemens;Baumann;;N;Triebweg 7;97508;Untereuerheim;09729;;24.04;Fussball;MÄNNLICH;N
+;1506;Thomas;Ebert;;N;Altenbergstrasse 8;97422;Schweinfurt;;thomas.ebert62@google.com;24.04;Combo;MÄNNLICH;N
+;0834;Gerhard ;Peterlik ;;N;Immenrot 7 ;97508;Untereuerheim ;09729;;25.04;;MÄNNLICH;N
+;1548;Ronja;Reinhart;;N;Immenrot 6;97508;Untereuerheim;;j.reinhart88@yahoo.de;25.04;Kinderturnen;WEIBLICH;N
+;1401;Paula;Geith;;N;Eichenweg 3;97508;Untereuerheim;09729;geith.paula@gmail.com;26.04;Combo;WEIBLICH;N
+;1295;Lilly ;Götzendörfer ;;N;Kirchenweg 12 ;97508 ;Untereuerheim ;09729/907411;;27.04;Kinderturnen;WEIBLICH;N
+;1481;Lionel;Bähr;;N;Am Unterhohn;97508;Untereuerheim;;;28.04;Fussball;MÄNNLICH;N
+;1525;Oliver;Wittig;;N;Kugelweide 9;97508;Untereuerheim;;kewittig@gmail.com;28.04;Tischtennis;MÄNNLICH;N
+;1553;Johanna;Kamm;;N;Buchenstraße 27;97469;Weyer;;;28.04;Korbball;WEIBLICH;N
+;0917 ;Hermann ;Nappert ;;N;Ringstraße 10 ;97508 ;Untereuerheim ;;;29.04;;MÄNNLICH;N
+;1433;Dana;Sperling;;N;Am Birngarten 2;97447;Frankenwinheim;;sperlida@gmail.com;29.04;;WEIBLICH;N
+;0836;Annemarie ;Zeitvogel ;;N;Ringstraße 2 ;97508;Untereuerheim;09729;;30.04;Gymnastik;WEIBLICH;N
+;1529;Tim;Seufert;;N;Eichenweg 8;97508;Untereuerheim;;tina11111@freenet.de;01.05;Kinderturnen;MÄNNLICH;N
+;1330;Eva ;Huppmann ;;N;Immenrot 12 ;97508  ;Untereuerheim;09729/4069875;Schmidt.Manuela1@gmx.de;02.05;Korbball;WEIBLICH;N
+;1183;Lea - Sophie ;Öhler ;;N;Kugelweide 17 ;97508;Untereuerheim ;09729;;02.05;Combo;WEIBLICH;N
+;0402;Ingrid ;Weger ;;N;Ringstraße 17 ;97508 ;Untereuerheim;;;03.05;Gymnastik;WEIBLICH;N
+;1383;Julius;Kortus;;N;Hintere Gasse 7;97508;Untereuerheim;09729;;03.05;Gymnastik;MÄNNLICH;N
+;1349;Mia ;Rebhan ;;N;Dornweg 4 ;97508;Obereuerheim ;09729;;05.05;Korbball;WEIBLICH;N
+;1326;Christiane ;Reinhart ;;N;Mühlgasse 12 ;97508 ;Untereuerheim ;;Reinhart-Christiane@t-online.de;07.05;Korbball;WEIBLICH;N
+;1146;Jürgen ;Bähr ;;N;Am Unterhohn;97508 ;Untereuerheim ;;;09.05;;MÄNNLICH;N
+;0785;Manfred ;Karch ;;N;Obereuerheimer Str. 4;97508;Untereuerheim ;09729;;09.05;;MÄNNLICH;N
+;0326;Otto ;Schor ;;N;Schloßmühlenweg 2 ;97508;Untereuerheim ;09729;;10.05;;MÄNNLICH;N
+;1176;Lina ;Schuster ;;N;Waldstraße 11 ;97508 ;Untereuerheim ;;;11.05;;WEIBLICH;N
+;0828;Martina ;Weber ;;N;Hintere Gasse 2 ;97508 ;Untereuerheim ;;;13.05;;WEIBLICH;N
+;1426;Oliver;Karsten;;N;Am Unterhohn 2;97508;Untereuerheim;;;13.05;Fussball;MÄNNLICH;N
+;1411;Robert;Höchemer;;N;Am Schmiedtor 4;97508;Untereuerheim;09729;;14.05;Gymnastik;MÄNNLICH;N
+;1335;Philipp-Manuel ;Wolkenstein ;;N;Fischgasse 1;97508;Untereuerheim;09721;;15.05;Fussball;MÄNNLICH;N
+;1367;Harvey;Eisenbarth;;N;Am Unterhohn 3a;97508;Untereuerheim;09729;;15.05;Fussball;MÄNNLICH;N
+;0320;Rüdiger ;Hänsch ;;N;Kugelweide 3 ;97508;Grettstadt/Untereuerheim ;09729;;16.05;;MÄNNLICH;N
+;1470;Eve;Goodmann;;N;Hermann Schumann Straße 12;97526;Sennfeld;;nomad7756@gmail.com;16.05;Combo;WEIBLICH;N
+;0444;Ingrid ;Vatter ;;N;Obereuerheimer Straße 19;97508;Untereuerheim;09729;;17.05;;WEIBLICH;N
+;0875;Silke ;Höchemer ;;N;Am Schmiedtor 4 ;97508 ;Untereuerheim ;;;18.05;;WEIBLICH;N
+;1105;Louis;Peterlik ;;N;Immenrot 7 ;97508 ;Untereuerheim ;;;18.05;;MÄNNLICH;N
+;0646;Jochen ;Straub ;;N;Kirchenweg 17;97508;Untereuerheim ;09729;;18.05;;MÄNNLICH;N
+;0374 ;Heinz ;Vatter ;;N;Obereuerheimer Str. 19 ;97508 ;Untereuerheim ;;;21.05;;MÄNNLICH;N
+;1265;Leonard;Scherer;;N;Am Sandrot 3;97508;Untereuerheim;;;22.05;Kinderturnen;MÄNNLICH;N
+;1261 ;Andreas ;Scherer ;;N;Am Sandrot 3 ;97508 ;Untereuerheim ;;;23.05;;MÄNNLICH;N
+;1518;Kerstin;Oberdörfer;;N;Am Oberhohn 9;97508;Untereuerheim;;ghkerstin88@gmail.com;23.05;Fussball;WEIBLICH;N
+;1465;Milo;Reichert;;N;Baumgarten 7;97508;Untereuerheim;;stefanie.herrmann92@gmail.com;25.05;Kinderturnen;MÄNNLICH;N
+;0461;Klaus ;Gräb ;;N;Obereuerheimer Str. 27 ;97508;Untereuerheim ;09729;;26.05;;MÄNNLICH;N
+;1279;Carsten;Kraut ;;N;Ringstraße 11 ;97508 ;Untereuerheim ;;;26.05;Fussball;MÄNNLICH;N
+;1048;Lorin ;Hümpfer ;;N;Am Birngarten 2;97442;Frankenwinheim;09729;;26.05;Combo;MÄNNLICH;N
+;0939;Doris ;Walter;;N;Am Oberhohn 24 ;97508 ;Untereuerheim ;;;26.05;;MÄNNLICH;N
+;1497;Justus;Wolf;;N;Falkenstein 16a;97499;Donnersdorf;;;28.05;Tischtennis;MÄNNLICH;N
+;0327;Werner ;Herbert;;N;Obereuerheimer Str. 12 ;97508;Untereuerheim ;09729;;29.05;Tischtennis;MÄNNLICH;N
+;0896;Kilian ;Hümpfer ;;N;Eibischring 18;97508;Grettstadt;;;29.05;Fussball;MÄNNLICH;N
+;1175;Philip;Schuster;;N;Waldstraße 11 ;97508;Untereuerheim;09729;;29.05;;MÄNNLICH;N
+;0495;Bernhard ;Eckert ;;N;Am Oberhohn 6 ;97508;Untereuerheim ;09729;;02.06;Fussball;MÄNNLICH;N
+;1064 ;Maximilian ;Weber ;;N;Hintere Gasse 2 ;97508 ;Untereuerheim ;;;03.06;;MÄNNLICH;N
+;0330 ;Helmut;Zeitvogel ;;N;Ringstraße 2 ;97508 ;Untereuerheim ;;;03.06;Fussball;MÄNNLICH;N
+;1392;Stefan;Greulich;;N;Haupstr. 31;97424;Schweinfurt;09721;stefangreulich93@gmx.de;04.06;Fussball;MÄNNLICH;N
+;0419 ;Adalbert ;Orth ;;N;Mühlgasse ;97508;Untereuerheim;09729;;05.06;;MÄNNLICH;N
+;0579;Petra ;Deppert ;;N;Schweinfurter Weg 6 ;97508;Untereuerheim ;;petra.deppert@untereuerheim.com;06.06;Fussball;WEIBLICH;N
+;1249 ;Noah Luca ;Warmuth ;;N;Am Trieb 13 ;97508 ;Untereuerheim ;;;06.06;Fussball;MÄNNLICH;N
+;0300 ;Reinhold ;Hahn ;;N;Weyerer Straße 3 ;97508 ;Untereuerheim ;;;09.06;;MÄNNLICH;N
+;1327;Michael;Reinhart ;;N;Mühlgasse 12 ;97508 ;Untereuerheim ;09729908236;michi.r.m.mr@gmail.com;09.06;Fussball;MÄNNLICH;N
+;0614;Edeltraud ;Wenzel ;;N;Am Schmiedtor 8;97508;Untereuerheim ;09729;;10.06;Gymnastik;WEIBLICH;N
+;1423;Kevin;Hartmann;;N;Kirchplatz 8;97508;Dürrfeld;;kevin-hartmann1997@web.de;12.06;Fussball;MÄNNLICH;N
+;1363;Luis ;Keller;;N;Ringstraße 24;97508;Untereuerheim;09729;;15.06;Fussball;MÄNNLICH;N
+;1406;Marcel;Ludwig;;N;Baumgarten 2;97508;Untereuerheim;;marcel.sunitsch@yahoo.de;16.06;;MÄNNLICH;N
+;0805;Daniela ;Jakob ;;N;Waldstrasse;97508;Untereuerheim;09729;;17.06;Gymnastik;WEIBLICH;N
+;1283;Emily ;Bähr ;;N;Am Unterhohn;97508 ;Untereuerheim ;;;18.06;Korbball;WEIBLICH;N
+;0879;Beate ;Höchemer ;;N;Am Schmiedtor 4 ;97508;Untereuerheim ;09729;;19.06;Gymnastik;WEIBLICH;N
+;1499;Diana;Andricher;;N;Obereuerheimer Strasse 5;97508;Untereuerheim;;;20.06;Combo;WEIBLICH;N
+;1416;Manuela;Hutter;;N;Am Trieb 4;97508;Untereuerheim;09729/210;;21.06;;WEIBLICH;N
+;0967;Ruth ;Eckert ;;N;Am Oberhohn 6;97508;Untereuerheim;09729;;22.06;;WEIBLICH;N
+;0432 ;Johannes ;Schneider ;;N;Kirchenweg 16 ;97508;Untereuerheim ;09729;;23.06;;MÄNNLICH;N
+;1329;Fee Emely ;Eisenbarth ;;N;Am Unterhohn 3a ;97508 ;Untereuerheim ;;;23.06;Kinderturnen, Korbball;WEIBLICH;N
+;0934 ;Richard ;Peterlik ;;N;Frankenstraße 3;97499 ;Traustadt ;;;24.06;;MÄNNLICH;N
+;1369;Luisa;Wagner;;N;Ringstraße 20;97508;Untereuerheim;09729;;24.06;;WEIBLICH;N
+;0855 ;Thomas ;Voit ;;N;Brunnenstraße 6 ;97508 ;Untereuerheim ;;;25.06;;MÄNNLICH;N
+;0816;Ralf ;Bauer ;;N;Bergstraße 18 ;97534 ;Waigolshausen/Theilheim ;;;26.06;Fussball;MÄNNLICH;N
+;1187 ;Melanie ;Schuster ;;N;Waldstraße 11 ;97508 ;Untereuerheim ;;;26.06;;WEIBLICH;N
+;1230;Sandra ;Götzendörfer ;;N;Kirchenweg 12 ;97508;Grettstadt/Untereuerheim ;09729;;27.06;Korbball;WEIBLICH;N
+;1511;Amber;Lechner-Odum;;N;Mühlgasse 8a;97508;Untereuerheim;;;27.06;;WEIBLICH;N
+;1424;Lilly;Karsten;;N;Am Unterhohn 2;97508;Untereuerheim;;;30.06;;WEIBLICH;N
+;1056;Lena ;Schwarz;;N;Ringstraße 9 ;97508;Untereuerheim ;09729;;01.07;Korbball;WEIBLICH;N
+;1311;Lukas ;Pfrommer ;;N;Baumgarten;97508 ;Untereuerheim ;;;02.07;Fussball;MÄNNLICH;N
+;0471;Erich ;Straub ;;N;Kirchenweg 17 ;97508 ;Untereuerheim ;;;03.07;;MÄNNLICH;N
+;1538;Martin;Piontek;;N;Brunnenstraße 3;97508;Untereuerheim;;m-piontek@freenet.de;06.07;Tischtennis;MÄNNLICH;N
+;0826;Nicole;Birkmeyer;;N;Ringstraße 10 ;97508;Untereuerheim ;09729;;07.07;Korbball;WEIBLICH;N
+;1340;Julia ;Hamacher ;;N;Siebengebirgsstraße 1 ;53859;Niederkassel , Rhein;;;07.07;;WEIBLICH;N
+;0298;Karl ;Götzendörfer ;;N;Kirchenweg 12 ;97508;Untereuerheim ;09729;;08.07;Fussball;MÄNNLICH;N
+;0848;Simone ;Marquard;;N;Sandweg 17;97493;Bergrheinfeld;;;09.07;;WEIBLICH;N
+;1418;Elias;Gock;;N;Am Gänswasen 13;97508;Obereuerheim;;;10.07;Fussball;MÄNNLICH;N
+;1390;Andreas;Ratner;;N;Hermann-Schumannstr. 4;97526;Sennfeld;09721944109;georg.ratner@googlemail.com;12.07;Tischtennis;MÄNNLICH;N
+;1362;Jan;Lechner ;;N;Mühlgasse 8a;97508;Untereuerheim;;;13.07;Fussball;MÄNNLICH;N
+;1515;Annalena;Ludwig;;N;Baumgarten 6;97508;Untereuerheim;;;13.07;Fussball;WEIBLICH;N
+;1551;Johanna;Pajak;;N;Am Oberhohn 14;97508;Untereuerheim;;;14.07;;WEIBLICH;N
+;1321 ;Simon ;Pfrommer ;;N;Steigerwaldstraße 26 ;97508 ;Obereuerheim ;;;16.07;Fussball;MÄNNLICH;N
+;1331;Luis ;Lommel ;;N;Wilhelm-Schröder-Straße 7 ;97508;Grettstadt;09729/908373;turbo-karin.lommel@t-online.de ;16.07;Tischtennis;MÄNNLICH;N
+;1308;Selina ;Schmidt ;;N;Ringstraße 15 ;97508 ;Untereuerheim ;09729/7161;;16.07;Korbball;WEIBLICH;N
+;1432;Luca;Mangold;;N;Baumgarten 9;97508;Untereuerheim;;;17.07;Fussball;MÄNNLICH;N
+;1496;Roman;Wolf;;N;Falkenstein 16a;97499;Donnersdorf;;;20.07;Tischtennis;MÄNNLICH;N
+;0612;Elvira ;Schneider ;;N;Kirchenweg 19 ;97508 ;Untereuerheim ;;;21.07;;WEIBLICH;N
+;1289;Leyla ;Mangold ;;N;Baumgarten 9 ;97508 ;Baumgarten 9 ;09729/5929066;steffenmangold@gmx.de;23.07;Kinderturnen;WEIBLICH;N
+;0499;Gisela ;Hutter ;;N;Am Trieb 4 ;97508 ;Untereuerheim ;;;24.07;Fussball;WEIBLICH;N
+;1488;Manuel;Kuhn;;N;Am Trieb 8;97508;Untereuerheim;09729/5928998;;24.07;Combo;MÄNNLICH;N
+;0827;Carina ;Öhler ;;N;Kugelweide 17 ;97508;Untereuerheim ;09729;;25.07;Combo;WEIBLICH;N
+;1395;Andreas;Fuhl;;N;Georg-Ludwig-Str. 15;97526;Sennfeld;097216466821;;26.07;;MÄNNLICH;N
+;1491;Carlo;Schwarz;;N;Ringstraße 9;97508;Untereuerheim;;;27.07;Combo;MÄNNLICH;N
+;0364;Winfried ;Greb ;;N;Am Schmiedtor 5;97508;Untereuerheim ;09729556;;29.07;Gymnastik;MÄNNLICH;N
+;0256 ;Rudolf ;Leuner ;;N;Waldstraße 2 ;97508 ;Untereueheim ;;;29.07;;MÄNNLICH;N
+;1454;Stella;Chwola;;N;Kirchenweg 3;97508;Untereuerheim;;;30.07;Korbball;MÄNNLICH;N
+;1402;Jasmin;Königer;;N;Schwebheimer Str. 33;97469;Gochsheim;;jasmin.mandry@gmx.de;31.07;Korbball;WEIBLICH;N
+;1431;Leonie;Gock;;N;Am Gänswasen 13;97508;Grettstadt;09729908160;hls-gock@t-online.de;31.07;;WEIBLICH;N
+;1296;Johanna ;Greb ;;N;Baumgarten 14;97508 ;Untereuerheim ;;;02.08;Kinderturnen;WEIBLICH;N
+;1492;Thomas;Stöcker;;N;Fischgasse 2a;97508;Untereuerheim;;thomas.stoecker1972@gmail.com;03.08;Fussball;MÄNNLICH;N
+;1437;Jonas;Frank;;N;Anton-Weber-Straße 42a;97453;Hausen;09727909980;gabisoukup@gmx.de;04.08;Tischtennis;MÄNNLICH;N
+;1522;Nicolas;Oberdörfer;;N;Am Oberhohn 9;97508;Untereuerheim;;;05.08;Kinderturnen;MÄNNLICH;N
+;1117;Alexander ;Dresch ;;N;Mühlgasse 12;97508;Untereuerheim ;09729;;07.08;Fussball;MÄNNLICH;N
+;0250;Armin ;Schneider ;;N;Am Bachwingert 3;97508;Untereuerheim ;09729;;07.08;;MÄNNLICH;N
+;1320;Kilian ;Brückner ;;N;Steigerwaldstraße 13 ;97508;Obereuerheim ;09729/7218;kilian-bru@t-online.de;08.08;Tischtennis;MÄNNLICH;N
+;1323;Maximilian ;Dinkel ;;N;Schönbornstraße 6;97508;Obereuerheim ;09729/907644;alexander.dinkel76@gmail.com ;08.08;Tischtennis;MÄNNLICH;N
+;1373;Hannah;Ludwig;;N;Baumgarten 6;97508;Untereuerheim;09729;annalena.ludwig@yahoo.de;08.08;Korbball;WEIBLICH;N
+;0806;Jochen ;Greb ;;N;Baumgarten 14 ;97508;Untereuerheim ;09729/5929019;;10.08;Fussball;MÄNNLICH;N
+;0714;Sabine ;Eckert ;;N;Ringstraße 9 ;97508 ;Untereuerheim;;;12.08;Korbball;WEIBLICH;N
+;0235;Richard ;Holzheimer ;;N;Kirchenweg 6;97508 ;Untereuerheimm ;;;12.08;;MÄNNLICH;N
+;1313;Markus ;Reinhart ;;N;Ringstraße 13;97508 ;Untereuerheim ;;markus.reinhart@freenet.de;12.08;Fussball;MÄNNLICH;N
+;0674;Hildegard;Bohnengel ;;N;Kugelweide 2 ;97508;Untereuerheim;09729;;13.08;;WEIBLICH;N
+;1352;Ute ;Dresch;;N;Baumgarten 4;97508;Untereuerheim ;09729;;13.08;Fussball;WEIBLICH;N
+;1387;Manfred;Deppert;;N;Schweinfurter Weg 6;97508;Untereuerheim;;m.deppert@web.de;13.08;Fussball;MÄNNLICH;N
+;1377;Elias;Feil;;N;Ringstr. 13;97508;Untereuerheim;09729;;14.08;Fussball;MÄNNLICH;N
+;0715 ;Diana ;Peterlik ;;N;Immenrot 7;97508 ;Untereuerheim;;;16.08;;WEIBLICH;N
+;1459;Rosa;Wolkenstein;;N;Fischgasse 3;97508;Untereuerheim;;;17.08;Kinderturnen;WEIBLICH;N
+;1475;Kevin;Peithmann;;N;Ringstrasse 12;97508;Untereuerheim;;;17.08;Fussball;MÄNNLICH;N
+;1516;Lotte;Ludwig;;N;Baumgarten 6;97508;Untereuerheim;;;17.08;Kinderturnen;WEIBLICH;N
+;1517;Mats;Ludwig;;N;Baumgarten 6;97508;Untereuerheim;;;17.08;Kinderturnen;MÄNNLICH;N
+;1461;Jana;Götz;;N;Birkenstrasse 15;97469;Weyer;097216753469;goetz-jana@gmx.de;19.08;Korbball;WEIBLICH;N
+;1288;Lucas ;Risling ;;N;Waldstrasse;97508;Untereuerheim ;09729;;21.08;Fussball;MÄNNLICH;N
+;1389;Fabian;Wolf;;N;Wetterriedstr. 26;97469;Gochsheim ;;FWolf2122@gmail.com;21.08;Fussball;MÄNNLICH;N
+;1294;Jonathan ;Hümmer ;;N;Baumgarten 12 ;97508 ;Untereuerheim ;;;22.08;Fussball;MÄNNLICH;N
+;1058 ;Monika ;Schneider ;;N;Brunnenstraße 1 ;97508;Untereuerheim ;09729;;23.08;;WEIBLICH;N
+;0882;Gerda ;Schmitt ;;N;Am Schmiedtor 1 ;97508;Untereuerheim ;09729;;25.08;;WEIBLICH;N
+;1397;Emma;Fuhl;;N;Georg-Ludwig-Str. 15;97526;Sennfeld;;;27.08;;WEIBLICH;N
+;1170;Marcel ;Falk;;N;Am Tiefen Graben 7 ;97508;Obereuerheim ;09729;;28.08;Fussball;MÄNNLICH;N
+;1345;Marlene ;Dorsch ;;N;Dornweg 12 ;97508 ;Obereuerheim;;;28.08;Korbball;WEIBLICH;N
+;1468;Azra;Hofrichter;;N;Baumgarten 28;97508;Untereuerheim;;hofrichter-nico@web.de;29.08;Combo;WEIBLICH;N
+;0936;Nina ;Glöckner ;;N;Kirchenweg 21 ;97508 ;Untereuerheim ;;nina.gloeckner@web.de;30.08;Korbball;WEIBLICH;N
+;1200 ;Katja ;Schwarz ;;N;Am Unterhohn 9 ;97508;Untereuerheim ;09729;;30.08;;WEIBLICH;N
+;1444;Konrad;Schneider;;N;Kirchenweg 11;97508;Untereuerheim;;;30.08;Kinderturnen;MÄNNLICH;N
+;1523;Felicia;Orth;;N;Waldstrasse 8;97508;Untereuerheim;;;31.08;Kinderturnen;WEIBLICH;N
+;0862 ;Adelgunde ;Voit ;;N;Brunnenstraße 6 ;97508 ;Untereuerheim;;;01.09;;WEIBLICH;N
+;0903;Uwe ;Schmidt ;;N;Ringstraße 15;97508;Untereuerheim ;09729;;02.09;;MÄNNLICH;N
+;1273 ;Tom;Lommel;;N;Ringstraße 22 ;97508 ;Untereuerheim ;;;02.09;Fussball;MÄNNLICH;N
+;1527;Noah;Wittig;;N;Kugelweide 9;97508;Untereuerheim;;;02.09;Tischtennis;MÄNNLICH;N
+;1141 ;Mathias ;Schad ;;N;Triebweg 10 ;97508;Untereuerheim ;09729;;03.09;;MÄNNLICH;N
+;1252;Jonas ;Schad ;;N;Triebweg 10 ;97508;Untereuerheim;09729;;03.09;;MÄNNLICH;N
+;0385;Elfriede;Holzheimer ;;N;Kirchenweg 6 ;97508 ;Untereuerheim ;;;05.09;;WEIBLICH;N
+;1278;Markus ;Kramer ;;N;Bachwingert 4 ;97508 ;Untereuerheim ;;;06.09;;MÄNNLICH;N
+;1353;Yoann-Feinn ;Kritzner ;;N;Hermannlönsstr.1;97526;Sennfeld;;;06.09;Fussball;MÄNNLICH;N
+;1439;Rudolf;Beil;;N;Am Trieb 2;97508;Untereuerheim;09729909644;;06.09;;MÄNNLICH;N
+;0301;Hans-Dieter ;Hartmann ;;N;Bachwingert 5 ;97508;Untereuerheim ;09729;;07.09;Gymnastik;MÄNNLICH;N
+;1471;Fabian;Fleischhauer;;N;Brunnenstrasse 13;97508;Untereuerheim;;fleischhauer123@web.de;08.09;Fussball;MÄNNLICH;N
+;1510;Stefan;Veselinov;;N;Conrad-Geiger-Straße 20;97531;Obertheres;;stefan@veselinov.eu;09.09;Tischtennis;MÄNNLICH;N
+;0433;Claus ;Durmann ;;N;Eichelbergstraße 32 ;97503 ;Gädheim ;;;11.09;;MÄNNLICH;N
+;1544;Philipp;Durschang;;N;Jahnstraße 2;97508;Grettstadt;097293023050;;11.09;Tischtennis;MÄNNLICH;N
+;0657;Mario;Denninger ;;N;Immenroth 5;97508;Untereuerheim ;09729;;12.09;Fussball;MÄNNLICH;N
+;1533;Anton;Huff;;N;Fischgasse 5;97508;Untereuerheim;;nadiahuff@aol.de;12.09;Kinderturnen;MÄNNLICH;N
+;1316;Manuela ;Kraut ;;N;Ringstraße 11 ;97508 ;Untereuerheim ;09729/4069826;;13.09;Gymnastik;WEIBLICH;N
+;1285;Kerstin ;Greb ;;N;Baumgarten 14 ;97508 ;Untereuerheim ;09729/5929019;Kerstin.greb@gmx.net;13.09;Gymnastik;WEIBLICH;N
+;1509;Holger;Götz;;N;Am Unterhohn 5;97508;Untereuerheim;;tanjaundholger@gmx.de;13.09;Tischtennis;MÄNNLICH;N
+;0865;Ulrike ;Götzendörfer ;;N;Am Trieb 7 ;97508;Untereuerheim ;09729;;14.09;Korbball;WEIBLICH;N
+;1350;Luisa ;Weidinger ;;N;Bachstraße 18 ;97508;Obereuerheim ;09729;;17.09;Korbball;WEIBLICH;N
+;;Heinz-Peter;Weidinger ;;N;Bachstraße 18;97508;Obereuerheim;;;17.09;Korbball;WEIBLICH;N
+;1269;Rene ;Eisenbarth ;;N;Am Unterhohn 3a ;97508;Untereuerheim ;09729/5929112;;20.09;Tischtennis;MÄNNLICH;N
+;0247 ;Edwin ;Lösch ;;N;Schloßmühlenweg 3 ;97508 ;Untereuerheim;;;20.09;Gymnastik;MÄNNLICH;N
+;0929;Jessica ;Namyslo;;N;Im Lampert 22;97503;Gädheim;09721;;20.09;Korbball;WEIBLICH;N
+;1047;Larissa ;Pfrommer;;N;Baumgarten;97508 ;Untereuerheim ;;;21.09;;WEIBLICH;N
+;1485;Philip;Risling;;N;Waldstrasse ;97508;Untereuerheim;;;21.09;Fussball;MÄNNLICH;N
+;1559;Emilian;Reichel;;N;Fischgasse 4;97508;Untereuerheim;;;23.09;Fussball;MÄNNLICH;N
+;0801 ;Dieter ;Wenzel ;;N;Am Schmiedtor 8 ;97508 ;Untereuerheim ;;;24.09;;MÄNNLICH;N
+;0621 ;Ingrid ;Riegler ;;N;Am Sandrot 1 ;97508 ;Untereuerheim ;;;27.09;Gymnastik;WEIBLICH;N
+;0817;Stefan ;Götzendörfer ;;N;Am Trieb 7 ;97508;Untereuerheim ;09729;;28.09;;MÄNNLICH;N
+;1514;Henrik;Ludwig;;N;Baumgarten 6;97508;Untereuerheim;;;28.09;Fussball;MÄNNLICH;N
+;1554;Nele;Steglich;;N;Am Oberhohn 15;97508;Untereuerheim;;;29.09;Korbball;WEIBLICH;N
+;1371;Marina;Eckert;;N;Am Oberhohn 6;97508;Untereuerheim;09729;;30.09;Fussball;WEIBLICH;N
+;0744;Bettina ;Schmidt ;;N;Ringstraße 15;97508;Untereuerheim ;09729;;01.10;Korbball;WEIBLICH;N
+;0649;Matthias ;Eckert;;N;Ringstraße 9 ;97508;Untereuerheim;09729;;02.10;Fussball;MÄNNLICH;N
+;0367;Peter-Josef ;Hümpfer ;;N;Hintere Gasse 8 ;97508;Untereuerheimm ;09729;;02.10;Gymnastik;MÄNNLICH;N
+;0597;Wolfgang ;Straub ;;N;Lärchenweg 14;97453;Schonungen;;;03.10;;MÄNNLICH;N
+;1338;Maria ;Köhler;;N;Am Unterhohn 4 ;97508;Untereuerheim ;09729;maria.dill@web.de;03.10;Gymnastik;WEIBLICH;N
+;1462;Lena ;Kuhn;;N;Am Trieb 8;97508;Untereuerheim;097295928998;ka.hoefer@web.de;04.10;Combo;WEIBLICH;N
+;1409;Matteo;Schwarz;;N;Ringstraße 9;97508;Untereuerheim;09729;robert.schwarz88@gmx.de;05.10;;MÄNNLICH;N
+;1400;Sven;Hillenkötter;;N;Eichenweg 3;97508;Untereuerheim;09729;;06.10;;MÄNNLICH;N
+;1403;Claudia;Schickerling;;N;Triebweg 8;97508;Untereuerheim;09729/5928856;claudia.schickerling@web.de;06.10;Gymnastik;WEIBLICH;N
+;1495;Gudrun;Wolf;;N;Falkenstein 16a;97499;Donnersdorf;;;07.10;Tischtennis;WEIBLICH;N
+;1494;Michael;Wolf;;N;Falkenstein 16a;97499;Donnersdorf;;;08.10;Tischtennis;MÄNNLICH;N
+;1396;Johanna;Fuhl;;N;Georg-Ludwid-Str. 15;97526;Sennfeld;;;10.10;;WEIBLICH;N
+;1412;Anni ;Birkmeyer;;N;Ringstraße 10;97508;Untereuerheim;09729;;10.10;;WEIBLICH;N
+;1469;Mathilda;Lechleitner;;N;Pusselsheimer Straße 3;97508;Dürrfeld;;s.lechleitner85@icloud.com;11.10;Combo;WEIBLICH;N
+;0775;Elke ;Schad;;N;Triebweg 10 ;97508;Untereuerheim ;09729;;13.10;;WEIBLICH;N
+;1540;Jasper;Wirsing;;N;Wilhelm-Schröder-Straße 11;97508;Grettstadt;097293023057;johanna.wirsing@gmail.com;13.10;Tischtennis;MÄNNLICH;N
+;0338;Reinhold ;Bohnengel ;;N;Kugelweide 2 ;97508;Untereuerheim ;09729;;14.10;;MÄNNLICH;N
+;1472;Jennifer;Schmitt;;N;Brunnenstrasse 13;97508;Untereuerheim;;;14.10;Fussball;WEIBLICH;N
+;1500;Xenia;Panov;;N;Schulplatz 5;97508;Untereuerheim;;jessicaberdia@web.de;14.10;Korbball;WEIBLICH;N
+;1449;Max;Seufert;;N;Eichenweg 8;97508;Untereuerheim;;tina11111@freenet.de;15.10;Fussball, Kinderturnen;MÄNNLICH;N
+;1483;Ferdinand;Knieß;;N;Triebweg 8;97508;Untereuerheim;;;16.10;Fussball;MÄNNLICH;N
+;1442;Martin;Huppmann;;N;Immenrot;97508;Untereuerheim;;;18.10;Fussball;MÄNNLICH;N
+;1368;Anne;Huber;;N;Pfarrgasse 3;97508;Obereuerheim;09729;;21.10;Korbball;WEIBLICH;N
+;1490;Jule;Kuhn;;N;Am Trieb 8;97508;Untereuerheim;;;22.10;Kinderturnen;MÄNNLICH;N
+;0494;Matthias ;Köhler ;;N;Hauptstraße 20 ;97503;Gädheim;;;24.10;Fussball;MÄNNLICH;N
+;0895;Christian ;Orth ;;N;Mühlgasse 3 ;97508;Untereuerheim ;09729;;24.10;;MÄNNLICH;N
+;1427;Patrizia;Karsten;;N;Am Unterhohn 4;97508;Untereuerheim;;;24.10;;WEIBLICH;N
+;1543;Kilian;Kral;;N;Nordstraße 12;97508;Grettstadt;097291208;cbkral@online.de;24.10;Tischtennis;MÄNNLICH;N
+;0979;Josephine ;Wolkenstein;;N;Fischgasse 1;97508;Untereuerheim;0972109729;;25.10;;WEIBLICH;N
+;0949;Matthias ;Ort;;N;Schallfelder Straße;97447;Frankenwinheim;;;27.10;;MÄNNLICH;N
+;1193;Sigmar ;Gross ;;N;Heideweg 10 ;97525 ;Schwebheim ;;;29.10;Fussball;MÄNNLICH;N
+;1344;Amelie ;Brand ;;N;Bachstraße 9 ;97508;Obereuerheim ;09729;;29.10;Korbball;weiblich ;N
+;1435;Mila;Pfrommer;;N;Baumgarten;97508;Untereuerheim;;;30.10;Kinderturnen;WEIBLICH;N
+;0308;Edith ;Leuner ;;N;Waldstraße 2 ;97508;Untereuerheim ;09729;;01.11;;WEIBLICH;N
+;1545;Emma;Stöhlein;;N;Mönchsgasse 35;97469;Gochsheim ;097217302146;michael-88@t-online.de;02.11;Korbball;WEIBLICH;N
+;0702;Werner ;Kaufmann ;;N;Am Sandrot 4 ;97508;Untereuerheim;09729;;03.11;Tischtennis;MÄNNLICH;N
+;0692;Oliver ;Holzheimer ;;N;Kirchenweg 6;97508;Untereuerheim ;09729;;03.11;Fussball;MÄNNLICH;N
+;1366;Nicole;Eisenbarth;;N;Am Unterhohn 3a;97508;Untereuerheim;0972909729/5929112;nicole-eisenbarth@freenet.de;04.11;Gymnastik, Tischtennis;WEIBLICH;N
+;0680;Claudia ;Jakob ;;N;Triebweg 5 ;97508;Untereuerheim ;09729;;05.11;;WEIBLICH;N
+;1078;Johannes ;Riegler ;;N;Kirchenweg 11;97508;Untereuerheim;;;06.11;Fussball;MÄNNLICH;N
+;0944;Stefanie ;Peterlik ;;N;Schulstraße 11;97499 ;Traustadt ;;;06.11;;WEIBLICH;N
+;1549;Oliver;Schlembach;;N;Wichernstraße 5;97525;Schwebheim;;oli.schlembach@gmail.com;06.11;Tischtennis;MÄNNLICH;N
+;1386;Hans-Ulrich;Wolkenstein;;N;Luisenweg 13;97534;Theilheim;093848487;praxis-wolkenstein@t-online.de;08.11;Fussball;MÄNNLICH;N
+;1530;Fabio;Ludwig;;N;Baumgarten 2;97508;Untereuerheim;;;10.11;Kinderturnen;MÄNNLICH;N
+;1458;Christina;Müller;;N;Eisengarten 3;97508;Untereuerheim;;bezold.chritina@gmail.com;11.11;;WEIBLICH;N
+;1380;Rafael;Krüger;;N;Baumgarten 5;97508;Untereuerheim;09729;dirk.krueger78@gmx.de;12.11;Fussball;MÄNNLICH;N
+;0730 ;Peter ;Wagner ;;N;Ringstraße 20;97508 ;Untereuerheim ;;;13.11;;MÄNNLICH;N
+;1534;Lana;Elfert;;N;Sandweg 9;97508;Obereuerheim;097299079877;elferts@web.de;13.11;Korbball;WEIBLICH;N
+;1419;Frieda;Göb;;N;Baumgarten 18;97508;Untereuerheim;09729/5929059;;14.11;Korbball;WEIBLICH;N
+;1341;Guenter ;Haas ;;N;Nethetalstr. 10;33034;Brakel ;;;15.11;Fussball;MÄNNLICH;N
+;0791 ;Georg ;Walthes ;;N;Karl-Brand-Str. 76 ;97422 ;Schweinfurt ;;;16.11;;MÄNNLICH;N
+;1487;Sophie;Rautenschlegel;;N;Baumgarten 31;97508;Untereuerheim;;;16.11;Combo;WEIBLICH;N
+;1317 ;Gerd ;Dietrich ;;N;Baumgarten 1 ;97508 ;Untereuerheim;;gerd.dietrich1179@gmx.de;17.11;Fussball;MÄNNLICH;N
+;1347;Aurelia ;Kral ;;N;Dürrfelder Straße 5 ;97508 ;Obereuerheim ;;;17.11;Korbball;MÄNNLICH;N
+;0708;Ingeborg ;Mädler ;;N;Am Schmiedtor 2 ;97508 ;Untereuerheim ;;;19.11;Gymnastik;WEIBLICH;N
+;1542;Johannes;Schömig;;N;Sonnenstraße 34;97508;Grettstadt;;;19.11;Tischtennis;MÄNNLICH;N
+;1017;Elisabeth ;Riegler ;;N;Am Schmiedtor 7 ;97508;Untereuerheim;09729;;20.11;Gymnastik;WEIBLICH;N
+;1503;Kurt;Müller;;N;Baumgarten 10;97508;Untereuerheim;;kurtimueller@gmx.de;20.11;Fussball;MÄNNLICH;N
+;0693 ;Friedel ;Schwarz ;;N;Obereuerheimer Str. 7 ;97508 ;Untereuerheim ;;;21.11;;MÄNNLICH;N
+;1304;Toni ;Witt ;;N;Dürrfelder Straße 14 ;97508 ;Obereuerheim ;;;23.11;Fussball;MÄNNLICH;N
+;1460;Lee-Ann;Reinhart;;N;Immenrot 6;97508;Untereuerheim;;j.reinhart88@yahoo.de;23.11;Kinderturnen;WEIBLICH;N
+;1520;Rosalie;Oberdörfer;;N;Am Oberhohn 8;97508;Untereuerheim;;;23.11;Kinderturnen;WEIBLICH;N
+;1521;Leonard;Oberdörfer;;N;Am Oberhohn 9;97508;Untereuerheim;;;23.11;Kinderturnen;MÄNNLICH;N
+;1059;Martina ;Wagner ;;N;Ringstraße 20;97508 ;Untereuerheim ;;;24.11;;WEIBLICH;N
+;1336;Kevin ;Stapf;;N;Reichelshöfer Straße 24 ;97469;Gochsheim, Weyer ;;stapf-kevin@web.de;25.11;;MÄNNLICH;N
+;1272;Pascal ;Brückner ;;N;Kirchenweg 5 ;97508;Untereuerheim ;09729;;28.11;;MÄNNLICH;N
+;1408;Robert;Schwarz;;N;Ringstraße 9;97508;Untereuerheim;09729;robert.schwarz88@gmx.de;28.11;;MÄNNLICH;N
+;1537;Isa;Klinger;;N;Blissestr. 27;10713;Berlin-Charlottenburg;;;28.11;;WEIBLICH;N
+;1361;Maximilian ;Eichfelder ;;N;Richard-Strauß-Straße 2 ;97469;Gochsheim ;;;29.11;Fussball;MÄNNLICH;N
+;1388;Uwe;Aumüller;;N;Obere Warte 7;97508;Obereuerheim;09729;;29.11;Fussball;MÄNNLICH;N
+;1482;Paul;Schottroff;;N;Eichelbergstrasse 13;97503;Gädheim;;;29.11;Tischtennis;MÄNNLICH;N
+;1262;Katja;Scherer ;;N;Am Sandrot 3 ;97508 ;Untereuerheim ;;;30.11;;WEIBLICH;N
+;1018;Christoph ;Riegler ;;N;Am Schmiedtor 7 ;97508 ;Untereuerheim ;;;01.12;Fussball;MÄNNLICH;N
+;0743;Gertraud ;Hartmann ;;N;Bachwingert 5 ;97508 ;Untereuerheim ;;;01.12;;WEIBLICH;N
+;1536;Marie;Piller;;N;Lindenstraße 3;97508;Untereuerheim;;;01.12;Korbball;WEIBLICH;N
+;0498;Gabriele ;Kirchner ;;N;Eichenweg 4;97508;Untereuerheim ;09729;;02.12;;WEIBLICH;N
+;0259 ;Herbert ;Nicklaus ;;N;Triebweg 7 ;97508 ;Untereuerheim ;;;04.12;Gymnastik;MÄNNLICH;N
+;1546;Manuela ;Huppmann ;;N;Immenrot 12;97508;Untereuerheim;;;05.12;;WEIBLICH;N
+;1557;Acliyah;Reichel;;N;Fischgasse 4;97508;Untereuerheim;;;05.12;Fussball;WEIBLICH;N
+;1447;Philomena;Eckert;;N;Am Oberhohn;97508;Untereuerheim;;;06.12;Kinderturnen;WEIBLICH;N
+;1332;Theresia ;Dorsch ;;N;Dornweg 12 ;97508;Obereuerheim ;09729;theresia.dorsch@obereuerheim.de ;08.12;Korbball;WEIBLICH;N
+;1372;Leonard;Eckert;;N;Am Oberhohn 6;97508;Untereuerheim;09729;;09.12;Fussball;MÄNNLICH;N
+;1456;Philipp ;Müller;;N;Eisengarten 3;97508;Untereuerheim;;philmuellae@web.de;11.12;Fussball;MÄNNLICH;N
+;0299 ;Günther ;Mädler ;;N;Am Schmiedtor 2 ;97508 ;Untereuerheim ;;;12.12;;MÄNNLICH;N
+;1033;Simon ;Baumann ;;N;Triebweg 7 ;97508 ;Untereuerheim ;;simon.baumann@live.de;14.12;Fussball;MÄNNLICH;N
+;1333;Hannah;Brückner ;;N;Kirchenweg 5 ;97508;Untereuerheim ;09729;;16.12;Korbball;WEIBLICH;N
+;1301;Theresa ;Oberleitner ;;N;Kirchenweg 2;97508;Untereuerheim ;0972909729/907006;claudiaoberleitner@web.de;16.12;Korbball;WEIBLICH;N
+;0428 ;Peter ;Fuhl ;;N;Blumenstraße 1 ;97526;Sennfeld;;;19.12;Fussball;MÄNNLICH;N
+;1441;Emma;Steglich;;N;Am Oberhohn 15;97508;Untereuerheim;;s.madleen@web.de;19.12;Korbball;WEIBLICH;N
+;0575;Uwe;Hau ;;N;Waldstraße 1 ;97508;Untereuerheim ;09729;;20.12;;MÄNNLICH;N
+;1195;Margit ;Hau;;N;Waldstraße 1 ;97508 ;Untereuerheim ;;;20.12;;WEIBLICH;N
+;0969;Daniel ;Ort;;N;Schallfelder Straße;97447;Frankenwinheim;09729;;21.12;Fussball;MÄNNLICH;N
+;1375;Michael;Metz;;N;Oerlenbacher Straße 22;97714;Ebenhausen;09725/704203;;22.12;Tischtennis;MÄNNLICH;N
+;1394;Nadine;Feil;;N;Ringstr. 13;97508;Untereuerheim;09729015730329253;nadine-feil@web.de;23.12;Gymnastik;WEIBLICH;N
+;1434;Fabian ;Stör;;N;Bgm.- Weigand-Str. 9;97447;Gerolzhofen;;;26.12;Fussball;MÄNNLICH;N
+;0483;Heinz Uwe ;Schrepfer ;;N;Hintere Gasse 10 ;97508 ;Untereuerheim ;;;27.12;;MÄNNLICH;N
+;1379;Dirk;Krüger;;N;Baumgarten 5;97508;Untereuerheim;09729;dirk.krueger78@gmx.de;27.12;Fussball;MÄNNLICH;N
+;1562;Finn;Kober;;N;Im Bayergrund 15;97503;Gädheim;;smellsma@web.de;28.12;Tischtennis;MÄNNLICH;N
+;0938 ;Otmar ;Walter ;;N;Am Oberhohn 24 ;97508 ;Untereuerheim ;;;29.12;Gymnastik;MÄNNLICH;N
+;1365;Kai ;Steglich ;;N;Am Oberhohn 15;97508;Untereuerheim ;09729;;29.12;Fussball;MÄNNLICH;N
+;1539;Jürgen ;Göb ;;N;Baumgarten 18;97508;Untereuerheim;;;31.12;;MÄNNLICH;N
+;0697;Beate ;Huppmann ;;N;Kugelweide 1;97508 ;Untereuerheim;;;31.12;;WEIBLICH;N
