@@ -1,6 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python,node
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,node
 
+# D1 Import artifacts
+d1-output/
+.wrangler/
+
 ### Node ###
 # Logs
 logs
@@ -312,4 +316,6 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,node
 
+linear-in/
 output/
+.wrangler/
