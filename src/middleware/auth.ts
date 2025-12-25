@@ -32,11 +32,18 @@ export function getSessionId(request: Request): string | null {
 
 export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
 	const sessionId = getSessionId(c.req.raw);
+	const url = new URL(c.req.url);
 
 	if (!sessionId || !sessions.has(sessionId)) {
+		console.log({
+			event: 'auth_failed',
+			reason: !sessionId ? 'no_session_cookie' : 'session_not_found',
+			path: url.pathname,
+			method: c.req.method
+		});
+		
 		// Store the original URL to redirect back after login
 		const originalUrl = c.req.url;
-		const url = new URL(originalUrl);
 		const returnTo = url.pathname + url.search;
 		
 		// Don't include /login or /logout in the return path
@@ -49,9 +56,14 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 	const session = sessions.get(sessionId)!;
 	if (Date.now() > session.expires) {
 		sessions.delete(sessionId);
+		console.log({
+			event: 'session_expired',
+			session_id: sessionId.substring(0, 8) + '...',
+			path: url.pathname
+		});
+		
 		// Store the original URL for redirect after re-login
 		const originalUrl = c.req.url;
-		const url = new URL(originalUrl);
 		const returnTo = url.pathname + url.search;
 		
 		if (returnTo !== '/login' && returnTo !== '/logout') {
@@ -59,6 +71,13 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 		}
 		return c.redirect('/login');
 	}
+
+	console.log({
+		event: 'auth_success',
+		session_id: sessionId.substring(0, 8) + '...',
+		path: url.pathname,
+		method: c.req.method
+	});
 
 	await next();
 }
