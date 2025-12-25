@@ -68,10 +68,4 @@ pages.get('/', (c) => {
 	return c.html(renderDashboard());
 });
 
-// Logo - redirect to external URL
-pages.get('/logo.png', (c) => {
-	return c.redirect('https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png', 302);
-});
-
 export default pages;
-

@@ -227,7 +227,7 @@ export function renderDashboard(): string {
     <div class="container">
         <div class="header">
             <div class="header-left">
-                <img src="/logo.png" alt="SVU Logo" class="header-logo" />
+                <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SVU Logo" class="header-logo" />
                 <div class="header-text">
                     <h1>SV 1945 Untereuerheim e.V.</h1>
                     <div class="subtitle">Mitgliederverwaltung • "Wir sind Untereuerheim"</div>
