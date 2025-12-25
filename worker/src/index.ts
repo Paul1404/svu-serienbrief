@@ -100,14 +100,17 @@ function addCORSHeaders(response: Response): Response {
  * GET /verify/:token - Member verification page
  */
 async function handleVerifyPage(token: string, env: Env): Promise<Response> {
+  console.log({ action: 'verify_page_request', token_prefix: token.substring(0, 8) });
   const sql = neon(env.DATABASE_URL);
   
   try {
     const members = await sql`
       SELECT * FROM members WHERE token = ${token} LIMIT 1
     `;
+    console.log({ action: 'database_query', query: 'select_member', found: members.length > 0 });
     
     if (members.length === 0) {
+      console.log({ action: 'verify_page_result', status: 'not_found', token_prefix: token.substring(0, 8) });
       return new Response(renderNotFoundPage(), {
         status: 404,
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -115,6 +118,12 @@ async function handleVerifyPage(token: string, env: Env): Promise<Response> {
     }
     
     const member = members[0] as Member;
+    console.log({ 
+      action: 'verify_page_result', 
+      status: 'found',
+      member_id: member.id,
+      verified: !!member.verified_at 
+    });
     
     return new Response(renderVerificationPage(member), {
       status: 200,
@@ -122,7 +131,7 @@ async function handleVerifyPage(token: string, env: Env): Promise<Response> {
     });
     
   } catch (error) {
-    console.error('Database error:', error);
+    console.error({ action: 'verify_page_error', error: String(error), token_prefix: token.substring(0, 8) });
     return new Response('Internal Server Error', { status: 500 });
   }
 }
@@ -131,10 +140,12 @@ async function handleVerifyPage(token: string, env: Env): Promise<Response> {
  * POST /api/verify/:token - Update member data
  */
 async function handleVerifyUpdate(token: string, request: Request, env: Env): Promise<Response> {
+  console.log({ action: 'verify_update_request', token_prefix: token.substring(0, 8) });
   const sql = neon(env.DATABASE_URL);
   
   try {
     const updates = await request.json();
+    console.log({ action: 'verify_update_data', fields: Object.keys(updates), token_prefix: token.substring(0, 8) });
     
     // Validate the token exists
     const members = await sql`
@@ -142,6 +153,7 @@ async function handleVerifyUpdate(token: string, request: Request, env: Env): Pr
     `;
     
     if (members.length === 0) {
+      console.log({ action: 'verify_update_result', status: 'invalid_token', token_prefix: token.substring(0, 8) });
       return new Response(JSON.stringify({ error: 'Invalid token' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
@@ -156,6 +168,7 @@ async function handleVerifyUpdate(token: string, request: Request, env: Env): Pr
         verified_at = COALESCE(verified_at, NOW())
       WHERE token = ${token}
     `;
+    console.log({ action: 'verify_update_result', status: 'success', member_id: members[0].id });
     
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -163,7 +176,7 @@ async function handleVerifyUpdate(token: string, request: Request, env: Env): Pr
     });
     
   } catch (error) {
-    console.error('Update error:', error);
+    console.error({ action: 'verify_update_error', error: String(error), token_prefix: token.substring(0, 8) });
     return new Response(JSON.stringify({ error: 'Failed to update data' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -175,6 +188,7 @@ async function handleVerifyUpdate(token: string, request: Request, env: Env): Pr
  * GET /admin - Admin panel with member list
  */
 async function handleAdminPanel(env: Env, searchQuery?: string): Promise<Response> {
+  console.log({ action: 'admin_panel_request' });
   const sql = neon(env.DATABASE_URL);
   
   try {
@@ -191,6 +205,12 @@ async function handleAdminPanel(env: Env, searchQuery?: string): Promise<Respons
     const members = await sql`
       SELECT * FROM members ORDER BY created_at DESC
     `;
+    console.log({ 
+      action: 'admin_panel_result', 
+      total_members: members.length,
+      verified_count: stats[0].verified,
+      pending_count: stats[0].pending
+    });
     
     return new Response(renderAdminPage(stats[0], members as Member[]), {
       status: 200,
@@ -198,7 +218,7 @@ async function handleAdminPanel(env: Env, searchQuery?: string): Promise<Respons
     });
     
   } catch (error) {
-    console.error('Admin panel error:', error);
+    console.error({ action: 'admin_panel_error', error: String(error) });
     return new Response('Internal Server Error', { status: 500 });
   }
 }
@@ -207,6 +227,7 @@ async function handleAdminPanel(env: Env, searchQuery?: string): Promise<Respons
  * GET /admin/export/csv - Export member data as CSV
  */
 async function handleAdminExport(env: Env): Promise<Response> {
+  console.log({ action: 'admin_export_request' });
   const sql = neon(env.DATABASE_URL);
   
   try {
@@ -219,6 +240,7 @@ async function handleAdminExport(env: Env): Promise<Response> {
     `;
     
     const csv = generateCSV(members as Member[]);
+    console.log({ action: 'admin_export_result', total_members: members.length, csv_size: csv.length });
     
     return new Response(csv, {
       status: 200,
@@ -229,7 +251,7 @@ async function handleAdminExport(env: Env): Promise<Response> {
     });
     
   } catch (error) {
-    console.error('Export error:', error);
+    console.error({ action: 'admin_export_error', error: String(error) });
     return new Response('Internal Server Error', { status: 500 });
   }
 }
@@ -813,47 +835,79 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
+    const startTime = Date.now();
+    
+    // Log incoming request
+    console.log({
+      action: 'request_received',
+      method: request.method,
+      path: path,
+      user_agent: request.headers.get('user-agent')?.substring(0, 50),
+      cf_country: (request as any).cf?.country,
+      cf_city: (request as any).cf?.city
+    });
     
     // Handle CORS preflight
     const corsResponse = handleCORS(request);
-    if (corsResponse) return corsResponse;
+    if (corsResponse) {
+      console.log({ action: 'cors_preflight', path });
+      return corsResponse;
+    }
     
     // Route: GET /verify/:token
     if (path.startsWith('/verify/') && request.method === 'GET') {
       const token = path.split('/')[2];
       if (!token) {
+        console.log({ action: 'route_error', route: 'verify_page', error: 'missing_token' });
         return new Response('Bad Request', { status: 400 });
       }
-      return await handleVerifyPage(token, env);
+      const response = await handleVerifyPage(token, env);
+      const duration = Date.now() - startTime;
+      console.log({ action: 'request_completed', route: 'verify_page', status: response.status, duration_ms: duration });
+      return response;
     }
     
     // Route: POST /api/verify/:token
     if (path.startsWith('/api/verify/') && request.method === 'POST') {
       const token = path.split('/')[3];
       if (!token) {
+        console.log({ action: 'route_error', route: 'verify_update', error: 'missing_token' });
         return new Response('Bad Request', { status: 400 });
       }
       const response = await handleVerifyUpdate(token, request, env);
+      const duration = Date.now() - startTime;
+      console.log({ action: 'request_completed', route: 'verify_update', status: response.status, duration_ms: duration });
       return addCORSHeaders(response);
     }
     
     // Route: GET /admin
     if (path === '/admin' && request.method === 'GET') {
       if (!checkAuth(request, env)) {
+        console.log({ action: 'auth_failed', route: 'admin_panel' });
         return requireAuth();
       }
-      return await handleAdminPanel(env);
+      console.log({ action: 'auth_success', route: 'admin_panel' });
+      const response = await handleAdminPanel(env);
+      const duration = Date.now() - startTime;
+      console.log({ action: 'request_completed', route: 'admin_panel', status: response.status, duration_ms: duration });
+      return response;
     }
     
     // Route: GET /admin/export/csv
     if (path === '/admin/export/csv' && request.method === 'GET') {
       if (!checkAuth(request, env)) {
+        console.log({ action: 'auth_failed', route: 'admin_export' });
         return requireAuth();
       }
-      return await handleAdminExport(env);
+      console.log({ action: 'auth_success', route: 'admin_export' });
+      const response = await handleAdminExport(env);
+      const duration = Date.now() - startTime;
+      console.log({ action: 'request_completed', route: 'admin_export', status: response.status, duration_ms: duration });
+      return response;
     }
     
     // Default: 404
+    console.log({ action: 'route_not_found', path, method: request.method });
     return new Response('Not Found', { status: 404 });
   },
 };
