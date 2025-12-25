@@ -67,6 +67,11 @@ const password = formData.get('password');
 			error: error.message,
 			stack: error.stack
 		});
+		return c.html(renderLoginPage('Login failed: ' + error.message), 500);
+	}
+});
+
+// Logout
 pages.get('/logout', (c) => {
 	const cookieHeader = c.req.header('Cookie');
 	if (cookieHeader) {

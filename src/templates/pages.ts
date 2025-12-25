@@ -249,13 +249,16 @@ export function renderDashboard(): string {
 
         async function init() {
             try {
-                // Initial load to get count
-                const response = await fetch('/api/data?page=1&limit=50');
+                document.getElementById('tableInfo').innerHTML = 
+                    '<strong>Mitgliederdatenbank</strong> — Daten werden geladen...';
+
+                // Load all data at once for client-side filtering and pagination
+                const response = await fetch('/api/data?page=1&limit=10000');
                 if (!response.ok) throw new Error(await response.text());
                 const data = await response.json();
                 
                 document.getElementById('tableInfo').innerHTML = 
-                    '<strong>Mitgliederdatenbank</strong> — Daten werden geladen...';
+                    '<strong>Mitgliederdatenbank</strong> — ' + data.data.length + ' Mitglieder';
 
                 const columns = columnNames.map(col => ({
                     title: col,
@@ -273,15 +276,6 @@ export function renderDashboard(): string {
                     paginationSizeSelector: [25, 50, 100, 200],
                     movableColumns: true,
                     resizableColumns: true,
-                    progressiveLoad: "scroll",
-                    paginationMode: "local",
-                    ajaxURL: "/api/data",
-                    ajaxParams: { limit: 10000 },
-                    ajaxResponse: function(url, params, response) {
-                        document.getElementById('tableInfo').innerHTML = 
-                            '<strong>Mitgliederdatenbank</strong> — ' + response.data.length + ' Mitglieder';
-                        return response.data;
-                    },
                     langs: {
                         "de": {
                             "pagination": {
