@@ -11,6 +11,6 @@ pattern = "svu-mitgliedschaft.untereuerheim.com"
 custom_domain = true
 
 [[d1_databases]]
-binding = "svu_prod"
-database_name = "svu-prod"
-database_id = "dc2cfc65-6242-4af4-bf37-ce5d7e3f6330"
+binding = "svu_prod01"
+database_name = "svu-prod01"
+database_id = "d9a3103d-a1fd-4260-b6c2-cf3d7530d956"
