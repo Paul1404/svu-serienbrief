@@ -252,6 +252,10 @@ export function renderDashboard(): string {
         }
         table.dataTable tbody td {
             padding: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
         }
         table.dataTable tbody tr:nth-child(even) {
             background-color: #f8f9fa;
@@ -368,13 +372,27 @@ export function renderDashboard(): string {
                             return '<input type="checkbox" class="row-select" data-id="' + memberId + '">';
                         }
                     },
-                    ...columnNames.map(col => ({
-                        title: col,
-                        data: col
-                    })),
+                    ...columnNames.map(col => {
+                        const config = {
+                            title: col,
+                            data: col
+                        };
+                        // Set minimum widths for specific columns
+                        if (col === 'IBAN') config.width = '180px';
+                        else if (col === 'BIC') config.width = '100px';
+                        else if (col === 'EMail') config.width = '200px';
+                        else if (col === 'Strasse') config.width = '150px';
+                        else if (col === 'Bankbezeichnung') config.width = '150px';
+                        else if (col === 'Telefon' || col === 'Mobil' || col === 'Fax') config.width = '120px';
+                        else if (col === 'MitglNr' || col === 'AdrNr') config.width = '80px';
+                        else if (col === 'PLZ') config.width = '70px';
+                        else if (col === 'Vorname' || col === 'Nachname') config.width = '120px';
+                        return config;
+                    }),
                     {
                         title: 'Letzter Zugriff',
                         data: 'Letzter_Zugriff',
+                        width: '140px',
                         render: function(data, type) {
                             if (type === 'display') {
                                 if (!data) return '<span style="color: #999;">Nie</span>';
@@ -394,6 +412,7 @@ export function renderDashboard(): string {
                         title: 'Zugriffe',
                         data: 'Zugriffe',
                         className: 'dt-center',
+                        width: '80px',
                         render: function(data, type) {
                             if (type === 'display') {
                                 if (data === 0) return '<span style="color: #999;">0</span>';
