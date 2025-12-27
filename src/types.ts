@@ -3,6 +3,6 @@
  */
 
 export interface Env {
-	svu_prod: D1Database;
+	svu_prod01: D1Database;
 	ADMIN_PASSWORD: string;
 }

@@ -17,7 +17,7 @@ api.get('/data', async (c) => {
 
 		const startTime = Date.now();
 		const query = `SELECT * FROM auswertung LIMIT ? OFFSET ?`;
-		const result = await c.env.svu_prod.prepare(query).bind(limit, offset).all();
+		const result = await c.env.svu_prod01.prepare(query).bind(limit, offset).all();
 		const duration = Date.now() - startTime;
 
 		console.log({
@@ -62,7 +62,7 @@ api.get('/search', async (c) => {
 
 		const startTime = Date.now();
 		const sql = `SELECT * FROM auswertung WHERE ${sanitizeIdentifier(column)} LIKE ? LIMIT 100`;
-		const result = await c.env.svu_prod.prepare(sql).bind(`%${query}%`).all();
+		const result = await c.env.svu_prod01.prepare(sql).bind(`%${query}%`).all();
 		const duration = Date.now() - startTime;
 
 		console.log({
