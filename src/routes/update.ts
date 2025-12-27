@@ -97,28 +97,90 @@ update.post('/:token', async (c) => {
 			'EMail', 'IBAN', 'BIC', 'Bankbezeichnung'
 		];
 
-		for (const field of allowedFields) {
-			const value = formData.get(field);
-			if (value !== null) {
-				updates[field] = value.toString().trim();
-			}
-		}
-
-		if (Object.keys(updates).length === 0) {
-			return jsonError('Keine Änderungen übermittelt', 400);
-		}
-
-		// Fetch current values before update
+		// Fetch current values before processing
 		const currentMember = await c.env.svu_prod01.prepare(
 			`SELECT * FROM auswertung WHERE AdrNr = ? OR MitglNr = ?`
 		).bind(memberId, memberId).first();
 
-		// Build UPDATE query
-		const setClause = Object.keys(updates)
+		if (!currentMember) {
+			return c.html(renderErrorPage('Mitglied nicht gefunden'), 404);
+		}
+
+		// Collect updates and validate
+		const actualChanges: any = {};
+		let hasChanges = false;
+		
+		for (const field of allowedFields) {
+			const rawValue = formData.get(field);
+			if (rawValue !== null) {
+				const newValue = rawValue.toString().trim();
+				const oldValue = String((currentMember as any)?.[field] || '').trim();
+				
+				// Validate email format if provided
+				if (field === 'EMail' && newValue && newValue !== oldValue) {
+					const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+					if (!emailRegex.test(newValue)) {
+						return c.html(renderErrorPage('Ungültige E-Mail-Adresse'), 400);
+					}
+				}
+				
+				// Validate IBAN format if provided
+				if (field === 'IBAN' && newValue && newValue !== oldValue) {
+					const ibanRegex = /^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/;
+					const cleanIban = newValue.replace(/\s/g, '').toUpperCase();
+					if (cleanIban && !ibanRegex.test(cleanIban)) {
+						return c.html(renderErrorPage('Ungültiges IBAN-Format'), 400);
+					}
+					updates[field] = cleanIban;
+					if (oldValue !== cleanIban) {
+						actualChanges[field] = { old: oldValue, new: cleanIban };
+						hasChanges = true;
+					}
+					continue;
+				}
+				
+				// Validate phone numbers (basic check)
+				if ((field === 'Telefon' || field === 'Mobil') && newValue && newValue !== oldValue) {
+					const phoneRegex = /^[\d\s\+\-\/\(\)]+$/;
+					if (!phoneRegex.test(newValue)) {
+						return c.html(renderErrorPage('Ungültiges Telefonnummer-Format'), 400);
+					}
+				}
+				
+				// Validate PLZ (German postal code)
+				if (field === 'PLZ' && newValue && newValue !== oldValue) {
+					const plzRegex = /^\d{5}$/;
+					if (!plzRegex.test(newValue)) {
+						return c.html(renderErrorPage('Ungültige Postleitzahl (muss 5 Ziffern sein)'), 400);
+					}
+				}
+				
+				updates[field] = newValue;
+				
+				// Track actual changes
+				if (oldValue !== newValue) {
+					actualChanges[field] = { old: oldValue, new: newValue };
+					hasChanges = true;
+				}
+			}
+		}
+
+		if (Object.keys(updates).length === 0) {
+			return c.html(renderErrorPage('Keine Daten übermittelt'), 400);
+		}
+
+		// Check if there are any actual changes
+		if (!hasChanges) {
+			return c.html(renderSuccessPage('Keine Änderungen vorgenommen - Ihre Daten waren bereits aktuell.'));
+		}
+
+		// Build UPDATE query only for changed fields
+		const changedFields = Object.keys(actualChanges);
+		const setClause = changedFields
 			.map(key => `\`${key}\` = ?`)
 			.join(', ');
 		
-		const values = Object.values(updates);
+		const values = changedFields.map(key => updates[key]);
 		values.push(memberId);
 
 		await c.env.svu_prod01.prepare(
@@ -144,25 +206,28 @@ update.post('/:token', async (c) => {
 			const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
 			const userAgent = c.req.header('user-agent') || 'unknown';
 
-			// Log each changed field
-			for (const [field, newValue] of Object.entries(updates)) {
-				const oldValue = (currentMember as any)?.[field] || '';
-				const newValueStr = String(newValue || '');
+			// Log each changed field (only actual changes)
+			for (const [field, change] of Object.entries(actualChanges)) {
+				const { old, new: newValue } = change as any;
 				
-				// Only log if value actually changed
-				if (oldValue !== newValueStr) {
-					await c.env.svu_prod01.prepare(`
-						INSERT INTO member_changes_log (member_id, field_name, old_value, new_value, changed_at, ip_address, user_agent)
-						VALUES (?, ?, ?, ?, datetime('now'), ?, ?)
-					`).bind(memberId, field, oldValue.toString(), newValueStr, ipAddress, userAgent.substring(0, 255)).run();
-				}
+				await c.env.svu_prod01.prepare(`
+					INSERT INTO member_changes_log (member_id, field_name, old_value, new_value, changed_at, ip_address, user_agent)
+					VALUES (?, ?, ?, ?, datetime('now'), ?, ?)
+				`).bind(memberId, field, old, newValue, ipAddress, userAgent.substring(0, 255)).run();
 			}
+			
+			console.log({
+				event: 'member_data_updated',
+				member_id: memberId,
+				fields_changed: Object.keys(actualChanges),
+				change_count: Object.keys(actualChanges).length
+			});
 		} catch (logError: any) {
 			// Don't fail the request if logging fails
 			console.error('Failed to log changes:', logError);
 		}
 
-		return c.html(renderSuccessPage());
+		return c.html(renderSuccessPage('Ihre Daten wurden erfolgreich aktualisiert.'));
 	} catch (error: any) {
 		console.error('Update submission error:', error);
 		return jsonError(error.message, 500);
@@ -432,7 +497,10 @@ function renderUpdateForm(member: any, token: string): string {
 </html>`;
 }
 
-function renderSuccessPage(): string {
+function renderSuccessPage(message?: string): string {
+	const defaultMessage = 'Ihre Daten wurden erfolgreich aktualisiert!';
+	const displayMessage = message || defaultMessage;
+	
 	return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -490,7 +558,7 @@ function renderSuccessPage(): string {
 	<div class="container">
 		<div class="success-icon"></div>
 		<h1>Vielen Dank!</h1>
-		<p>Ihre Daten wurden erfolgreich aktualisiert.</p>
+		<p>${escapeHtml(displayMessage)}</p>
 		<p>Sie können dieses Fenster nun schließen.</p>
 	</div>
 </body>
