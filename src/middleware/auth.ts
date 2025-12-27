@@ -39,11 +39,6 @@ export function cleanupSessions() {
 	}
 }
 
-// Run cleanup periodically (every 5 minutes)
-if (typeof setInterval !== 'undefined') {
-	setInterval(cleanupSessions, 5 * 60 * 1000);
-}
-
 export function getSessionId(request: Request): string | null {
 	const cookieHeader = request.headers.get('Cookie');
 	if (!cookieHeader) return null;
@@ -135,6 +130,11 @@ export function validateSession(sessionId: string, ipAddress: string): boolean {
 }
 
 export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
+	// Run periodic cleanup (throttled - only every 100 requests)
+	if (Math.random() < 0.01) {
+		cleanupSessions();
+	}
+	
 	const sessionId = getSessionId(c.req.raw);
 	const url = new URL(c.req.url);
 	const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
