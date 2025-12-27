@@ -54,15 +54,19 @@ letters.post('/generate-pdfs', async (c) => {
 		// Create ZIP with PDF files
 		const zipContent = createZipFromPdfFiles(pdfFiles);
 
+		const filename = `serienbriefe_${new Date().toISOString().split('T')[0]}.zip`;
+
 		return new Response(zipContent, {
+			status: 200,
 			headers: {
 				'Content-Type': 'application/zip',
-				'Content-Disposition': `attachment; filename="serienbriefe_${new Date().toISOString().split('T')[0]}.zip"`,
+				'Content-Disposition': `attachment; filename="${filename}"`,
+				'Content-Length': zipContent.length.toString(),
 			},
 		});
 	} catch (error: any) {
 		console.error('PDF generation error:', error);
-		return jsonError(error.message);
+		return jsonError(error.message || 'Fehler beim Generieren der PDFs');
 	}
 });
 
@@ -439,26 +443,32 @@ function createZipFromPdfFiles(files: Array<{ filename: string; data: Uint8Array
 	
 	// Add a README
 	const encoder = new TextEncoder();
-	fileMap['README.txt'] = encoder.encode(
+	const readmeText = 
 		'SV 1945 Untereuerheim - Serienbriefe\n\n' +
-		'Diese PDF-Dateien können Sie:\n' +
+		'Diese PDF-Dateien koennen Sie:\n' +
 		'1. Direkt ausdrucken und per Post versenden\n' +
 		'2. Per E-Mail an Mitglieder senden\n\n' +
-		'Jeder Brief enthält:\n' +
+		'Jeder Brief enthaelt:\n' +
 		'- Aktuelle Mitgliederdaten\n' +
-		'- QR-Code für Online-Aktualisierung\n' +
-		'- Eindeutige Update-URL (90 Tage gültig)\n' +
-		'- Anleitung für Datenaktualisierung\n\n' +
+		'- QR-Code fuer Online-Aktualisierung\n' +
+		'- Eindeutige Update-URL (90 Tage gueltig)\n' +
+		'- Anleitung fuer Datenaktualisierung\n\n' +
 		'Generiert am: ' + new Date().toLocaleString('de-DE') + '\n' +
-		'Anzahl Briefe: ' + files.length
-	);
+		'Anzahl Briefe: ' + files.length;
 	
-	// Create ZIP
-	const zipped = zipSync(fileMap, {
-		level: 6, // Compression level
-	});
+	fileMap['README.txt'] = encoder.encode(readmeText);
 	
-	return zipped;
+	try {
+		// Create ZIP using fflate
+		const zipped = zipSync(fileMap, {
+			level: 6,
+		});
+		
+		return zipped;
+	} catch (error) {
+		console.error('ZIP creation error:', error);
+		throw error;
+	}
 }
 
 /**
