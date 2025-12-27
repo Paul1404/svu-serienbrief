@@ -218,6 +218,16 @@ export function renderDashboard(): string {
         .action-btn.secondary:hover {
             background: #444;
         }
+        .action-btn.icon {
+            padding: 12px 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .action-btn.icon svg {
+            width: 18px;
+            height: 18px;
+        }
         .info {
             background: #fff3cd;
             padding: 15px;
@@ -272,6 +282,13 @@ export function renderDashboard(): string {
         <div class="actions">
             <button id="generatePdfsBtn" class="action-btn" disabled>PDFs für ausgewählte Mitglieder generieren (<span id="selectedCount">0</span>)</button>
             <a href="/letters/preview/demo" class="action-btn secondary" target="_blank">Brief-Vorschau</a>
+            <button id="refreshBtn" class="action-btn secondary icon" title="Tabelle aktualisieren">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+            </button>
         </div>
 
         <div class="content">
@@ -459,6 +476,22 @@ export function renderDashboard(): string {
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
+            }
+        });
+
+        // Handle table refresh
+        document.getElementById('refreshBtn').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            
+            try {
+                await init();
+            } catch (error) {
+                alert('Fehler beim Aktualisieren: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.style.opacity = '1';
             }
         });
 
