@@ -89,7 +89,7 @@ export function createSession(ipAddress: string, userAgent: string): { sessionId
 	return { sessionId, expires };
 }
 
-export function validateSession(sessionId: string, ipAddress: string): boolean {
+export function validateSession(sessionId: string, ipAddress: string, userAgent: string): boolean {
 	const session = sessions.get(sessionId);
 	if (!session) return false;
 	
@@ -111,12 +111,17 @@ export function validateSession(sessionId: string, ipAddress: string): boolean {
 		return false;
 	}
 	
-	// Validate IP address hasn't changed (security measure)
-	if (session.ipAddress !== ipAddress) {
+	// Validate BOTH IP and User-Agent changed (security measure)
+	// This allows dual-WAN setups while still detecting session theft
+	const ipChanged = session.ipAddress !== ipAddress;
+	const userAgentChanged = session.userAgent !== userAgent;
+	
+	if (ipChanged && userAgentChanged) {
 		sessions.delete(sessionId);
 		console.log({
-			event: 'session_ip_mismatch',
+			event: 'session_security_breach',
 			session_id: sessionId.substring(0, 8) + '...',
+			reason: 'ip_and_useragent_mismatch',
 			original_ip: session.ipAddress,
 			current_ip: ipAddress
 		});
@@ -138,8 +143,9 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 	const sessionId = getSessionId(c.req.raw);
 	const url = new URL(c.req.url);
 	const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
+	const userAgent = c.req.header('user-agent') || '';
 
-	if (!sessionId || !validateSession(sessionId, ipAddress)) {
+	if (!sessionId || !validateSession(sessionId, ipAddress, userAgent)) {
 		console.log({
 			event: 'auth_failed',
 			reason: !sessionId ? 'no_session_cookie' : 'invalid_session',
