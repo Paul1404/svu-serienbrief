@@ -290,15 +290,32 @@ export function renderDashboard(): string {
                 document.getElementById('tableInfo').innerHTML = 
                     '<strong>Mitgliederdatenbank</strong> — Daten werden geladen...';
 
-                // Load all data at once for client-side filtering and pagination
-                const response = await fetch('/api/data?page=1&limit=10000');
-                if (!response.ok) throw new Error(await response.text());
-                const data = await response.json();
+                // Load all data and access stats in parallel
+                const [dataResponse, statsResponse] = await Promise.all([
+                    fetch('/api/data?page=1&limit=10000'),
+                    fetch('/api/access-stats')
+                ]);
+                
+                if (!dataResponse.ok) throw new Error(await dataResponse.text());
+                
+                const data = await dataResponse.json();
+                const accessStats = statsResponse.ok ? await statsResponse.json() : {};
                 
                 document.getElementById('tableInfo').innerHTML = 
                     '<strong>Mitgliederdatenbank</strong> — ' + data.data.length + ' Mitglieder';
 
-                // Add selection column
+                // Enrich data with access information
+                const enrichedData = data.data.map(member => {
+                    const memberId = member.AdrNr || member.MitglNr;
+                    const stats = accessStats[memberId];
+                    return {
+                        ...member,
+                        Letzter_Zugriff: stats?.last_accessed || null,
+                        Zugriffe: stats?.access_count || 0
+                    };
+                });
+
+                // Add selection column and access columns
                 const columns = [
                     {
                         formatter: "rowSelection",
@@ -317,11 +334,41 @@ export function renderDashboard(): string {
                         field: col,
                         headerFilter: "input",
                         headerFilterPlaceholder: "Filter...",
-                    }))
+                    })),
+                    {
+                        title: "Letzter Zugriff",
+                        field: "Letzter_Zugriff",
+                        headerFilter: "input",
+                        formatter: function(cell) {
+                            const value = cell.getValue();
+                            if (!value) return '<span style="color: #999;">Nie</span>';
+                            const date = new Date(value);
+                            return date.toLocaleString('de-DE', { 
+                                year: 'numeric', 
+                                month: '2-digit', 
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        },
+                        sorter: "datetime",
+                    },
+                    {
+                        title: "Zugriffe",
+                        field: "Zugriffe",
+                        hozAlign: "center",
+                        width: 100,
+                        formatter: function(cell) {
+                            const value = cell.getValue();
+                            if (value === 0) return '<span style="color: #999;">0</span>';
+                            return '<span style="color: #28a745; font-weight: 600;">' + value + '</span>';
+                        },
+                        sorter: "number",
+                    }
                 ];
 
                 table = new Tabulator("#data-table", {
-                    data: data.data,
+                    data: enrichedData,
                     columns: columns,
                     layout: "fitDataFill",
                     pagination: true,

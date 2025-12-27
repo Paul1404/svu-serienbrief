@@ -33,6 +33,38 @@ update.get('/:token', async (c) => {
 			return c.html(renderErrorPage('Mitglied nicht gefunden'), 404);
 		}
 
+		// Log access (create access log table if not exists and record visit)
+		try {
+			// Create table if not exists
+			await c.env.svu_prod01.prepare(`
+				CREATE TABLE IF NOT EXISTS member_access_log (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					member_id TEXT NOT NULL,
+					accessed_at TEXT NOT NULL,
+					ip_address TEXT,
+					user_agent TEXT
+				)
+			`).run();
+
+			// Log this access
+			const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
+			const userAgent = c.req.header('user-agent') || 'unknown';
+			
+			await c.env.svu_prod01.prepare(`
+				INSERT INTO member_access_log (member_id, accessed_at, ip_address, user_agent)
+				VALUES (?, datetime('now'), ?, ?)
+			`).bind(memberId, ipAddress, userAgent.substring(0, 255)).run();
+
+			console.log({
+				event: 'member_access',
+				member_id: memberId,
+				ip: ipAddress
+			});
+		} catch (logError: any) {
+			// Don't fail the request if logging fails
+			console.error('Failed to log access:', logError);
+		}
+
 		return c.html(renderUpdateForm(member, token));
 	} catch (error: any) {
 		console.error('Update form error:', error);

@@ -87,4 +87,41 @@ api.get('/search', async (c) => {
 	}
 });
 
+// Get member access statistics
+api.get('/access-stats', async (c) => {
+	try {
+		// Get latest access for each member
+		const result = await c.env.svu_prod01.prepare(`
+			SELECT 
+				member_id,
+				MAX(accessed_at) as last_accessed,
+				COUNT(*) as access_count
+			FROM member_access_log
+			GROUP BY member_id
+		`).all();
+
+		// Return as a map for easy lookup
+		const statsMap: Record<string, { last_accessed: string; access_count: number }> = {};
+		
+		if (result.results) {
+			for (const row of result.results) {
+				const record = row as any;
+				statsMap[record.member_id] = {
+					last_accessed: record.last_accessed,
+					access_count: record.access_count
+				};
+			}
+		}
+
+		return jsonResponse(statsMap);
+	} catch (error: any) {
+		// Return empty object if table doesn't exist yet
+		console.log({
+			event: 'api_access_stats_error',
+			error: error.message
+		});
+		return jsonResponse({});
+	}
+});
+
 export default api;
