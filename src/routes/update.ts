@@ -108,6 +108,11 @@ update.post('/:token', async (c) => {
 			return jsonError('Keine Änderungen übermittelt', 400);
 		}
 
+		// Fetch current values before update
+		const currentMember = await c.env.svu_prod01.prepare(
+			`SELECT * FROM auswertung WHERE AdrNr = ? OR MitglNr = ?`
+		).bind(memberId, memberId).first();
+
 		// Build UPDATE query
 		const setClause = Object.keys(updates)
 			.map(key => `\`${key}\` = ?`)
@@ -119,6 +124,43 @@ update.post('/:token', async (c) => {
 		await c.env.svu_prod01.prepare(
 			`UPDATE auswertung SET ${setClause} WHERE AdrNr = ? OR MitglNr = ?`
 		).bind(...values, memberId).run();
+
+		// Log the changes
+		try {
+			// Create change log table if not exists
+			await c.env.svu_prod01.prepare(`
+				CREATE TABLE IF NOT EXISTS member_changes_log (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					member_id TEXT NOT NULL,
+					field_name TEXT NOT NULL,
+					old_value TEXT,
+					new_value TEXT,
+					changed_at TEXT NOT NULL,
+					ip_address TEXT,
+					user_agent TEXT
+				)
+			`).run();
+
+			const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
+			const userAgent = c.req.header('user-agent') || 'unknown';
+
+			// Log each changed field
+			for (const [field, newValue] of Object.entries(updates)) {
+				const oldValue = (currentMember as any)?.[field] || '';
+				const newValueStr = String(newValue || '');
+				
+				// Only log if value actually changed
+				if (oldValue !== newValueStr) {
+					await c.env.svu_prod01.prepare(`
+						INSERT INTO member_changes_log (member_id, field_name, old_value, new_value, changed_at, ip_address, user_agent)
+						VALUES (?, ?, ?, ?, datetime('now'), ?, ?)
+					`).bind(memberId, field, oldValue.toString(), newValueStr, ipAddress, userAgent.substring(0, 255)).run();
+				}
+			}
+		} catch (logError: any) {
+			// Don't fail the request if logging fails
+			console.error('Failed to log changes:', logError);
+		}
 
 		return c.html(renderSuccessPage());
 	} catch (error: any) {

@@ -124,4 +124,38 @@ api.get('/access-stats', async (c) => {
 	}
 });
 
+// Get member change history
+api.get('/change-history', async (c) => {
+	try {
+		const result = await c.env.svu_prod01.prepare(`
+			SELECT 
+				c.id,
+				c.member_id,
+				c.field_name,
+				c.old_value,
+				c.new_value,
+				c.changed_at,
+				c.ip_address,
+				a.Vorname,
+				a.Nachname,
+				a.EMail
+			FROM member_changes_log c
+			LEFT JOIN auswertung a ON (c.member_id = a.AdrNr OR c.member_id = a.MitglNr)
+			ORDER BY c.changed_at DESC
+			LIMIT 1000
+		`).all();
+
+		return jsonResponse({
+			changes: result.results || []
+		});
+	} catch (error: any) {
+		// Return empty array if table doesn't exist yet
+		console.log({
+			event: 'api_change_history_error',
+			error: error.message
+		});
+		return jsonResponse({ changes: [] });
+	}
+});
+
 export default api;

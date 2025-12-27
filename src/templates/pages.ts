@@ -297,12 +297,20 @@ export function renderDashboard(): string {
             </div>
             <div id="data-table"></div>
         </div>
+
+        <div class="content" style="margin-top: 30px;">
+            <div class="info" id="changesInfo">
+                <strong>Änderungsprotokoll</strong> — Zeigt die letzten Änderungen von Mitgliedern
+            </div>
+            <div id="changes-table"></div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js"></script>
     <script>
         const columnNames = ['MitglNr', 'Anrede', 'Vorname', 'Nachname', 'Firma', 'Strasse', 'PLZ', 'Ort', 'Telefon', 'Geburtsdatum', 'IBAN', 'BIC', 'Fax', 'Mobil', 'EMail', 'Nationalitaet', 'Geschlecht', 'Familienstand', 'Beruf', 'Bankbezeichnung', 'Eintritt', 'Austritt', 'Abteilung', 'Funktionen', 'MandatsNr', 'Alter', 'Kurzname'];
         let table = null;
+        let changesTable = null;
 
         async function init() {
             try {
@@ -421,9 +429,86 @@ export function renderDashboard(): string {
                     document.getElementById('generatePdfsBtn').disabled = count === 0;
                 });
 
+                // Load change history
+                await loadChangeHistory();
+
             } catch (error) {
                 document.getElementById('tableInfo').innerHTML = 
                     '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler: ' + error.message + '</div>';
+            }
+        }
+
+        async function loadChangeHistory() {
+            try {
+                document.getElementById('changesInfo').innerHTML = 
+                    '<strong>Änderungsprotokoll</strong> — Lade Daten...';
+
+                const response = await fetch('/api/change-history');
+                if (!response.ok) throw new Error('Fehler beim Laden der Änderungen');
+                
+                const data = await response.json();
+                const changes = data.changes || [];
+
+                document.getElementById('changesInfo').innerHTML = 
+                    '<strong>Änderungsprotokoll</strong> — ' + changes.length + ' Änderungen';
+
+                changesTable = new Tabulator("#changes-table", {
+                    data: changes,
+                    layout: "fitDataStretch",
+                    pagination: true,
+                    paginationSize: 20,
+                    paginationSizeSelector: [10, 20, 50, 100],
+                    columns: [
+                        { title: "Zeitpunkt", field: "changed_at", width: 160, formatter: function(cell) {
+                            const value = cell.getValue();
+                            if (!value) return '';
+                            const date = new Date(value + 'Z'); // Assume UTC
+                            return date.toLocaleString('de-DE', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        }},
+                        { title: "Mitglieds-ID", field: "member_id", width: 120 },
+                        { title: "Name", field: "Nachname", width: 150, formatter: function(cell) {
+                            const row = cell.getRow().getData();
+                            return (row.Vorname || '') + ' ' + (row.Nachname || '');
+                        }},
+                        { title: "E-Mail", field: "EMail", width: 200 },
+                        { title: "Feld", field: "field_name", width: 150 },
+                        { title: "Alter Wert", field: "old_value", width: 200, formatter: function(cell) {
+                            const value = cell.getValue();
+                            return value || '<leer>';
+                        }},
+                        { title: "Neuer Wert", field: "new_value", width: 200, formatter: function(cell) {
+                            const value = cell.getValue();
+                            return value || '<leer>';
+                        }},
+                        { title: "IP-Adresse", field: "ip_address", width: 130 },
+                    ],
+                    langs: {
+                        "de": {
+                            "pagination": {
+                                "first": "Erste",
+                                "first_title": "Erste Seite",
+                                "last": "Letzte",
+                                "last_title": "Letzte Seite",
+                                "prev": "Zurück",
+                                "prev_title": "Vorherige Seite",
+                                "next": "Weiter",
+                                "next_title": "Nächste Seite",
+                                "page_size": "Einträge pro Seite",
+                            },
+                        }
+                    },
+                    locale: "de",
+                });
+
+            } catch (error) {
+                document.getElementById('changesInfo').innerHTML = 
+                    '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler beim Laden der Änderungen: ' + error.message + '</div>';
             }
         }
 
