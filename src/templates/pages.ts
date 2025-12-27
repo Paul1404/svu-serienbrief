@@ -11,6 +11,7 @@ export function renderLoginPage(error?: string): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SV 1945 Untereuerheim - Login</title>
+    <link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -132,6 +133,7 @@ export function renderDashboard(): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SV 1945 Untereuerheim - Mitgliederverwaltung</title>
+    <link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
     <link href="https://unpkg.com/tabulator-tables@6.2.5/dist/css/tabulator.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }

@@ -134,6 +134,7 @@ function renderUpdateForm(member: any, token: string): string {
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Daten aktualisieren - SV Untereuerheim</title>
+	<link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
 	<style>
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		body {
@@ -396,6 +397,7 @@ function renderSuccessPage(): string {
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Erfolgreich aktualisiert</title>
+	<link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
 	<style>
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		body {
@@ -460,6 +462,7 @@ function renderErrorPage(message: string): string {
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Fehler</title>
+	<link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
 	<style>
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		body {
