@@ -69,7 +69,8 @@ export function createSession(ipAddress: string, userAgent: string): { sessionId
 			console.log({
 				event: 'session_limit_reached',
 				ip: ipAddress,
-				action: 'removed_oldest'
+				action: 'removed_oldest',
+				removed_session_id: oldestSession[0].substring(0, 8) + '...'
 			});
 		}
 	}
@@ -78,12 +79,23 @@ export function createSession(ipAddress: string, userAgent: string): { sessionId
 	const now = Date.now();
 	const expires = now + SESSION_DURATION;
 	
+	const truncatedUA = userAgent.substring(0, 255);
+	
 	sessions.set(sessionId, {
 		expires,
 		createdAt: now,
 		lastActivity: now,
 		ipAddress,
-		userAgent: userAgent.substring(0, 255)
+		userAgent: truncatedUA
+	});
+	
+	console.log({
+		event: 'session_created',
+		session_id: sessionId.substring(0, 8) + '...',
+		ip: ipAddress,
+		user_agent_prefix: truncatedUA.substring(0, 50) + '...',
+		expires_in_hours: SESSION_DURATION / (60 * 60 * 1000),
+		total_sessions: sessions.size
 	});
 	
 	return { sessionId, expires };
@@ -91,13 +103,27 @@ export function createSession(ipAddress: string, userAgent: string): { sessionId
 
 export function validateSession(sessionId: string, ipAddress: string, userAgent: string): boolean {
 	const session = sessions.get(sessionId);
-	if (!session) return false;
+	if (!session) {
+		console.log({
+			event: 'session_validation_failed',
+			reason: 'session_not_found',
+			session_id: sessionId.substring(0, 8) + '...',
+			ip: ipAddress
+		});
+		return false;
+	}
 	
 	const now = Date.now();
 	
 	// Check expiration
 	if (now > session.expires) {
 		sessions.delete(sessionId);
+		console.log({
+			event: 'session_validation_failed',
+			reason: 'expired',
+			session_id: sessionId.substring(0, 8) + '...',
+			expired_ms_ago: now - session.expires
+		});
 		return false;
 	}
 	
@@ -105,8 +131,11 @@ export function validateSession(sessionId: string, ipAddress: string, userAgent:
 	if ((now - session.lastActivity) > IDLE_TIMEOUT) {
 		sessions.delete(sessionId);
 		console.log({
-			event: 'session_idle_timeout',
-			session_id: sessionId.substring(0, 8) + '...'
+			event: 'session_validation_failed',
+			reason: 'idle_timeout',
+			session_id: sessionId.substring(0, 8) + '...',
+			idle_ms: now - session.lastActivity,
+			idle_timeout_ms: IDLE_TIMEOUT
 		});
 		return false;
 	}
@@ -116,12 +145,27 @@ export function validateSession(sessionId: string, ipAddress: string, userAgent:
 	const ipChanged = session.ipAddress !== ipAddress;
 	const userAgentChanged = session.userAgent !== userAgent;
 	
+	// Log any changes (even if not rejecting)
+	if (ipChanged || userAgentChanged) {
+		console.log({
+			event: 'session_credential_change_detected',
+			session_id: sessionId.substring(0, 8) + '...',
+			ip_changed: ipChanged,
+			ua_changed: userAgentChanged,
+			original_ip: session.ipAddress,
+			current_ip: ipAddress,
+			original_ua_prefix: session.userAgent.substring(0, 50) + '...',
+			current_ua_prefix: userAgent.substring(0, 50) + '...',
+			will_reject: ipChanged && userAgentChanged
+		});
+	}
+	
 	if (ipChanged && userAgentChanged) {
 		sessions.delete(sessionId);
 		console.log({
-			event: 'session_security_breach',
-			session_id: sessionId.substring(0, 8) + '...',
+			event: 'session_validation_failed',
 			reason: 'ip_and_useragent_mismatch',
+			session_id: sessionId.substring(0, 8) + '...',
 			original_ip: session.ipAddress,
 			current_ip: ipAddress
 		});
@@ -130,6 +174,16 @@ export function validateSession(sessionId: string, ipAddress: string, userAgent:
 	
 	// Update last activity
 	session.lastActivity = now;
+	
+	console.log({
+		event: 'session_validated',
+		session_id: sessionId.substring(0, 8) + '...',
+		ip: ipAddress,
+		ip_changed: ipChanged,
+		ua_changed: userAgentChanged,
+		age_minutes: Math.round((now - session.createdAt) / (60 * 1000)),
+		idle_seconds: Math.round((now - session.lastActivity) / 1000)
+	});
 	
 	return true;
 }
@@ -151,7 +205,14 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 			reason: !sessionId ? 'no_session_cookie' : 'invalid_session',
 			path: url.pathname,
 			method: c.req.method,
-			ip: ipAddress
+			ip: ipAddress,
+			user_agent_prefix: userAgent.substring(0, 50) + '...',
+			session_id: sessionId ? sessionId.substring(0, 8) + '...' : 'none',
+			all_headers: {
+				'cf-connecting-ip': c.req.header('cf-connecting-ip'),
+				'x-forwarded-for': c.req.header('x-forwarded-for'),
+				'user-agent': userAgent.substring(0, 100)
+			}
 		});
 		
 		// Store the original URL to redirect back after login
@@ -169,6 +230,7 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 		session_id: sessionId.substring(0, 8) + '...',
 		path: url.pathname,
 		method: c.req.method,
+		ip: ipAddress,
 		active_sessions: sessions.size
 	});
 
