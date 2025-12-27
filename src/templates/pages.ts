@@ -134,7 +134,7 @@ export function renderDashboard(): string {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SV 1945 Untereuerheim - Mitgliederverwaltung</title>
     <link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
-    <link href="https://unpkg.com/tabulator-tables@6.2.5/dist/css/tabulator.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/2.3.6/css/dataTables.dataTables.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -237,32 +237,42 @@ export function renderDashboard(): string {
             color: #000;
         }
         #data-table { margin-top: 20px; }
-        .tabulator {
+        .dataTables_wrapper {
             font-size: 14px;
-            border: 1px solid #ddd;
         }
-        .tabulator .tabulator-header {
+        table.dataTable {
+            border: 1px solid #ddd;
+            width: 100% !important;
+        }
+        table.dataTable thead th {
             background: #f8f9fa;
             border-bottom: 2px solid #CC0000;
-        }
-        .tabulator .tabulator-header .tabulator-col {
-            background: #f8f9fa;
-            border-right: 1px solid #ddd;
-        }
-        .tabulator .tabulator-header .tabulator-col-content {
             padding: 12px;
+            font-weight: 600;
         }
-        .tabulator-row {
-            min-height: 40px;
+        table.dataTable tbody td {
+            padding: 10px;
         }
-        .tabulator-row.tabulator-row-even {
+        table.dataTable tbody tr:nth-child(even) {
             background-color: #f8f9fa;
         }
-        .tabulator-row:hover {
+        table.dataTable tbody tr:hover {
             background-color: #fff3cd !important;
         }
-        .tabulator-cell {
-            padding: 10px;
+        table.dataTable tbody tr.selected {
+            background-color: #d4edda !important;
+        }
+        .dataTables_filter input {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+        .dataTables_length select {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 0 8px;
         }
     </style>
 </head>
@@ -295,22 +305,24 @@ export function renderDashboard(): string {
             <div class="info" id="tableInfo">
                 <strong>Mitgliederdatenbank</strong> - Lade Daten...
             </div>
-            <div id="data-table"></div>
+            <table id="data-table" class="display" style="width:100%"></table>
         </div>
 
         <div class="content" style="margin-top: 30px;">
             <div class="info" id="changesInfo">
                 <strong>Änderungsprotokoll</strong> - Zeigt die letzten Änderungen von Mitgliedern
             </div>
-            <div id="changes-table"></div>
+            <table id="changes-table" class="display" style="width:100%"></table>
         </div>
     </div>
 
-    <script src="https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.6/js/dataTables.min.js"></script>
     <script>
         const columnNames = ['MitglNr', 'Anrede', 'Vorname', 'Nachname', 'Firma', 'Strasse', 'PLZ', 'Ort', 'Telefon', 'Geburtsdatum', 'IBAN', 'BIC', 'Fax', 'Mobil', 'EMail', 'Nationalitaet', 'Geschlecht', 'Familienstand', 'Beruf', 'Bankbezeichnung', 'Eintritt', 'Austritt', 'Abteilung', 'Funktionen', 'MandatsNr', 'Alter', 'Kurzname'];
         let table = null;
         let changesTable = null;
+        let selectedRows = new Set();
 
         async function init() {
             try {
@@ -342,91 +354,109 @@ export function renderDashboard(): string {
                     };
                 });
 
-                // Add selection column and access columns
+                // Build columns for DataTables
                 const columns = [
                     {
-                        formatter: "rowSelection",
-                        titleFormatter: "rowSelection",
-                        titleFormatterParams: {
-                            rowRange: "active"
-                        },
-                        hozAlign: "center",
-                        headerSort: false,
-                        cellClick: function(e, cell) {
-                            cell.getRow().toggleSelect();
+                        title: '<input type="checkbox" id="selectAll">',
+                        data: null,
+                        orderable: false,
+                        searchable: false,
+                        className: 'dt-center',
+                        width: '40px',
+                        render: function(data, type, row) {
+                            const memberId = row.AdrNr || row.MitglNr;
+                            return '<input type="checkbox" class="row-select" data-id="' + memberId + '">';
                         }
                     },
                     ...columnNames.map(col => ({
                         title: col,
-                        field: col,
-                        headerFilter: "input",
-                        headerFilterPlaceholder: "Filter...",
+                        data: col
                     })),
                     {
-                        title: "Letzter Zugriff",
-                        field: "Letzter_Zugriff",
-                        headerFilter: "input",
-                        formatter: function(cell) {
-                            const value = cell.getValue();
-                            if (!value) return '<span style="color: #999;">Nie</span>';
-                            const date = new Date(value);
-                            return date.toLocaleString('de-DE', { 
-                                year: 'numeric', 
-                                month: '2-digit', 
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
-                        },
-                        sorter: "datetime",
+                        title: 'Letzter Zugriff',
+                        data: 'Letzter_Zugriff',
+                        render: function(data, type) {
+                            if (type === 'display') {
+                                if (!data) return '<span style="color: #999;">Nie</span>';
+                                const date = new Date(data);
+                                return date.toLocaleString('de-DE', { 
+                                    year: 'numeric', 
+                                    month: '2-digit', 
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
+                            }
+                            return data;
+                        }
                     },
                     {
-                        title: "Zugriffe",
-                        field: "Zugriffe",
-                        hozAlign: "center",
-                        width: 100,
-                        formatter: function(cell) {
-                            const value = cell.getValue();
-                            if (value === 0) return '<span style="color: #999;">0</span>';
-                            return '<span style="color: #28a745; font-weight: 600;">' + value + '</span>';
-                        },
-                        sorter: "number",
+                        title: 'Zugriffe',
+                        data: 'Zugriffe',
+                        className: 'dt-center',
+                        render: function(data, type) {
+                            if (type === 'display') {
+                                if (data === 0) return '<span style="color: #999;">0</span>';
+                                return '<span style="color: #28a745; font-weight: 600;">' + data + '</span>';
+                            }
+                            return data;
+                        }
                     }
                 ];
 
-                table = new Tabulator("#data-table", {
+                // Destroy existing table if it exists
+                if (table) {
+                    table.destroy();
+                    $('#data-table').empty();
+                }
+
+                // Initialize DataTable
+                table = $('#data-table').DataTable({
                     data: enrichedData,
                     columns: columns,
-                    layout: "fitDataTable",
-                    pagination: true,
-                    paginationSize: 100,
-                    paginationSizeSelector: [50, 100, 200, 500],
-                    movableColumns: true,
-                    resizableColumns: true,
-                    selectable: true,
-                    langs: {
-                        "de": {
-                            "pagination": {
-                                "first": "Erste",
-                                "first_title": "Erste Seite",
-                                "last": "Letzte",
-                                "last_title": "Letzte Seite",
-                                "prev": "Zurück",
-                                "prev_title": "Vorherige Seite",
-                                "next": "Weiter",
-                                "next_title": "Nächste Seite",
-                                "page_size": "Einträge pro Seite",
-                            },
+                    pageLength: 100,
+                    lengthMenu: [[50, 100, 200, 500], [50, 100, 200, 500]],
+                    language: {
+                        lengthMenu: 'Zeige _MENU_ Einträge',
+                        search: 'Suchen:',
+                        info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                        infoEmpty: 'Keine Einträge vorhanden',
+                        infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                        paginate: {
+                            first: 'Erste',
+                            last: 'Letzte',
+                            next: 'Weiter',
+                            previous: 'Zurück'
                         }
                     },
-                    locale: "de",
+                    order: [[1, 'asc']],
+                    scrollX: true
                 });
 
-                // Update button state on selection change
-                table.on("rowSelectionChanged", function(data, rows) {
-                    const count = rows.length;
-                    document.getElementById('selectedCount').textContent = count;
-                    document.getElementById('generatePdfsBtn').disabled = count === 0;
+                // Handle select all checkbox
+                $('#selectAll').on('click', function() {
+                    const isChecked = $(this).prop('checked');
+                    $('.row-select:visible').prop('checked', isChecked).each(function() {
+                        const id = $(this).data('id');
+                        if (isChecked) {
+                            selectedRows.add(id);
+                        } else {
+                            selectedRows.delete(id);
+                        }
+                    });
+                    updateSelectedCount();
+                });
+
+                // Handle individual row selection
+                $('#data-table').on('change', '.row-select', function() {
+                    const id = $(this).data('id');
+                    if ($(this).prop('checked')) {
+                        selectedRows.add(id);
+                    } else {
+                        selectedRows.delete(id);
+                        $('#selectAll').prop('checked', false);
+                    }
+                    updateSelectedCount();
                 });
 
                 // Load change history
@@ -436,6 +466,11 @@ export function renderDashboard(): string {
                 document.getElementById('tableInfo').innerHTML = 
                     '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler: ' + error.message + '</div>';
             }
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = selectedRows.size;
+            document.getElementById('generatePdfsBtn').disabled = selectedRows.size === 0;
         }
 
         async function loadChangeHistory() {
@@ -452,58 +487,75 @@ export function renderDashboard(): string {
                 document.getElementById('changesInfo').innerHTML = 
                     '<strong>Änderungsprotokoll</strong> - ' + changes.length + ' Änderungen';
 
-                changesTable = new Tabulator("#changes-table", {
+                // Destroy existing table if it exists
+                if (changesTable) {
+                    changesTable.destroy();
+                    $('#changes-table').empty();
+                }
+
+                changesTable = $('#changes-table').DataTable({
                     data: changes,
-                    layout: "fitDataTable",
-                    pagination: true,
-                    paginationSize: 50,
-                    paginationSizeSelector: [20, 50, 100, 200],
                     columns: [
-                        { title: "Zeitpunkt", field: "changed_at", width: 160, formatter: function(cell) {
-                            const value = cell.getValue();
-                            if (!value) return '';
-                            const date = new Date(value + 'Z'); // Assume UTC
-                            return date.toLocaleString('de-DE', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
-                        }},
-                        { title: "Mitglieds-ID", field: "member_id", width: 120 },
-                        { title: "Name", field: "Nachname", width: 150, formatter: function(cell) {
-                            const row = cell.getRow().getData();
-                            return (row.Vorname || '') + ' ' + (row.Nachname || '');
-                        }},
-                        { title: "E-Mail", field: "EMail", width: 200 },
-                        { title: "Feld", field: "field_name", width: 150 },
-                        { title: "Alter Wert", field: "old_value", width: 200, formatter: function(cell) {
-                            const value = cell.getValue();
-                            return value || '<leer>';
-                        }},
-                        { title: "Neuer Wert", field: "new_value", width: 200, formatter: function(cell) {
-                            const value = cell.getValue();
-                            return value || '<leer>';
-                        }},
-                        { title: "IP-Adresse", field: "ip_address", width: 130 },
+                        {
+                            title: 'Zeitpunkt',
+                            data: 'changed_at',
+                            render: function(data, type) {
+                                if (type === 'display' && data) {
+                                    const date = new Date(data + 'Z');
+                                    return date.toLocaleString('de-DE', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    });
+                                }
+                                return data;
+                            }
+                        },
+                        { title: 'Mitglieds-ID', data: 'member_id' },
+                        {
+                            title: 'Name',
+                            data: 'Nachname',
+                            render: function(data, type, row) {
+                                return (row.Vorname || '') + ' ' + (row.Nachname || '');
+                            }
+                        },
+                        { title: 'E-Mail', data: 'EMail' },
+                        { title: 'Feld', data: 'field_name' },
+                        {
+                            title: 'Alter Wert',
+                            data: 'old_value',
+                            render: function(data) {
+                                return data || '<leer>';
+                            }
+                        },
+                        {
+                            title: 'Neuer Wert',
+                            data: 'new_value',
+                            render: function(data) {
+                                return data || '<leer>';
+                            }
+                        },
+                        { title: 'IP-Adresse', data: 'ip_address' }
                     ],
-                    langs: {
-                        "de": {
-                            "pagination": {
-                                "first": "Erste",
-                                "first_title": "Erste Seite",
-                                "last": "Letzte",
-                                "last_title": "Letzte Seite",
-                                "prev": "Zurück",
-                                "prev_title": "Vorherige Seite",
-                                "next": "Weiter",
-                                "next_title": "Nächste Seite",
-                                "page_size": "Einträge pro Seite",
-                            },
+                    pageLength: 50,
+                    lengthMenu: [[20, 50, 100, 200], [20, 50, 100, 200]],
+                    language: {
+                        lengthMenu: 'Zeige _MENU_ Einträge',
+                        search: 'Suchen:',
+                        info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                        infoEmpty: 'Keine Einträge vorhanden',
+                        infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                        paginate: {
+                            first: 'Erste',
+                            last: 'Letzte',
+                            next: 'Weiter',
+                            previous: 'Zurück'
                         }
                     },
-                    locale: "de",
+                    order: [[0, 'desc']],
+                    scrollX: true
                 });
 
             } catch (error) {
@@ -514,10 +566,7 @@ export function renderDashboard(): string {
 
         // Handle PDF generation
         document.getElementById('generatePdfsBtn').addEventListener('click', async function() {
-            if (!table) return;
-
-            const selectedRows = table.getSelectedData();
-            if (selectedRows.length === 0) {
+            if (selectedRows.size === 0) {
                 alert('Bitte wählen Sie mindestens ein Mitglied aus.');
                 return;
             }
@@ -528,8 +577,7 @@ export function renderDashboard(): string {
             btn.textContent = '⏳ PDFs werden generiert...';
 
             try {
-                // Extract member IDs (use AdrNr or MitglNr)
-                const memberIds = selectedRows.map(row => row.AdrNr || row.MitglNr).filter(id => id);
+                const memberIds = Array.from(selectedRows);
 
                 const response = await fetch('/letters/generate-pdfs', {
                     method: 'POST',
@@ -571,6 +619,7 @@ export function renderDashboard(): string {
             btn.style.opacity = '0.5';
             
             try {
+                selectedRows.clear();
                 await init();
             } catch (error) {
                 alert('Fehler beim Aktualisieren: ' + error.message);
