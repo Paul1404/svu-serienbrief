@@ -184,6 +184,38 @@ export function renderDashboard(): string {
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .actions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            padding: 12px 24px;
+            background: #CC0000;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .action-btn:hover {
+            background: #990000;
+        }
+        .action-btn.secondary {
+            background: #666;
+        }
+        .action-btn.secondary:hover {
+            background: #444;
+        }
         .info {
             background: #fff3cd;
             padding: 15px;
@@ -235,6 +267,11 @@ export function renderDashboard(): string {
             <a href="/logout" class="logout-btn">Abmelden</a>
         </div>
 
+        <div class="actions">
+            <button id="generatePdfsBtn" class="action-btn" disabled>📄 PDFs für ausgewählte Mitglieder generieren (<span id="selectedCount">0</span>)</button>
+            <a href="/letters/preview/demo" class="action-btn secondary" target="_blank">👁️ Brief-Vorschau</a>
+        </div>
+
         <div class="content">
             <div class="info" id="tableInfo">
                 <strong>Mitgliederdatenbank</strong> — Lade Daten...
@@ -246,6 +283,7 @@ export function renderDashboard(): string {
     <script src="https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js"></script>
     <script>
         const columnNames = ['Ausw', 'MitglNr', 'Anrede', 'Vorname', 'Nachname', 'Firma', 'Strasse', 'PLZ', 'Ort', 'Telefon', 'Geburtsdatum', 'IBAN', 'BIC', 'Telefon_gesch', 'Fax', 'Mobil', 'EMail', 'Nationalitaet', 'Geschlecht', 'Familienstand', 'Beruf', 'Status', 'Bankbezeichnung', 'Eintritt', 'Austritt', 'Abteilung', 'Funktionen', 'MandatsNr', 'Titel', 'Alter', 'AdrNr', 'Kurzname', 'Versandart', 'Adresszusatz', 'Landname'];
+        let table = null;
 
         async function init() {
             try {
@@ -260,14 +298,29 @@ export function renderDashboard(): string {
                 document.getElementById('tableInfo').innerHTML = 
                     '<strong>Mitgliederdatenbank</strong> — ' + data.data.length + ' Mitglieder';
 
-                const columns = columnNames.map(col => ({
-                    title: col,
-                    field: col,
-                    headerFilter: "input",
-                    headerFilterPlaceholder: "Filter...",
-                }));
+                // Add selection column
+                const columns = [
+                    {
+                        formatter: "rowSelection",
+                        titleFormatter: "rowSelection",
+                        titleFormatterParams: {
+                            rowRange: "active"
+                        },
+                        hozAlign: "center",
+                        headerSort: false,
+                        cellClick: function(e, cell) {
+                            cell.getRow().toggleSelect();
+                        }
+                    },
+                    ...columnNames.map(col => ({
+                        title: col,
+                        field: col,
+                        headerFilter: "input",
+                        headerFilterPlaceholder: "Filter...",
+                    }))
+                ];
 
-                new Tabulator("#data-table", {
+                table = new Tabulator("#data-table", {
                     data: data.data,
                     columns: columns,
                     layout: "fitDataFill",
@@ -276,6 +329,7 @@ export function renderDashboard(): string {
                     paginationSizeSelector: [25, 50, 100, 200],
                     movableColumns: true,
                     resizableColumns: true,
+                    selectable: true,
                     langs: {
                         "de": {
                             "pagination": {
@@ -293,11 +347,71 @@ export function renderDashboard(): string {
                     },
                     locale: "de",
                 });
+
+                // Update button state on selection change
+                table.on("rowSelectionChanged", function(data, rows) {
+                    const count = rows.length;
+                    document.getElementById('selectedCount').textContent = count;
+                    document.getElementById('generatePdfsBtn').disabled = count === 0;
+                });
+
             } catch (error) {
                 document.getElementById('tableInfo').innerHTML = 
                     '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler: ' + error.message + '</div>';
             }
         }
+
+        // Handle PDF generation
+        document.getElementById('generatePdfsBtn').addEventListener('click', async function() {
+            if (!table) return;
+
+            const selectedRows = table.getSelectedData();
+            if (selectedRows.length === 0) {
+                alert('Bitte wählen Sie mindestens ein Mitglied aus.');
+                return;
+            }
+
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ PDFs werden generiert...';
+
+            try {
+                // Extract member IDs (use AdrNr or MitglNr)
+                const memberIds = selectedRows.map(row => row.AdrNr || row.MitglNr).filter(id => id);
+
+                const response = await fetch('/letters/generate-pdfs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ memberIds })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Fehler beim Generieren der PDFs');
+                }
+
+                // Download the ZIP file
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'serienbriefe_' + new Date().toISOString().split('T')[0] + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                alert('PDFs erfolgreich generiert und heruntergeladen!');
+            } catch (error) {
+                alert('Fehler: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
 
         init();
     </script>
