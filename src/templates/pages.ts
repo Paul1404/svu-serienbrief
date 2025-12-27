@@ -270,8 +270,8 @@ export function renderDashboard(): string {
         </div>
 
         <div class="actions">
-            <button id="generatePdfsBtn" class="action-btn" disabled>📄 PDFs für ausgewählte Mitglieder generieren (<span id="selectedCount">0</span>)</button>
-            <a href="/letters/preview/demo" class="action-btn secondary" target="_blank">👁️ Brief-Vorschau</a>
+            <button id="generatePdfsBtn" class="action-btn" disabled>PDFs für ausgewählte Mitglieder generieren (<span id="selectedCount">0</span>)</button>
+            <a href="/letters/preview/demo" class="action-btn secondary" target="_blank">Brief-Vorschau</a>
         </div>
 
         <div class="content">
