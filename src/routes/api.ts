@@ -158,4 +158,104 @@ api.get('/change-history', async (c) => {
 	}
 });
 
+// Get statistics for dashboard
+api.get('/stats', async (c) => {
+	try {
+		// Get total members
+		const totalMembers = await c.env.svu_prod01.prepare(
+			'SELECT COUNT(*) as count FROM auswertung'
+		).first();
+
+		// Get members with access
+		const membersWithAccess = await c.env.svu_prod01.prepare(
+			'SELECT COUNT(DISTINCT member_id) as count FROM member_access_log'
+		).first();
+
+		// Get total accesses
+		const totalAccesses = await c.env.svu_prod01.prepare(
+			'SELECT COUNT(*) as count FROM member_access_log'
+		).first();
+
+		// Get total changes
+		const totalChanges = await c.env.svu_prod01.prepare(
+			'SELECT COUNT(*) as count FROM member_changes_log'
+		).first();
+
+		// Get members who made changes
+		const membersWithChanges = await c.env.svu_prod01.prepare(
+			'SELECT COUNT(DISTINCT member_id) as count FROM member_changes_log'
+		).first();
+
+		// Get most changed fields
+		const topFields = await c.env.svu_prod01.prepare(`
+			SELECT field_name, COUNT(*) as count 
+			FROM member_changes_log 
+			GROUP BY field_name 
+			ORDER BY count DESC 
+			LIMIT 5
+		`).all();
+
+		// Get recent activity (last 7 days)
+		const recentActivity = await c.env.svu_prod01.prepare(`
+			SELECT COUNT(*) as count 
+			FROM member_changes_log 
+			WHERE changed_at > datetime('now', '-7 days')
+		`).first();
+
+		return jsonResponse({
+			totalMembers: (totalMembers as any)?.count || 0,
+			membersWithAccess: (membersWithAccess as any)?.count || 0,
+			totalAccesses: (totalAccesses as any)?.count || 0,
+			totalChanges: (totalChanges as any)?.count || 0,
+			membersWithChanges: (membersWithChanges as any)?.count || 0,
+			topFields: topFields.results || [],
+			recentActivity: (recentActivity as any)?.count || 0,
+			accessRate: totalMembers?.count ? Math.round(((membersWithAccess as any)?.count || 0) / (totalMembers as any).count * 100) : 0,
+			changeRate: (membersWithAccess as any)?.count ? Math.round(((membersWithChanges as any)?.count || 0) / (membersWithAccess as any).count * 100) : 0
+		});
+	} catch (error: any) {
+		console.log({
+			event: 'api_stats_error',
+			error: error.message
+		});
+		return jsonResponse({
+			totalMembers: 0,
+			membersWithAccess: 0,
+			totalAccesses: 0,
+			totalChanges: 0,
+			membersWithChanges: 0,
+			topFields: [],
+			recentActivity: 0,
+			accessRate: 0,
+			changeRate: 0
+		});
+	}
+});
+
+// Clear change history and access logs
+api.post('/clear-history', async (c) => {
+	try {
+		// Clear change log
+		await c.env.svu_prod01.prepare('DELETE FROM member_changes_log').run();
+		
+		// Clear access log
+		await c.env.svu_prod01.prepare('DELETE FROM member_access_log').run();
+
+		console.log({
+			event: 'history_cleared',
+			ip: c.req.header('cf-connecting-ip')
+		});
+
+		return jsonResponse({
+			message: 'Verlauf und Statistiken erfolgreich gelöscht'
+		});
+	} catch (error: any) {
+		console.log({
+			event: 'clear_history_error',
+			error: error.message
+		});
+		return jsonError(error.message, 500);
+	}
+});
+
 export default api;

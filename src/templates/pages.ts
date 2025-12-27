@@ -278,6 +278,179 @@ export function renderDashboard(): string {
             border-radius: 4px;
             margin: 0 8px;
         }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #CC0000;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #CC0000;
+            margin: 10px 0;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-detail {
+            color: #999;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        .top-fields {
+            margin-top: 10px;
+        }
+        .field-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .field-item:last-child {
+            border-bottom: none;
+        }
+        .danger-zone {
+            background: #fff3f3;
+            border: 1px solid #ffcccc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .danger-zone h3 {
+            color: #c00;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .danger-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .danger-btn:hover {
+            background: #c82333;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            max-width: 500px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid #CC0000;
+        }
+        .toast.success {
+            border-left-color: #28a745;
+        }
+        .toast.error {
+            border-left-color: #dc3545;
+        }
+        .toast.warning {
+            border-left-color: #ffc107;
+        }
+        .toast-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .toast-message {
+            flex: 1;
+            color: #333;
+        }
+        .toast-close {
+            cursor: pointer;
+            opacity: 0.5;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .toast-close:hover {
+            opacity: 1;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+        .modal h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        .modal p {
+            margin: 0 0 20px 0;
+            color: #666;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .modal-btn.primary {
+            background: #dc3545;
+            color: white;
+        }
+        .modal-btn.primary:hover {
+            background: #c82333;
+        }
+        .modal-btn.secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .modal-btn.secondary:hover {
+            background: #5a6268;
+        }
     </style>
 </head>
 <body>
@@ -317,6 +490,18 @@ export function renderDashboard(): string {
                 <strong>Änderungsprotokoll</strong> - Zeigt die letzten Änderungen von Mitgliedern
             </div>
             <table id="changes-table" class="display" style="width:100%"></table>
+        </div>
+
+        <div class="content" style="margin-top: 30px;">
+            <h2 style="margin-bottom: 20px;">Statistik Dashboard</h2>
+            <div id="statsInfo" class="info">Lade Statistiken...</div>
+            <div id="stats-dashboard"></div>
+            
+            <div class="danger-zone">
+                <h3>Gefahrenzone</h3>
+                <p style="margin-bottom: 10px; color: #666;">Löscht alle Änderungen und Zugriffsprotokolle permanent. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+                <button id="clearHistoryBtn" class="danger-btn">Verlauf und Statistiken löschen</button>
+            </div>
         </div>
     </div>
 
@@ -480,6 +665,9 @@ export function renderDashboard(): string {
 
                 // Load change history
                 await loadChangeHistory();
+                
+                // Load statistics
+                await loadStats();
 
             } catch (error) {
                 document.getElementById('tableInfo').innerHTML = 
@@ -490,6 +678,42 @@ export function renderDashboard(): string {
         function updateSelectedCount() {
             document.getElementById('selectedCount').textContent = selectedRows.size;
             document.getElementById('generatePdfsBtn').disabled = selectedRows.size === 0;
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                if (!response.ok) throw new Error('Fehler beim Laden der Statistiken');
+                
+                const stats = await response.json();
+                
+                document.getElementById('statsInfo').style.display = 'none';
+                
+                const dashboard = document.getElementById('stats-dashboard');
+                
+                let topFieldsHtml = '';
+                if (stats.topFields.length > 0) {
+                    const fieldsHtml = stats.topFields.map(field => 
+                        '<div class="field-item"><span>' + field.field_name + '</span><span style="font-weight: 600; color: #CC0000;">' + field.count + 'x</span></div>'
+                    ).join('');
+                    
+                    topFieldsHtml = '<div class="stat-card" style="margin-top: 20px;"><div class="stat-label" style="margin-bottom: 15px;">Meist geänderte Felder</div><div class="top-fields">' + fieldsHtml + '</div></div>';
+                }
+                
+                dashboard.innerHTML = '<div class="stats-grid">' +
+                    '<div class="stat-card"><div class="stat-label">Gesamt Mitglieder</div><div class="stat-value">' + stats.totalMembers + '</div></div>' +
+                    '<div class="stat-card"><div class="stat-label">Portal Zugriffe</div><div class="stat-value">' + stats.membersWithAccess + '</div>' +
+                    '<div class="stat-detail">' + stats.accessRate + '% der Mitglieder</div>' +
+                    '<div class="stat-detail">' + stats.totalAccesses + ' Gesamt Zugriffe</div></div>' +
+                    '<div class="stat-card"><div class="stat-label">Änderungen</div><div class="stat-value">' + stats.totalChanges + '</div>' +
+                    '<div class="stat-detail">' + stats.membersWithChanges + ' Mitglieder haben Änderungen vorgenommen</div>' +
+                    '<div class="stat-detail">' + stats.changeRate + '% Änderungsrate</div></div>' +
+                    '<div class="stat-card"><div class="stat-label">Letzte 7 Tage</div><div class="stat-value">' + stats.recentActivity + '</div>' +
+                    '<div class="stat-detail">Änderungen in der letzten Woche</div></div>' +
+                    '</div>' + topFieldsHtml;
+            } catch (error) {
+                showToast('Fehler beim Laden der Statistiken: ' + error.message, 'error');
+            }
         }
 
         async function loadChangeHistory() {
@@ -586,7 +810,7 @@ export function renderDashboard(): string {
         // Handle PDF generation
         document.getElementById('generatePdfsBtn').addEventListener('click', async function() {
             if (selectedRows.size === 0) {
-                alert('Bitte wählen Sie mindestens ein Mitglied aus.');
+                showToast('Bitte wählen Sie mindestens ein Mitglied aus.', 'warning');
                 return;
             }
 
@@ -622,9 +846,9 @@ export function renderDashboard(): string {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
 
-                alert('PDFs erfolgreich generiert und heruntergeladen!');
+                showToast('PDFs erfolgreich generiert und heruntergeladen!', 'success');
             } catch (error) {
-                alert('Fehler: ' + error.message);
+                showToast('Fehler: ' + error.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
@@ -640,11 +864,47 @@ export function renderDashboard(): string {
             try {
                 selectedRows.clear();
                 await init();
+                showToast('Tabelle erfolgreich aktualisiert', 'success');
             } catch (error) {
-                alert('Fehler beim Aktualisieren: ' + error.message);
+                showToast('Fehler beim Aktualisieren: ' + error.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.style.opacity = '1';
+            }
+        });
+
+        // Handle clear history
+        document.getElementById('clearHistoryBtn').addEventListener('click', async function() {
+            const confirmed = await showConfirm(
+                'Verlauf löschen', 
+                'Sind Sie sicher, dass Sie alle Änderungen und Zugriffsprotokolle löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden!'
+            );
+            
+            if (!confirmed) return;
+
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Lösche...';
+
+            try {
+                const response = await fetch('/api/clear-history', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Fehler beim Löschen');
+                }
+
+                showToast('Verlauf und Statistiken erfolgreich gelöscht!', 'success');
+                await loadChangeHistory();
+                await loadStats();
+            } catch (error) {
+                showToast('Fehler: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
         });
 
