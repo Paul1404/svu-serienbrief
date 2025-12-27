@@ -5,21 +5,22 @@
 import { Hono } from 'hono';
 import type { Env } from '../types';
 import { renderLoginPage, renderDashboard } from '../templates/pages';
-import { sessions, cleanupSessions } from '../middleware/auth';
+import { sessions, cleanupSessions, createSession } from '../middleware/auth';
 
 const pages = new Hono<{ Bindings: Env }>();
 
 // Login page
 pages.get('/login', (c) => {
-return c.html(renderLoginPage());
+	return c.html(renderLoginPage());
 });
 
 // Handle login form submission
 pages.post('/login', async (c) => {
-try {
-const formData = await c.req.formData();
-const password = formData.get('password');
-		const clientIP = c.req.header('cf-connecting-ip') || 'unknown';
+	try {
+		const formData = await c.req.formData();
+		const password = formData.get('password');
+		const clientIP = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
+		const userAgent = c.req.header('user-agent') || 'unknown';
 		const country = c.req.raw.cf?.country || 'unknown';
 
 		if (!c.env.ADMIN_PASSWORD) {
@@ -38,23 +39,24 @@ const password = formData.get('password');
 				client_ip: clientIP,
 				country: country
 			});
-			return c.html(renderLoginPage('Invalid password'), 401);
+			// Add a small delay to prevent brute force attacks
+			await new Promise(resolve => setTimeout(resolve, 1000));
+			return c.html(renderLoginPage('Ungültiges Passwort'), 401);
 		}
 
-		const sessionId = crypto.randomUUID();
-		const expires = Date.now() + 8 * 60 * 60 * 1000; // 8 hours
-		sessions.set(sessionId, { expires });
-		cleanupSessions();
+		const { sessionId, expires } = createSession(clientIP, userAgent);
 
 		console.log({
 			event: 'login_success',
 			session_id: sessionId.substring(0, 8) + '...',
 			client_ip: clientIP,
 			country: country,
-			session_duration_hours: 8
+			session_duration_hours: 8,
+			active_sessions: sessions.size
 		});
 
-		c.header('Set-Cookie', `session=${sessionId}; HttpOnly; Secure; SameSite=Strict; Max-Age=28800; Path=/`);
+		const maxAge = Math.floor((expires - Date.now()) / 1000);
+		c.header('Set-Cookie', `session=${sessionId}; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}; Path=/`);
 		
 		// Redirect back to the original URL if provided
 		const returnTo = c.req.query('return') || '/';
@@ -67,7 +69,7 @@ const password = formData.get('password');
 			error: error.message,
 			stack: error.stack
 		});
-		return c.html(renderLoginPage('Login failed: ' + error.message), 500);
+		return c.html(renderLoginPage('Login fehlgeschlagen: ' + error.message), 500);
 	}
 });
 
@@ -86,7 +88,8 @@ pages.get('/logout', (c) => {
 			sessions.delete(sessionId);
 			console.log({
 				event: 'logout',
-				session_id: sessionId.substring(0, 8) + '...'
+				session_id: sessionId.substring(0, 8) + '...',
+				remaining_sessions: sessions.size
 			});
 		}
 	}
