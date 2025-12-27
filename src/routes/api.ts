@@ -16,7 +16,7 @@ api.get('/data', async (c) => {
 		const offset = (page - 1) * limit;
 
 		const startTime = Date.now();
-		const query = `SELECT * FROM adresse LIMIT ? OFFSET ?`;
+		const query = `SELECT * FROM auswertung LIMIT ? OFFSET ?`;
 		const result = await c.env.svu_prod.prepare(query).bind(limit, offset).all();
 		const duration = Date.now() - startTime;
 
@@ -61,7 +61,7 @@ api.get('/search', async (c) => {
 		}
 
 		const startTime = Date.now();
-		const sql = `SELECT * FROM adresse WHERE ${sanitizeIdentifier(column)} LIKE ? LIMIT 100`;
+		const sql = `SELECT * FROM auswertung WHERE ${sanitizeIdentifier(column)} LIKE ? LIMIT 100`;
 		const result = await c.env.svu_prod.prepare(sql).bind(`%${query}%`).all();
 		const duration = Date.now() - startTime;
 
