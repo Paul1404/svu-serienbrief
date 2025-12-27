@@ -245,7 +245,7 @@ export function renderDashboard(): string {
 
     <script src="https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js"></script>
     <script>
-        const columnNames = ['AdrNr', 'Vorname', 'Nachname', 'Strasse', 'PLZ', 'Ort', 'Telefon1', 'Telefon3', 'Geburtsdatum', 'Eintritt', 'Austritt', 'mandatsrefenz', 'IBAN1', 'BIC1', 'Bank1', 'Anrede', 'Firma1', 'LKZ', 'Aktiv', 'Mitglied'];
+        const columnNames = ['Ausw', 'MitglNr', 'Anrede', 'Vorname', 'Nachname', 'Firma', 'Strasse', 'PLZ', 'Ort', 'Telefon', 'Geburtsdatum', 'IBAN', 'BIC', 'Telefon_gesch', 'Fax', 'Mobil', 'EMail', 'Nationalitaet', 'Geschlecht', 'Familienstand', 'Beruf', 'Status', 'Bankbezeichnung', 'Eintritt', 'Austritt', 'Abteilung', 'Funktionen', 'MandatsNr', 'Titel', 'Alter', 'AdrNr', 'Kurzname', 'Versandart', 'Adresszusatz', 'Landname'];
 
         async function init() {
             try {
