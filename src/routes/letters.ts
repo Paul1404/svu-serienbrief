@@ -6,7 +6,8 @@ import { Hono } from 'hono';
 import type { Env } from '../types';
 import { generateMemberToken } from '../utils/tokens';
 import { jsonResponse, jsonError } from '../utils/helpers';
-import { zipSync, strToU8 } from 'fflate';
+import { zipSync } from 'fflate';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 const letters = new Hono<{ Bindings: Env }>();
 
@@ -34,23 +35,24 @@ letters.post('/generate-pdfs', async (c) => {
 		const baseUrl = new URL(c.req.url).origin;
 		const secret = c.env.ADMIN_PASSWORD;
 
-		// Generate HTML for each member
-		const htmlDocuments: Array<{ filename: string; html: string }> = await Promise.all(
+		// Generate PDFs for each member
+		const pdfFiles: Array<{ filename: string; data: Uint8Array }> = await Promise.all(
 			result.results.map(async (member: any) => {
 				const memberId = member.AdrNr || member.MitglNr;
 				const token = await generateMemberToken(memberId, secret);
 				const updateUrl = `${baseUrl}/update/${token}`;
-				const html = renderLetterHTML(member, updateUrl);
+				const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(updateUrl)}`;
 				
-				const filename = `Brief_${member.Nachname}_${member.Vorname}_${memberId}.html`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+				const pdfBytes = await generateLetterPDF(member, updateUrl, qrCodeUrl);
 				
-				return { filename, html };
+				const filename = `Brief_${member.Nachname}_${member.Vorname}_${memberId}.pdf`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+				
+				return { filename, data: pdfBytes };
 			})
 		);
 
-		// For now, we'll create a simple ZIP with HTML files
-		// In production, you'd want to convert these to PDFs using Puppeteer or a PDF service
-		const zipContent = await createZipFromHtmlFiles(htmlDocuments);
+		// Create ZIP with PDF files
+		const zipContent = createZipFromPdfFiles(pdfFiles);
 
 		return new Response(zipContent, {
 			headers: {
@@ -65,33 +67,395 @@ letters.post('/generate-pdfs', async (c) => {
 });
 
 /**
- * Create a ZIP file from HTML files using fflate
+ * Generate a DIN A4 letter PDF for a member
  */
-async function createZipFromHtmlFiles(files: Array<{ filename: string; html: string }>): Promise<Uint8Array> {
-	// Create a file map for fflate
+async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: string): Promise<Uint8Array> {
+	const pdfDoc = await PDFDocument.create();
+	const page = pdfDoc.addPage([595.28, 841.89]); // A4 size in points
+	
+	const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+	const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+	
+	const { width, height } = page.getSize();
+	const margin = 56.7; // 2cm in points
+	const lineHeight = 14;
+	let yPosition = height - margin;
+
+	// Fetch and embed QR code
+	let qrImage = null;
+	try {
+		const qrResponse = await fetch(qrCodeUrl);
+		const qrImageBytes = await qrResponse.arrayBuffer();
+		qrImage = await pdfDoc.embedPng(new Uint8Array(qrImageBytes));
+	} catch (e) {
+		console.warn('Could not embed QR code:', e);
+	}
+
+	// Header - Club name
+	page.drawText('SV 1945 Untereuerheim e.V.', {
+		x: margin,
+		y: yPosition,
+		size: 16,
+		font: fontBold,
+		color: rgb(0.8, 0, 0), // Red color
+	});
+	yPosition -= lineHeight + 5;
+	
+	page.drawText('"Wir sind Untereuerheim"', {
+		x: margin,
+		y: yPosition,
+		size: 10,
+		font: font,
+		color: rgb(0.4, 0.4, 0.4),
+	});
+	yPosition -= lineHeight * 2;
+
+	// Club address (right side)
+	const addressX = width - margin - 150;
+	let addressY = height - margin;
+	const addressLines = [
+		'SV 1945 Untereuerheim e.V.',
+		'Hauptstraße 42',
+		'97508 Untereuerheim',
+		'Tel: 09729 / 123456'
+	];
+	addressLines.forEach(line => {
+		page.drawText(line, {
+			x: addressX,
+			y: addressY,
+			size: 9,
+			font: font,
+		});
+		addressY -= 12;
+	});
+
+	// QR Code (if available)
+	if (qrImage) {
+		const qrSize = 120;
+		page.drawImage(qrImage, {
+			x: width - margin - qrSize - 10,
+			y: yPosition - qrSize - 100,
+			width: qrSize,
+			height: qrSize,
+		});
+		
+		// QR code description
+		const qrTextY = yPosition - qrSize - 115;
+		page.drawText('Online aktualisieren:', {
+			x: width - margin - qrSize - 10,
+			y: qrTextY,
+			size: 8,
+			font: fontBold,
+		});
+		page.drawText('QR-Code scannen', {
+			x: width - margin - qrSize - 10,
+			y: qrTextY - 10,
+			size: 8,
+			font: font,
+		});
+	}
+
+	// Line separator
+	page.drawLine({
+		start: { x: margin, y: yPosition },
+		end: { x: width - margin, y: yPosition },
+		thickness: 2,
+		color: rgb(0.8, 0, 0),
+	});
+	yPosition -= lineHeight * 2;
+
+	// Recipient address
+	const recipient = [
+		`${member.Anrede || ''} ${member.Vorname || ''} ${member.Nachname || ''}`.trim(),
+		member.Strasse || '',
+		`${member.PLZ || ''} ${member.Ort || ''}`.trim()
+	].filter(line => line);
+
+	recipient.forEach(line => {
+		page.drawText(line, {
+			x: margin,
+			y: yPosition,
+			size: 11,
+			font: font,
+		});
+		yPosition -= lineHeight;
+	});
+	yPosition -= lineHeight;
+
+	// Date
+	const dateStr = new Date().toLocaleDateString('de-DE', { 
+		year: 'numeric', 
+		month: 'long', 
+		day: 'numeric' 
+	});
+	page.drawText(`Untereuerheim, den ${dateStr}`, {
+		x: margin,
+		y: yPosition,
+		size: 10,
+		font: font,
+	});
+	yPosition -= lineHeight * 2;
+
+	// Subject
+	page.drawText('Aktualisierung Ihrer Mitgliederdaten', {
+		x: margin,
+		y: yPosition,
+		size: 12,
+		font: fontBold,
+	});
+	yPosition -= lineHeight * 2;
+
+	// Greeting
+	const greeting = `Sehr geehrte/r ${member.Anrede || ''} ${member.Vorname || ''} ${member.Nachname || ''},`;
+	page.drawText(greeting, {
+		x: margin,
+		y: yPosition,
+		size: 11,
+		font: font,
+	});
+	yPosition -= lineHeight * 2;
+
+	// Body text
+	const bodyText = [
+		'im Rahmen der Aktualisierung unserer Mitgliederdatenbank möchten wir Sie bitten,',
+		'Ihre aktuellen Daten zu überprüfen und gegebenenfalls zu korrigieren.'
+	];
+	bodyText.forEach(line => {
+		page.drawText(line, {
+			x: margin,
+			y: yPosition,
+			size: 11,
+			font: font,
+		});
+		yPosition -= lineHeight;
+	});
+	yPosition -= lineHeight;
+
+	// Data table header
+	page.drawText('Ihre aktuellen Daten:', {
+		x: margin,
+		y: yPosition,
+		size: 11,
+		font: fontBold,
+	});
+	yPosition -= lineHeight * 1.5;
+
+	// Data table
+	const tableData = [
+		['Mitgliedsnummer:', member.MitglNr?.toString() || '-'],
+		['Anrede:', member.Anrede || ''],
+		['Vorname:', member.Vorname || ''],
+		['Nachname:', member.Nachname || ''],
+		['Straße:', member.Strasse || ''],
+		['PLZ:', member.PLZ?.toString() || ''],
+		['Ort:', member.Ort || ''],
+		['Telefon:', member.Telefon || ''],
+		['Mobil:', member.Mobil || ''],
+		['E-Mail:', member.EMail || ''],
+		['IBAN:', member.IBAN || ''],
+		['Bank:', member.Bankbezeichnung || ''],
+		['Abteilung:', member.Abteilung || ''],
+	];
+
+	const labelWidth = 120;
+	tableData.forEach(([label, value]) => {
+		if (yPosition < margin + 100) return; // Stop if too close to bottom
+		
+		// Draw label
+		page.drawText(label, {
+			x: margin,
+			y: yPosition,
+			size: 9,
+			font: fontBold,
+		});
+		
+		// Draw value
+		page.drawText(value, {
+			x: margin + labelWidth,
+			y: yPosition,
+			size: 9,
+			font: font,
+		});
+		
+		// Draw line
+		page.drawLine({
+			start: { x: margin, y: yPosition - 3 },
+			end: { x: width - margin - 140, y: yPosition - 3 },
+			thickness: 0.5,
+			color: rgb(0.8, 0.8, 0.8),
+		});
+		
+		yPosition -= lineHeight + 2;
+	});
+
+	// Continue on second page if needed
+	if (yPosition < margin + 150) {
+		const page2 = pdfDoc.addPage([595.28, 841.89]);
+		yPosition = height - margin;
+		
+		// Instructions box
+		page2.drawRectangle({
+			x: margin,
+			y: yPosition - 120,
+			width: width - 2 * margin,
+			height: 110,
+			borderColor: rgb(0.8, 0, 0),
+			borderWidth: 2,
+			color: rgb(1, 0.98, 0.9),
+		});
+		
+		yPosition -= 15;
+		page2.drawText('So können Sie Ihre Daten aktualisieren:', {
+			x: margin + 10,
+			y: yPosition,
+			size: 10,
+			font: fontBold,
+		});
+		yPosition -= lineHeight + 3;
+		
+		const instructions = [
+			'• Online (empfohlen): Scannen Sie den QR-Code mit Ihrem Smartphone',
+			`  oder besuchen Sie: ${updateUrl.substring(0, 60)}...`,
+			'• Per Post: Tragen Sie Korrekturen direkt in die Tabelle ein und senden',
+			'  Sie das ausgefüllte Formular zurück an die oben genannte Adresse',
+			'• Persönlich: Geben Sie das ausgefüllte Formular bei einem',
+			'  Vorstandsmitglied ab'
+		];
+		
+		instructions.forEach(line => {
+			page2.drawText(line, {
+				x: margin + 10,
+				y: yPosition,
+				size: 9,
+				font: font,
+			});
+			yPosition -= lineHeight;
+		});
+		
+		yPosition -= lineHeight * 2;
+		
+		// Closing
+		page2.drawText('Vielen Dank für Ihre Unterstützung!', {
+			x: margin,
+			y: yPosition,
+			size: 11,
+			font: font,
+		});
+		yPosition -= lineHeight * 3;
+		
+		page2.drawText('Mit sportlichen Grüßen', {
+			x: margin,
+			y: yPosition,
+			size: 11,
+			font: font,
+		});
+		yPosition -= lineHeight;
+		
+		page2.drawText('Der Vorstand des SV 1945 Untereuerheim e.V.', {
+			x: margin,
+			y: yPosition,
+			size: 11,
+			font: fontBold,
+		});
+		
+		// Footer
+		page2.drawText('SV 1945 Untereuerheim e.V. • Vereinsregister AG Schweinfurt • Steuernummer: 123/456/78901', {
+			x: margin,
+			y: 30,
+			size: 7,
+			font: font,
+			color: rgb(0.5, 0.5, 0.5),
+		});
+	} else {
+		// Add instructions and closing on first page
+		yPosition -= lineHeight;
+		
+		// Instructions
+		const shortInstructions = [
+			'So können Sie Ihre Daten aktualisieren:',
+			'• Online: Scannen Sie den QR-Code oben rechts',
+			'• Per Post: Korrekturen eintragen und zurücksenden',
+			'• Persönlich: Bei einem Vorstandsmitglied abgeben'
+		];
+		
+		shortInstructions.forEach((line, i) => {
+			page.drawText(line, {
+				x: margin,
+				y: yPosition,
+				size: 9,
+				font: i === 0 ? fontBold : font,
+			});
+			yPosition -= lineHeight;
+		});
+		
+		yPosition -= lineHeight;
+		
+		// Closing
+		page.drawText('Vielen Dank für Ihre Unterstützung!', {
+			x: margin,
+			y: yPosition,
+			size: 11,
+			font: font,
+		});
+		yPosition -= lineHeight * 2;
+		
+		page.drawText('Mit sportlichen Grüßen', {
+			x: margin,
+			y: yPosition,
+			size: 11,
+			font: font,
+		});
+		yPosition -= lineHeight;
+		
+		page.drawText('Der Vorstand des SV 1945 Untereuerheim e.V.', {
+			x: margin,
+			y: yPosition,
+			size: 11,
+			font: fontBold,
+		});
+		
+		// Footer
+		page.drawText('SV 1945 Untereuerheim e.V. • Vereinsregister AG Schweinfurt • Steuernummer: 123/456/78901', {
+			x: margin,
+			y: 30,
+			size: 7,
+			font: font,
+			color: rgb(0.5, 0.5, 0.5),
+		});
+	}
+
+	return await pdfDoc.save();
+}
+
+/**
+ * Create a ZIP file from PDF files
+ */
+function createZipFromPdfFiles(files: Array<{ filename: string; data: Uint8Array }>): Uint8Array {
 	const fileMap: Record<string, Uint8Array> = {};
 	
 	for (const file of files) {
-		fileMap[file.filename] = strToU8(file.html);
+		fileMap[file.filename] = file.data;
 	}
 	
 	// Add a README
-	fileMap['README.txt'] = strToU8(
+	const encoder = new TextEncoder();
+	fileMap['README.txt'] = encoder.encode(
 		'SV 1945 Untereuerheim - Serienbriefe\n\n' +
-		'Diese HTML-Dateien können Sie:\n' +
-		'1. Im Browser öffnen und als PDF drucken (Strg+P oder Cmd+P)\n' +
-		'2. Mit einem PDF-Drucker in PDF konvertieren\n' +
-		'3. Direkt ausdrucken\n\n' +
+		'Diese PDF-Dateien können Sie:\n' +
+		'1. Direkt ausdrucken und per Post versenden\n' +
+		'2. Per E-Mail an Mitglieder senden\n\n' +
 		'Jeder Brief enthält:\n' +
-		'- Mitgliederdaten\n' +
+		'- Aktuelle Mitgliederdaten\n' +
 		'- QR-Code für Online-Aktualisierung\n' +
-		'- Eindeutige Update-URL\n\n' +
-		'Generiert am: ' + new Date().toLocaleString('de-DE')
+		'- Eindeutige Update-URL (90 Tage gültig)\n' +
+		'- Anleitung für Datenaktualisierung\n\n' +
+		'Generiert am: ' + new Date().toLocaleString('de-DE') + '\n' +
+		'Anzahl Briefe: ' + files.length
 	);
 	
 	// Create ZIP
 	const zipped = zipSync(fileMap, {
-		level: 6, // Compression level (0-9)
+		level: 6, // Compression level
 	});
 	
 	return zipped;
