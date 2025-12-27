@@ -141,6 +141,11 @@ Deployed to Cloudflare Workers with automatic D1 binding.
 - Maximum payload size limited by Workers platform limits
 - No file system access; all operations use D1 or external APIs
 
+## Edge Cases & Quirks
+
+### Dual-WAN Load Balancing
+The original IP-only session validation would break sessions when accessed from home networks with dual-WAN setups (multiple public IPs with load balancing). Since the public IP rotates between requests while the browser's User-Agent remains constant, the session validation was enhanced to require BOTH IP and User-Agent to change before invalidating a session. This allows legitimate users with load-balanced connections to maintain their sessions while still detecting actual session theft (different IP + different browser).
+
 ## Project Structure
 
 ```
