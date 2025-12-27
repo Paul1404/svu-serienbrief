@@ -145,7 +145,8 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 		'97508 Grettstadt/Untereuerheim',
 		'',
 		'Tel: 09729/432',
-		'info@sv-untereuerheim.de'
+		'info@sv-untereuerheim.de',
+        '',
 	];
 	addressLines.forEach(line => {
 		if (line) {
@@ -258,10 +259,11 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 	yPosition -= lineHeight * 2;
 
 	// Body text
-	const bodyText = [
-		'im Rahmen der Aktualisierung unserer Mitgliederdatenbank möchten wir Sie bitten,',
-		'Ihre aktuellen Daten zu überprüfen und gegebenenfalls zu korrigieren.'
-	];
+    const bodyText = [
+        'im Rahmen der Aktualisierung unserer Mitgliederdatenbank bitten wir Sie,',
+        'Ihre Daten zu überprüfen und gegebenenfalls zu korrigieren. Bitte nehmen Sie',
+        'sich einen Moment Zeit, um die unten aufgeführten Informationen zu kontrollieren.'
+    ];
 	bodyText.forEach(line => {
 		page.drawText(line, {
 			x: margin,
@@ -355,14 +357,14 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 		});
 		yPosition -= lineHeight + 3;
 		
-		const instructions = [
-			'• Online (empfohlen): Scannen Sie den QR-Code mit Ihrem Smartphone',
-			`  oder besuchen Sie: ${updateUrl.substring(0, 60)}...`,
-			'• Per Post: Tragen Sie Korrekturen direkt in die Tabelle ein und senden',
-			'  Sie das ausgefüllte Formular zurück an die oben genannte Adresse',
-			'• Persönlich: Geben Sie das ausgefüllte Formular bei einem',
-			'  Vorstandsmitglied ab'
-		];
+        const instructions = [
+            '• Online (empfohlen): Scannen Sie den QR-Code mit Ihrem Smartphone',
+            `  oder besuchen Sie: ${updateUrl}`,
+            '• Per Post: Tragen Sie Korrekturen direkt in die Tabelle ein und senden',
+            '  Sie das ausgefüllte Formular zurück an die oben genannte Adresse',
+            '• Persönlich: Geben Sie das ausgefüllte Formular bei einem',
+            '  Vorstandsmitglied ab'
+        ];
 		
 		instructions.forEach(line => {
 			page2.drawText(line, {
