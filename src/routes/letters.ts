@@ -134,7 +134,7 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 		font: font,
 		color: rgb(0.4, 0.4, 0.4),
 	});
-	yPosition -= lineHeight * 3;
+	yPosition -= lineHeight * 5;
 
 	// Club address (right side)
 	const addressX = width - margin - 160;
@@ -160,42 +160,66 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 		addressY -= 12;
 	});
 
-	// QR Code (if available)
+	// QR Code (if available) - positioned on the right side
+	const qrReservedSpace = qrImage ? 180 : 0;
 	if (qrImage) {
-		const qrSize = 120;
-		const qrX = width - margin - qrSize - 10;
-		const qrY = yPosition - qrSize - 100;
+		const qrSize = 100;
+		const qrX = width - margin - qrSize;
+		const qrY = yPosition - 40;
 		
 		page.drawImage(qrImage, {
 			x: qrX,
-			y: qrY,
+			y: qrY - qrSize,
 			width: qrSize,
 			height: qrSize,
 		});
 		
 		// QR code description
-		const qrTextY = qrY - 15;
+		let qrTextY = qrY - qrSize - 10;
 		page.drawText('Online aktualisieren:', {
-			x: qrX,
+			x: qrX - 5,
 			y: qrTextY,
 			size: 8,
 			font: fontBold,
 		});
+		qrTextY -= 10;
 		
-		// Add URL below QR code
-		const urlParts = updateUrl.replace('https://', '').split('/');
-		page.drawText(urlParts[0], {
-			x: qrX,
-			y: qrTextY - 12,
-			size: 7,
-			font: font,
-		});
-		page.drawText('/' + urlParts.slice(1).join('/').substring(0, 20) + '...', {
-			x: qrX,
-			y: qrTextY - 20,
-			size: 7,
-			font: font,
-		});
+		// Add full URL below QR code (split into multiple lines if needed)
+		const fullUrl = updateUrl.replace('https://', '');
+		const maxWidth = qrSize + 10;
+		
+		// Split URL intelligently
+		if (fullUrl.includes('/')) {
+			const parts = fullUrl.split('/');
+			page.drawText(parts[0], {
+				x: qrX - 5,
+				y: qrTextY,
+				size: 6,
+				font: font,
+			});
+			qrTextY -= 8;
+			
+			// Display rest of URL in chunks
+			const remainingUrl = parts.slice(1).join('/');
+			const chunkSize = 18;
+			for (let i = 0; i < remainingUrl.length; i += chunkSize) {
+				const chunk = (i === 0 ? '/' : '') + remainingUrl.substring(i, i + chunkSize);
+				page.drawText(chunk, {
+					x: qrX - 5,
+					y: qrTextY,
+					size: 6,
+					font: font,
+				});
+				qrTextY -= 8;
+			}
+		} else {
+			page.drawText(fullUrl, {
+				x: qrX - 5,
+				y: qrTextY,
+				size: 6,
+				font: font,
+			});
+		}
 	}
 
 	// Line separator
@@ -258,12 +282,14 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 	});
 	yPosition -= lineHeight * 2;
 
-	// Body text
-    const bodyText = [
-        'im Rahmen der Aktualisierung unserer Mitgliederdatenbank bitten wir Sie,',
-        'Ihre Daten zu überprüfen und gegebenenfalls zu korrigieren. Bitte nehmen Sie',
-        'sich einen Moment Zeit, um die unten aufgeführten Informationen zu kontrollieren.'
-    ];
+	// Body text (adjusted to avoid QR code)
+	const bodyText = [
+		'im Rahmen der Aktualisierung unserer Mitgliederdatenbank bitten wir Sie,',
+		'Ihre Daten zu überprüfen und gegebenenfalls zu korrigieren. Bitte nehmen',
+		'Sie sich einen Moment Zeit, um die unten aufgeführten Informationen zu',
+		'kontrollieren.'
+	];
+	const textWidth = width - margin * 2 - qrReservedSpace;
 	bodyText.forEach(line => {
 		page.drawText(line, {
 			x: margin,
