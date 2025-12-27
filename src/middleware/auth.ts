@@ -1,40 +1,36 @@
 /**
  * Authentication middleware with improved session management
+ * Sessions are stored in D1 database for persistence across Worker invocations
  */
 
 import type { Context, Next } from 'hono';
 import type { Env } from '../types';
 
 interface Session {
+	session_id: string;
 	expires: number;
-	createdAt: number;
-	lastActivity: number;
-	ipAddress: string;
-	userAgent: string;
+	created_at: number;
+	last_activity: number;
+	ip_address: string;
+	user_agent: string;
 }
-
-export const sessions = new Map<string, Session>();
 
 const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 hours
 const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes of inactivity
 const MAX_SESSIONS_PER_IP = 5; // Prevent session flooding
 
-export function cleanupSessions() {
+export async function cleanupSessions(db: D1Database) {
 	const now = Date.now();
-	let cleaned = 0;
 	
-	for (const [id, session] of sessions.entries()) {
-		if (now > session.expires || (now - session.lastActivity) > IDLE_TIMEOUT) {
-			sessions.delete(id);
-			cleaned++;
-		}
-	}
+	const result = await db.prepare(`
+		DELETE FROM admin_sessions 
+		WHERE expires < ? OR (? - last_activity) > ?
+	`).bind(now, now, IDLE_TIMEOUT).run();
 	
-	if (cleaned > 0) {
+	if (result.meta.changes > 0) {
 		console.log({
 			event: 'sessions_cleaned',
-			count: cleaned,
-			remaining: sessions.size
+			count: result.meta.changes
 		});
 	}
 }
@@ -53,24 +49,29 @@ export function getSessionId(request: Request): string | null {
 	return cookies['session'] || null;
 }
 
-export function createSession(ipAddress: string, userAgent: string): { sessionId: string; expires: number } {
+export async function createSession(db: D1Database, ipAddress: string, userAgent: string): Promise<{ sessionId: string; expires: number }> {
 	// Cleanup old sessions first
-	cleanupSessions();
+	await cleanupSessions(db);
 	
 	// Check for too many sessions from same IP
-	const ipSessions = Array.from(sessions.values()).filter(s => s.ipAddress === ipAddress);
-	if (ipSessions.length >= MAX_SESSIONS_PER_IP) {
+	const ipSessionCount = await db.prepare(
+		'SELECT COUNT(*) as count FROM admin_sessions WHERE ip_address = ?'
+	).bind(ipAddress).first();
+	
+	if ((ipSessionCount as any)?.count >= MAX_SESSIONS_PER_IP) {
 		// Remove oldest session for this IP
-		const oldestSession = Array.from(sessions.entries())
-			.filter(([_, s]) => s.ipAddress === ipAddress)
-			.sort(([_, a], [__, b]) => a.createdAt - b.createdAt)[0];
+		const oldestSession = await db.prepare(
+			'SELECT session_id FROM admin_sessions WHERE ip_address = ? ORDER BY created_at ASC LIMIT 1'
+		).bind(ipAddress).first();
+		
 		if (oldestSession) {
-			sessions.delete(oldestSession[0]);
+			await db.prepare('DELETE FROM admin_sessions WHERE session_id = ?')
+				.bind((oldestSession as any).session_id).run();
 			console.log({
 				event: 'session_limit_reached',
 				ip: ipAddress,
 				action: 'removed_oldest',
-				removed_session_id: oldestSession[0].substring(0, 8) + '...'
+				removed_session_id: (oldestSession as any).session_id.substring(0, 8) + '...'
 			});
 		}
 	}
@@ -78,31 +79,29 @@ export function createSession(ipAddress: string, userAgent: string): { sessionId
 	const sessionId = crypto.randomUUID();
 	const now = Date.now();
 	const expires = now + SESSION_DURATION;
-	
 	const truncatedUA = userAgent.substring(0, 255);
 	
-	sessions.set(sessionId, {
-		expires,
-		createdAt: now,
-		lastActivity: now,
-		ipAddress,
-		userAgent: truncatedUA
-	});
+	await db.prepare(`
+		INSERT INTO admin_sessions (session_id, expires, created_at, last_activity, ip_address, user_agent)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`).bind(sessionId, expires, now, now, ipAddress, truncatedUA).run();
 	
 	console.log({
 		event: 'session_created',
 		session_id: sessionId.substring(0, 8) + '...',
 		ip: ipAddress,
 		user_agent_prefix: truncatedUA.substring(0, 50) + '...',
-		expires_in_hours: SESSION_DURATION / (60 * 60 * 1000),
-		total_sessions: sessions.size
+		expires_in_hours: SESSION_DURATION / (60 * 60 * 1000)
 	});
 	
 	return { sessionId, expires };
 }
 
-export function validateSession(sessionId: string, ipAddress: string, userAgent: string): boolean {
-	const session = sessions.get(sessionId);
+export async function validateSession(db: D1Database, sessionId: string, ipAddress: string, userAgent: string): Promise<boolean> {
+	const session = await db.prepare(
+		'SELECT * FROM admin_sessions WHERE session_id = ?'
+	).bind(sessionId).first() as Session | null;
+	
 	if (!session) {
 		console.log({
 			event: 'session_validation_failed',
@@ -117,7 +116,7 @@ export function validateSession(sessionId: string, ipAddress: string, userAgent:
 	
 	// Check expiration
 	if (now > session.expires) {
-		sessions.delete(sessionId);
+		await db.prepare('DELETE FROM admin_sessions WHERE session_id = ?').bind(sessionId).run();
 		console.log({
 			event: 'session_validation_failed',
 			reason: 'expired',
@@ -128,13 +127,13 @@ export function validateSession(sessionId: string, ipAddress: string, userAgent:
 	}
 	
 	// Check idle timeout
-	if ((now - session.lastActivity) > IDLE_TIMEOUT) {
-		sessions.delete(sessionId);
+	if ((now - session.last_activity) > IDLE_TIMEOUT) {
+		await db.prepare('DELETE FROM admin_sessions WHERE session_id = ?').bind(sessionId).run();
 		console.log({
 			event: 'session_validation_failed',
 			reason: 'idle_timeout',
 			session_id: sessionId.substring(0, 8) + '...',
-			idle_ms: now - session.lastActivity,
+			idle_ms: now - session.last_activity,
 			idle_timeout_ms: IDLE_TIMEOUT
 		});
 		return false;
@@ -142,8 +141,8 @@ export function validateSession(sessionId: string, ipAddress: string, userAgent:
 	
 	// Validate BOTH IP and User-Agent changed (security measure)
 	// This allows dual-WAN setups while still detecting session theft
-	const ipChanged = session.ipAddress !== ipAddress;
-	const userAgentChanged = session.userAgent !== userAgent;
+	const ipChanged = session.ip_address !== ipAddress;
+	const userAgentChanged = session.user_agent !== userAgent;
 	
 	// Log any changes (even if not rejecting)
 	if (ipChanged || userAgentChanged) {
@@ -152,28 +151,29 @@ export function validateSession(sessionId: string, ipAddress: string, userAgent:
 			session_id: sessionId.substring(0, 8) + '...',
 			ip_changed: ipChanged,
 			ua_changed: userAgentChanged,
-			original_ip: session.ipAddress,
+			original_ip: session.ip_address,
 			current_ip: ipAddress,
-			original_ua_prefix: session.userAgent.substring(0, 50) + '...',
+			original_ua_prefix: session.user_agent.substring(0, 50) + '...',
 			current_ua_prefix: userAgent.substring(0, 50) + '...',
 			will_reject: ipChanged && userAgentChanged
 		});
 	}
 	
 	if (ipChanged && userAgentChanged) {
-		sessions.delete(sessionId);
+		await db.prepare('DELETE FROM admin_sessions WHERE session_id = ?').bind(sessionId).run();
 		console.log({
 			event: 'session_validation_failed',
 			reason: 'ip_and_useragent_mismatch',
 			session_id: sessionId.substring(0, 8) + '...',
-			original_ip: session.ipAddress,
+			original_ip: session.ip_address,
 			current_ip: ipAddress
 		});
 		return false;
 	}
 	
 	// Update last activity
-	session.lastActivity = now;
+	await db.prepare('UPDATE admin_sessions SET last_activity = ? WHERE session_id = ?')
+		.bind(now, sessionId).run();
 	
 	console.log({
 		event: 'session_validated',
@@ -181,8 +181,8 @@ export function validateSession(sessionId: string, ipAddress: string, userAgent:
 		ip: ipAddress,
 		ip_changed: ipChanged,
 		ua_changed: userAgentChanged,
-		age_minutes: Math.round((now - session.createdAt) / (60 * 1000)),
-		idle_seconds: Math.round((now - session.lastActivity) / 1000)
+		age_minutes: Math.round((now - session.created_at) / (60 * 1000)),
+		idle_seconds: Math.round((now - session.last_activity) / 1000)
 	});
 	
 	return true;
@@ -191,7 +191,7 @@ export function validateSession(sessionId: string, ipAddress: string, userAgent:
 export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
 	// Run periodic cleanup (throttled - only every 100 requests)
 	if (Math.random() < 0.01) {
-		cleanupSessions();
+		await cleanupSessions(c.env.svu_prod01);
 	}
 	
 	const sessionId = getSessionId(c.req.raw);
@@ -199,7 +199,7 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 	const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
 	const userAgent = c.req.header('user-agent') || '';
 
-	if (!sessionId || !validateSession(sessionId, ipAddress, userAgent)) {
+	if (!sessionId || !(await validateSession(c.env.svu_prod01, sessionId, ipAddress, userAgent))) {
 		console.log({
 			event: 'auth_failed',
 			reason: !sessionId ? 'no_session_cookie' : 'invalid_session',
@@ -230,8 +230,7 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 		session_id: sessionId.substring(0, 8) + '...',
 		path: url.pathname,
 		method: c.req.method,
-		ip: ipAddress,
-		active_sessions: sessions.size
+		ip: ipAddress
 	});
 
 	await next();

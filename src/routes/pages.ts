@@ -5,7 +5,7 @@
 import { Hono } from 'hono';
 import type { Env } from '../types';
 import { renderLoginPage, renderDashboard } from '../templates/pages';
-import { sessions, cleanupSessions, createSession } from '../middleware/auth';
+import { createSession } from '../middleware/auth';
 
 const pages = new Hono<{ Bindings: Env }>();
 
@@ -44,15 +44,14 @@ pages.post('/login', async (c) => {
 			return c.html(renderLoginPage('Ungültiges Passwort'), 401);
 		}
 
-		const { sessionId, expires } = createSession(clientIP, userAgent);
+		const { sessionId, expires } = await createSession(c.env.svu_prod01, clientIP, userAgent);
 
 		console.log({
 			event: 'login_success',
 			session_id: sessionId.substring(0, 8) + '...',
 			client_ip: clientIP,
 			country: country,
-			session_duration_hours: 8,
-			active_sessions: sessions.size
+			session_duration_hours: 8
 		});
 
 		const maxAge = Math.floor((expires - Date.now()) / 1000);
@@ -74,7 +73,7 @@ pages.post('/login', async (c) => {
 });
 
 // Logout
-pages.get('/logout', (c) => {
+pages.get('/logout', async (c) => {
 	const cookieHeader = c.req.header('Cookie');
 	if (cookieHeader) {
 		const cookies = Object.fromEntries(
@@ -85,11 +84,11 @@ pages.get('/logout', (c) => {
 		);
 		const sessionId = cookies['session'];
 		if (sessionId) {
-			sessions.delete(sessionId);
+			await c.env.svu_prod01.prepare('DELETE FROM admin_sessions WHERE session_id = ?')
+				.bind(sessionId).run();
 			console.log({
 				event: 'logout',
-				session_id: sessionId.substring(0, 8) + '...',
-				remaining_sessions: sessions.size
+				session_id: sessionId.substring(0, 8) + '...'
 			});
 		}
 	}
