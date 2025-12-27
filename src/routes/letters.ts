@@ -85,6 +85,16 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 	const lineHeight = 14;
 	let yPosition = height - margin;
 
+	// Fetch and embed club logo
+	let clubLogo = null;
+	try {
+		const logoResponse = await fetch('https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png');
+		const logoImageBytes = await logoResponse.arrayBuffer();
+		clubLogo = await pdfDoc.embedPng(new Uint8Array(logoImageBytes));
+	} catch (e) {
+		console.warn('Could not embed club logo:', e);
+	}
+
 	// Fetch and embed QR code
 	let qrImage = null;
 	try {
@@ -95,66 +105,94 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 		console.warn('Could not embed QR code:', e);
 	}
 
-	// Header - Club name
+	// Draw club logo (top left)
+	if (clubLogo) {
+		const logoHeight = 50;
+		const logoWidth = (clubLogo.width / clubLogo.height) * logoHeight;
+		page.drawImage(clubLogo, {
+			x: margin,
+			y: yPosition - logoHeight,
+			width: logoWidth,
+			height: logoHeight,
+		});
+	}
+
+	// Header - Club name (next to logo)
+	const headerX = clubLogo ? margin + 50 : margin;
 	page.drawText('SV 1945 Untereuerheim e.V.', {
-		x: margin,
+		x: headerX,
 		y: yPosition,
-		size: 16,
+		size: 12,
 		font: fontBold,
-		color: rgb(0.8, 0, 0), // Red color
 	});
 	yPosition -= lineHeight + 5;
 	
 	page.drawText('"Wir sind Untereuerheim"', {
-		x: margin,
+		x: headerX,
 		y: yPosition,
 		size: 10,
 		font: font,
 		color: rgb(0.4, 0.4, 0.4),
 	});
-	yPosition -= lineHeight * 2;
+	yPosition -= lineHeight * 3;
 
 	// Club address (right side)
-	const addressX = width - margin - 150;
+	const addressX = width - margin - 160;
 	let addressY = height - margin;
 	const addressLines = [
-		'SV 1945 Untereuerheim e.V.',
-		'Hauptstraße 42',
-		'97508 Untereuerheim',
-		'Tel: 09729 / 123456'
+		'Sportverein 1945 Untereuerheim e.V.',
+		'Triebweg 9',
+		'97508 Grettstadt/Untereuerheim',
+		'',
+		'Tel: 09729/432',
+		'info@sv-untereuerheim.de'
 	];
 	addressLines.forEach(line => {
-		page.drawText(line, {
-			x: addressX,
-			y: addressY,
-			size: 9,
-			font: font,
-		});
+		if (line) {
+			page.drawText(line, {
+				x: addressX,
+				y: addressY,
+				size: 9,
+				font: font,
+			});
+		}
 		addressY -= 12;
 	});
 
 	// QR Code (if available)
 	if (qrImage) {
 		const qrSize = 120;
+		const qrX = width - margin - qrSize - 10;
+		const qrY = yPosition - qrSize - 100;
+		
 		page.drawImage(qrImage, {
-			x: width - margin - qrSize - 10,
-			y: yPosition - qrSize - 100,
+			x: qrX,
+			y: qrY,
 			width: qrSize,
 			height: qrSize,
 		});
 		
 		// QR code description
-		const qrTextY = yPosition - qrSize - 115;
+		const qrTextY = qrY - 15;
 		page.drawText('Online aktualisieren:', {
-			x: width - margin - qrSize - 10,
+			x: qrX,
 			y: qrTextY,
 			size: 8,
 			font: fontBold,
 		});
-		page.drawText('QR-Code scannen', {
-			x: width - margin - qrSize - 10,
-			y: qrTextY - 10,
-			size: 8,
+		
+		// Add URL below QR code
+		const urlParts = updateUrl.replace('https://', '').split('/');
+		page.drawText(urlParts[0], {
+			x: qrX,
+			y: qrTextY - 12,
+			size: 7,
+			font: font,
+		});
+		page.drawText('/' + urlParts.slice(1).join('/').substring(0, 20) + '...', {
+			x: qrX,
+			y: qrTextY - 20,
+			size: 7,
 			font: font,
 		});
 	}
@@ -363,7 +401,8 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 		});
 		
 		// Footer
-		page2.drawText('SV 1945 Untereuerheim e.V. • Vereinsregister AG Schweinfurt • Steuernummer: 123/456/78901', {
+		const footerText = 'Sportverein 1945 Untereuerheim e.V. • Registergericht Schweinfurt • Steuer-ID: 249/111/20506';
+		page2.drawText(footerText, {
 			x: margin,
 			y: 30,
 			size: 7,
@@ -419,7 +458,8 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 		});
 		
 		// Footer
-		page.drawText('SV 1945 Untereuerheim e.V. • Vereinsregister AG Schweinfurt • Steuernummer: 123/456/78901', {
+		const footerText = 'Sportverein 1945 Untereuerheim e.V. • Registergericht Schweinfurt • Steuer-ID: 249/111/20506';
+		page.drawText(footerText, {
 			x: margin,
 			y: 30,
 			size: 7,
