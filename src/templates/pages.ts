@@ -142,11 +142,11 @@ export function renderDashboard(): string {
             background: #f5f5f5;
             padding: 20px;
         }
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 1800px; margin: 0 auto; }
         .header {
             background: linear-gradient(135deg, #CC0000 0%, #000000 100%);
             color: white;
-            padding: 30px;
+            padding: 30px 40px;
             border-radius: 8px;
             margin-bottom: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
@@ -182,13 +182,13 @@ export function renderDashboard(): string {
         .logout-btn:hover { background: #f0f0f0; }
         .content {
             background: white;
-            padding: 20px;
+            padding: 30px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .actions {
             background: white;
-            padding: 20px;
+            padding: 20px 30px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
@@ -293,14 +293,14 @@ export function renderDashboard(): string {
 
         <div class="content">
             <div class="info" id="tableInfo">
-                <strong>Mitgliederdatenbank</strong> — Lade Daten...
+                <strong>Mitgliederdatenbank</strong> - Lade Daten...
             </div>
             <div id="data-table"></div>
         </div>
 
         <div class="content" style="margin-top: 30px;">
             <div class="info" id="changesInfo">
-                <strong>Änderungsprotokoll</strong> — Zeigt die letzten Änderungen von Mitgliedern
+                <strong>Änderungsprotokoll</strong> - Zeigt die letzten Änderungen von Mitgliedern
             </div>
             <div id="changes-table"></div>
         </div>
@@ -315,7 +315,7 @@ export function renderDashboard(): string {
         async function init() {
             try {
                 document.getElementById('tableInfo').innerHTML = 
-                    '<strong>Mitgliederdatenbank</strong> — Daten werden geladen...';
+                    '<strong>Mitgliederdatenbank</strong> - Daten werden geladen...';
 
                 // Load all data and access stats in parallel
                 const [dataResponse, statsResponse] = await Promise.all([
@@ -329,7 +329,7 @@ export function renderDashboard(): string {
                 const accessStats = statsResponse.ok ? await statsResponse.json() : {};
                 
                 document.getElementById('tableInfo').innerHTML = 
-                    '<strong>Mitgliederdatenbank</strong> — ' + data.data.length + ' Mitglieder';
+                    '<strong>Mitgliederdatenbank</strong> - ' + data.data.length + ' Mitglieder';
 
                 // Enrich data with access information
                 const enrichedData = data.data.map(member => {
@@ -397,10 +397,10 @@ export function renderDashboard(): string {
                 table = new Tabulator("#data-table", {
                     data: enrichedData,
                     columns: columns,
-                    layout: "fitDataFill",
+                    layout: "fitDataTable",
                     pagination: true,
-                    paginationSize: 50,
-                    paginationSizeSelector: [25, 50, 100, 200],
+                    paginationSize: 100,
+                    paginationSizeSelector: [50, 100, 200, 500],
                     movableColumns: true,
                     resizableColumns: true,
                     selectable: true,
@@ -441,7 +441,7 @@ export function renderDashboard(): string {
         async function loadChangeHistory() {
             try {
                 document.getElementById('changesInfo').innerHTML = 
-                    '<strong>Änderungsprotokoll</strong> — Lade Daten...';
+                    '<strong>Änderungsprotokoll</strong> - Lade Daten...';
 
                 const response = await fetch('/api/change-history');
                 if (!response.ok) throw new Error('Fehler beim Laden der Änderungen');
@@ -450,14 +450,14 @@ export function renderDashboard(): string {
                 const changes = data.changes || [];
 
                 document.getElementById('changesInfo').innerHTML = 
-                    '<strong>Änderungsprotokoll</strong> — ' + changes.length + ' Änderungen';
+                    '<strong>Änderungsprotokoll</strong> - ' + changes.length + ' Änderungen';
 
                 changesTable = new Tabulator("#changes-table", {
                     data: changes,
-                    layout: "fitDataStretch",
+                    layout: "fitDataTable",
                     pagination: true,
-                    paginationSize: 20,
-                    paginationSizeSelector: [10, 20, 50, 100],
+                    paginationSize: 50,
+                    paginationSizeSelector: [20, 50, 100, 200],
                     columns: [
                         { title: "Zeitpunkt", field: "changed_at", width: 160, formatter: function(cell) {
                             const value = cell.getValue();
