@@ -312,19 +312,19 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 
 	// Data table
 	const tableData = [
-		['Mitgliedsnummer:', member.MitglNr?.toString() || '-'],
-		['Anrede:', member.Anrede || ''],
-		['Vorname:', member.Vorname || ''],
-		['Nachname:', member.Nachname || ''],
-		['Straße:', member.Strasse || ''],
-		['PLZ:', member.PLZ?.toString() || ''],
-		['Ort:', member.Ort || ''],
-		['Telefon:', member.Telefon || ''],
-		['Mobil:', member.Mobil || ''],
-		['E-Mail:', member.EMail || ''],
-		['IBAN:', member.IBAN || ''],
-		['Bank:', member.Bankbezeichnung || ''],
-		['Abteilung:', member.Abteilung || ''],
+		['Mitgliedsnummer:', member.MitglNr ? String(member.MitglNr) : '-'],
+		['Anrede:', member.Anrede ? String(member.Anrede) : ''],
+		['Vorname:', member.Vorname ? String(member.Vorname) : ''],
+		['Nachname:', member.Nachname ? String(member.Nachname) : ''],
+		['Straße:', member.Strasse ? String(member.Strasse) : ''],
+		['PLZ:', member.PLZ ? String(member.PLZ) : ''],
+		['Ort:', member.Ort ? String(member.Ort) : ''],
+		['Telefon:', member.Telefon ? String(member.Telefon) : ''],
+		['Mobil:', member.Mobil ? String(member.Mobil) : ''],
+		['E-Mail:', member.EMail ? String(member.EMail) : ''],
+		['IBAN:', member.IBAN ? String(member.IBAN) : ''],
+		['Bank:', member.Bankbezeichnung ? String(member.Bankbezeichnung) : ''],
+		['Abteilung:', member.Abteilung ? String(member.Abteilung) : ''],
 	];
 
 	const labelWidth = 120;
