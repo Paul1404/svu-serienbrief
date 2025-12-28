@@ -32,7 +32,7 @@ letters.post('/generate-pdfs', async (c) => {
 			return jsonError('Keine Mitglieder gefunden', 404);
 		}
 
-		const baseUrl = new URL(c.req.url).origin;
+		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
 		const secret = c.env.ADMIN_PASSWORD;
 
 		// Generate PDFs for each member
@@ -563,7 +563,7 @@ letters.get('/generate', async (c) => {
 			`SELECT * FROM auswertung ORDER BY AdrNr`
 		).all();
 
-		const baseUrl = new URL(c.req.url).origin;
+		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
 		const secret = c.env.ADMIN_PASSWORD; // Use password as signing secret
 
 		const letterData = await Promise.all(
@@ -596,7 +596,7 @@ letters.get('/generate', async (c) => {
 letters.get('/preview/:token', async (c) => {
 	try {
 		const token = c.req.param('token');
-		const baseUrl = new URL(c.req.url).origin;
+		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
 
 		// For preview, we'll just use the first member
 		const result = await c.env.svu_prod01.prepare(
