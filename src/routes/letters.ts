@@ -54,7 +54,8 @@ letters.post('/generate-pdfs', async (c) => {
 		// Create ZIP with PDF files
 		const zipContent = createZipFromPdfFiles(pdfFiles);
 
-		const filename = `serienbriefe_${new Date().toISOString().split('T')[0]}.zip`;
+		const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+		const filename = `serienbriefe_${timestamp}.zip`;
 
 		return new Response(zipContent, {
 			status: 200,
