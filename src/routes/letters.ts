@@ -43,6 +43,19 @@ letters.post('/generate-pdfs', async (c) => {
 				const updateUrl = `${baseUrl}/update/${token}`;
 				const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(updateUrl)}`;
 				
+				// Store token in database
+				const now = Date.now();
+				const expiresAt = now + (90 * 24 * 60 * 60 * 1000); // 90 days
+				await c.env.svu_prod01.prepare(`
+					INSERT INTO member_tokens (member_id, token, generated_at, expires_at, regenerated_count)
+					VALUES (?, ?, ?, ?, 0)
+					ON CONFLICT(member_id) DO UPDATE SET
+						token = excluded.token,
+						generated_at = excluded.generated_at,
+						expires_at = excluded.expires_at,
+						regenerated_count = regenerated_count + 1
+				`).bind(memberId, token, now, expiresAt).run();
+				
 				const pdfBytes = await generateLetterPDF(member, updateUrl, qrCodeUrl);
 				
 				const filename = `Brief_${member.Nachname}_${member.Vorname}_${memberId}.pdf`.replace(/[^a-zA-Z0-9_.-]/g, '_');

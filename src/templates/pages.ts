@@ -493,6 +493,12 @@ export function renderDashboard(): string {
         </div>
 
         <div class="content" style="margin-top: 30px;">
+            <h2 style="margin-bottom: 20px;">Token Status</h2>
+            <div id="tokenInfo" class="info">Lade Token-Informationen...</div>
+            <table id="token-table" class="display" style="width:100%"></table>
+        </div>
+
+        <div class="content" style="margin-top: 30px;">
             <h2 style="margin-bottom: 20px;">Statistik Dashboard</h2>
             <div id="statsInfo" class="info">Lade Statistiken...</div>
             <div id="stats-dashboard"></div>
@@ -666,6 +672,9 @@ export function renderDashboard(): string {
                 // Load change history
                 await loadChangeHistory();
                 
+                // Load token status
+                await loadTokenStatus();
+                
                 // Load statistics
                 await loadStats();
 
@@ -804,6 +813,132 @@ export function renderDashboard(): string {
             } catch (error) {
                 document.getElementById('changesInfo').innerHTML = 
                     '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler beim Laden der Änderungen: ' + error.message + '</div>';
+            }
+        }
+
+        let tokenTable = null;
+        async function loadTokenStatus() {
+            try {
+                document.getElementById('tokenInfo').innerHTML = 
+                    '<strong>Token Status</strong> - Lade Daten...';
+
+                const response = await fetch('/api/token-status');
+                if (!response.ok) throw new Error('Fehler beim Laden der Token');
+                
+                const data = await response.json();
+                const tokens = data.tokens || [];
+
+                document.getElementById('tokenInfo').innerHTML = 
+                    '<strong>Token Status</strong> - ' + tokens.length + ' generierte Token';
+
+                // Destroy existing table if it exists
+                if (tokenTable) {
+                    tokenTable.destroy();
+                    $('#token-table').empty();
+                }
+
+                tokenTable = $('#token-table').DataTable({
+                    data: tokens,
+                    columns: [
+                        { title: 'Mitglieds-ID', data: 'member_id' },
+                        {
+                            title: 'Name',
+                            data: 'Nachname',
+                            render: function(data, type, row) {
+                                return (row.Vorname || '') + ' ' + (row.Nachname || '');
+                            }
+                        },
+                        { title: 'E-Mail', data: 'EMail' },
+                        {
+                            title: 'Erstellt',
+                            data: 'generated_at',
+                            render: function(data, type) {
+                                if (type === 'display' && data) {
+                                    const date = new Date(data);
+                                    return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+                                }
+                                return data;
+                            }
+                        },
+                        {
+                            title: 'Status',
+                            data: 'is_expired',
+                            render: function(data, type, row) {
+                                if (type === 'display') {
+                                    if (data) {
+                                        return '<span style="color: #dc3545; font-weight: 600;">Abgelaufen</span>';
+                                    }
+                                    const days = row.days_remaining;
+                                    const color = days < 7 ? '#ffc107' : days < 30 ? '#17a2b8' : '#28a745';
+                                    return '<span style="color: ' + color + '; font-weight: 600;">' + days + ' Tage</span>';
+                                }
+                                return data;
+                            }
+                        },
+                        {
+                            title: 'Neu generiert',
+                            data: 'regenerated_count',
+                            className: 'dt-center'
+                        },
+                        {
+                            title: 'Aktionen',
+                            data: null,
+                            orderable: false,
+                            render: function(data, type, row) {
+                                return '<button class="action-btn regenerate-token" data-id="' + row.member_id + '">Token neu generieren</button>';
+                            }
+                        }
+                    ],
+                    pageLength: 50,
+                    lengthMenu: [[20, 50, 100, 200], [20, 50, 100, 200]],
+                    language: {
+                        lengthMenu: 'Zeige _MENU_ Einträge',
+                        search: 'Suchen:',
+                        info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                        infoEmpty: 'Keine Einträge vorhanden',
+                        infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                        paginate: {
+                            first: 'Erste',
+                            last: 'Letzte',
+                            next: 'Weiter',
+                            previous: 'Zurück'
+                        }
+                    },
+                    order: [[3, 'desc']],
+                    scrollX: true
+                });
+
+                // Handle token regeneration
+                $('#token-table').on('click', '.regenerate-token', async function() {
+                    const memberId = $(this).data('id');
+                    const btn = $(this);
+                    const originalText = btn.text();
+                    
+                    btn.prop('disabled', true).text('Generiere...');
+                    
+                    try {
+                        const response = await fetch('/api/regenerate-token/' + memberId, {
+                            method: 'POST'
+                        });
+                        
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.error || 'Fehler beim Generieren');
+                        }
+                        
+                        const result = await response.json();
+                        showToast('Token neu generiert! URL: ' + result.updateUrl, 'success');
+                        await loadTokenStatus();
+                    } catch (error) {
+                        showToast('Fehler: ' + error.message, 'error');
+                    } finally {
+                        btn.prop('disabled', false).text(originalText);
+                    }
+                });
+
+            } catch (error) {
+                document.getElementById('tokenInfo').innerHTML = 
+                    '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler beim Laden der Token: ' + error.message + '</div>';
             }
         }
 

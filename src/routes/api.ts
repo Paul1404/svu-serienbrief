@@ -258,4 +258,85 @@ api.post('/clear-history', async (c) => {
 	}
 });
 
+// Get token status for all members
+api.get('/token-status', async (c) => {
+	try {
+		const result = await c.env.svu_prod01.prepare(`
+			SELECT 
+				t.member_id,
+				t.generated_at,
+				t.expires_at,
+				t.regenerated_count,
+				a.Vorname,
+				a.Nachname,
+				a.EMail
+			FROM member_tokens t
+			LEFT JOIN auswertung a ON (t.member_id = a.AdrNr OR t.member_id = a.MitglNr)
+			ORDER BY t.generated_at DESC
+		`).all();
+
+		const now = Date.now();
+		const tokens = (result.results || []).map((row: any) => ({
+			...row,
+			is_expired: now > row.expires_at,
+			days_remaining: Math.floor((row.expires_at - now) / (24 * 60 * 60 * 1000))
+		}));
+
+		return jsonResponse({ tokens });
+	} catch (error: any) {
+		console.log({
+			event: 'token_status_error',
+			error: error.message
+		});
+		return jsonResponse({ tokens: [] });
+	}
+});
+
+// Regenerate token for a specific member
+api.post('/regenerate-token/:memberId', async (c) => {
+	try {
+		const memberId = c.req.param('memberId');
+		const secret = c.env.ADMIN_PASSWORD;
+		
+		// Import generateMemberToken
+		const { generateMemberToken } = await import('../utils/tokens');
+		
+		const token = await generateMemberToken(memberId, secret);
+		const now = Date.now();
+		const expiresAt = now + (90 * 24 * 60 * 60 * 1000);
+		
+		await c.env.svu_prod01.prepare(`
+			INSERT INTO member_tokens (member_id, token, generated_at, expires_at, regenerated_count)
+			VALUES (?, ?, ?, ?, 0)
+			ON CONFLICT(member_id) DO UPDATE SET
+				token = excluded.token,
+				generated_at = excluded.generated_at,
+				expires_at = excluded.expires_at,
+				regenerated_count = regenerated_count + 1
+		`).bind(memberId, token, now, expiresAt).run();
+		
+		const baseUrl = new URL(c.req.url).origin;
+		const updateUrl = `${baseUrl}/update/${token}`;
+		
+		console.log({
+			event: 'token_regenerated',
+			member_id: memberId,
+			ip: c.req.header('cf-connecting-ip')
+		});
+		
+		return jsonResponse({
+			token,
+			updateUrl,
+			expiresAt,
+			message: 'Token erfolgreich neu generiert'
+		});
+	} catch (error: any) {
+		console.log({
+			event: 'token_regenerate_error',
+			error: error.message
+		});
+		return jsonError(error.message, 500);
+	}
+});
+
 export default api;
