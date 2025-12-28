@@ -67,7 +67,8 @@ letters.post('/generate-pdfs', async (c) => {
 		// Create ZIP with PDF files
 		const zipContent = createZipFromPdfFiles(pdfFiles);
 
-		const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+		const now = new Date();
+		const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
 		const filename = `serienbriefe_${timestamp}.zip`;
 
 		return new Response(zipContent, {
@@ -198,6 +199,26 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 		});
 		qrTextY -= 10;
 		
+		// Add clickable link annotation over the entire QR code and text area
+		const linkAnnotation = pdfDoc.context.obj({
+			Type: 'Annot',
+			Subtype: 'Link',
+			Rect: [qrX - 5, qrY - qrSize - 50, qrX + qrSize + 5, qrY],
+			Border: [0, 0, 0],
+			A: {
+				Type: 'Action',
+				S: 'URI',
+				URI: pdfDoc.context.obj(updateUrl),
+			},
+		});
+		const linkAnnotationRef = pdfDoc.context.register(linkAnnotation);
+		const annots = page.node.Annots();
+		if (annots) {
+			annots.push(linkAnnotationRef);
+		} else {
+			page.node.set(pdfDoc.context.obj('Annots'), pdfDoc.context.obj([linkAnnotationRef]));
+		}
+		
 		// Add full URL below QR code (split into multiple lines if needed)
 		const fullUrl = updateUrl.replace('https://', '');
 		const maxWidth = qrSize + 10;
@@ -210,6 +231,7 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 				y: qrTextY,
 				size: 6,
 				font: font,
+				color: rgb(0, 0, 1), // Blue color for link
 			});
 			qrTextY -= 8;
 			
@@ -223,6 +245,7 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 					y: qrTextY,
 					size: 6,
 					font: font,
+					color: rgb(0, 0, 1), // Blue color for link
 				});
 				qrTextY -= 8;
 			}
@@ -232,6 +255,7 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 				y: qrTextY,
 				size: 6,
 				font: font,
+				color: rgb(0, 0, 1), // Blue color for link
 			});
 		}
 	}
