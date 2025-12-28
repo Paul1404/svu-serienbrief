@@ -199,25 +199,8 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 		});
 		qrTextY -= 10;
 		
-		// Add clickable link annotation over the entire QR code and text area
-		const linkAnnotation = pdfDoc.context.obj({
-			Type: 'Annot',
-			Subtype: 'Link',
-			Rect: [qrX - 5, qrY - qrSize - 50, qrX + qrSize + 5, qrY],
-			Border: [0, 0, 0],
-			A: {
-				Type: 'Action',
-				S: 'URI',
-				URI: pdfDoc.context.obj(updateUrl),
-			},
-		});
-		const linkAnnotationRef = pdfDoc.context.register(linkAnnotation);
-		const annots = page.node.Annots();
-		if (annots) {
-			annots.push(linkAnnotationRef);
-		} else {
-			page.node.set(pdfDoc.context.obj('Annots'), pdfDoc.context.obj([linkAnnotationRef]));
-		}
+		// Store starting position for link annotation
+		const linkStartY = qrTextY;
 		
 		// Add full URL below QR code (split into multiple lines if needed)
 		const fullUrl = updateUrl.replace('https://', '');
@@ -257,6 +240,34 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 				font: font,
 				color: rgb(0, 0, 1), // Blue color for link
 			});
+		}
+		
+		// Add clickable link annotation over the entire URL text and QR code area
+		// The coordinates need to cover from top of QR code to bottom of URL text
+		const linkEndY = qrTextY - 5; // Bottom of URL text area
+		const linkAnnotation = {
+			Type: 'Annot',
+			Subtype: 'Link',
+			Rect: [qrX - 5, linkEndY, qrX + qrSize + 5, qrY + 10],
+			Border: [0, 0, 0],
+			C: [0, 0, 1],
+			A: {
+				Type: 'Action',
+				S: 'URI',
+				URI: updateUrl,
+			},
+		};
+		
+		const linkRef = pdfDoc.context.register(pdfDoc.context.obj(linkAnnotation));
+		const existingAnnots = page.node.lookup(pdfDoc.context.obj('Annots'));
+		
+		if (existingAnnots) {
+			// Append to existing annotations
+			const annotsArray = existingAnnots.dict?.get(pdfDoc.context.obj('Annots')) || [];
+			page.node.set(pdfDoc.context.obj('Annots'), pdfDoc.context.obj([linkRef]));
+		} else {
+			// Create new annotations array
+			page.node.set(pdfDoc.context.obj('Annots'), pdfDoc.context.obj([linkRef]));
 		}
 	}
 
