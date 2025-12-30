@@ -409,16 +409,30 @@ export function renderDashboard(): string {
         .dataTables_info, .dataTables_paginate {
             color: var(--text-secondary) !important;
         }
-        .dataTables_paginate .paginate_button {
+        .dataTables_paginate .paginate_button,
+        .dataTables_paginate .paginate_button.disabled,
+        .dataTables_paginate .paginate_button.disabled:hover {
             color: var(--text-primary) !important;
+            background: transparent !important;
+            border: 1px solid var(--border-color) !important;
         }
-        .dataTables_paginate .paginate_button.current {
+        .dataTables_paginate .paginate_button.disabled,
+        .dataTables_paginate .paginate_button.disabled:hover {
+            color: var(--text-muted) !important;
+            cursor: default;
+        }
+        .dataTables_paginate .paginate_button.current,
+        .dataTables_paginate .paginate_button.current:hover {
             background: #CC0000 !important;
             color: white !important;
             border-color: #CC0000 !important;
         }
-        .dataTables_paginate .paginate_button:hover {
+        .dataTables_paginate .paginate_button:hover:not(.disabled):not(.current) {
             background: var(--table-hover) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
             color: var(--text-primary) !important;
         }
         .stats-grid {
