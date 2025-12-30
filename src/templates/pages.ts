@@ -156,10 +156,53 @@ export function renderDashboard(): string {
     <link href="https://cdn.datatables.net/2.3.6/css/dataTables.dataTables.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* Light mode (default) */
+        :root {
+            --bg-primary: #f5f5f5;
+            --bg-card: #ffffff;
+            --bg-input: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            --border-color: #e0e0e0;
+            --border-light: #ddd;
+            --shadow-color: rgba(0,0,0,0.1);
+            --info-bg: #fff3cd;
+            --info-border: #CC0000;
+            --table-stripe: #f8f9fa;
+            --table-hover: #fff3cd;
+            --table-selected: #d4edda;
+            --danger-bg: #fff3f3;
+            --danger-border: #ffcccc;
+        }
+        
+        /* Dark mode */
+        [data-theme="dark"] {
+            --bg-primary: #0f0f14;
+            --bg-card: #1a1a24;
+            --bg-input: #252532;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border-color: #3f3f46;
+            --border-light: #27272a;
+            --shadow-color: rgba(0,0,0,0.4);
+            --info-bg: #27251e;
+            --info-border: #CC0000;
+            --table-stripe: #1f1f28;
+            --table-hover: #2a2820;
+            --table-selected: #1a2e1f;
+            --danger-bg: #2a1f1f;
+            --danger-border: #4a2a2a;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f5f5f5;
+            background: var(--bg-primary);
             padding: 20px;
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
         }
         .container { max-width: 1800px; margin: 0 auto; }
         .header {
@@ -199,21 +242,47 @@ export function renderDashboard(): string {
             font-size: 14px;
         }
         .logout-btn:hover { background: #f0f0f0; }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .theme-toggle {
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.25);
+        }
         .content {
-            background: white;
+            background: var(--bg-card);
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px var(--shadow-color);
+            transition: background 0.3s;
+        }
+        .content h2 {
+            color: var(--text-primary);
         }
         .actions {
-            background: white;
+            background: var(--bg-card);
             padding: 20px 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px var(--shadow-color);
             margin-bottom: 20px;
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            transition: background 0.3s;
         }
         .action-btn {
             padding: 12px 24px;
@@ -251,51 +320,56 @@ export function renderDashboard(): string {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: white;
+            background: var(--bg-card);
             padding: 8px 14px;
             border-radius: 6px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
+            transition: background 0.3s, border-color 0.3s;
         }
         .validity-selector label {
             font-size: 13px;
-            color: #666;
+            color: var(--text-secondary);
             white-space: nowrap;
         }
         .validity-selector select {
             padding: 6px 10px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 13px;
             font-weight: 600;
-            color: #333;
-            background: #f8f8f8;
+            color: var(--text-primary);
+            background: var(--bg-input);
             cursor: pointer;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
         }
         .validity-selector select:focus {
             outline: none;
             border-color: #CC0000;
         }
         .info {
-            background: #fff3cd;
+            background: var(--info-bg);
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 20px;
-            border-left: 4px solid #CC0000;
-            color: #000;
+            border-left: 4px solid var(--info-border);
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
         }
         #data-table { margin-top: 20px; }
         .dataTables_wrapper {
             font-size: 14px;
+            color: var(--text-primary);
         }
         table.dataTable {
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-light) !important;
             width: 100% !important;
         }
         table.dataTable thead th {
-            background: #f8f9fa;
-            border-bottom: 2px solid #CC0000;
+            background: var(--table-stripe) !important;
+            border-bottom: 2px solid #CC0000 !important;
             padding: 12px;
             font-weight: 600;
+            color: var(--text-primary) !important;
         }
         table.dataTable tbody td {
             padding: 10px;
@@ -303,27 +377,49 @@ export function renderDashboard(): string {
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 300px;
+            color: var(--text-primary);
+            background: var(--bg-card);
+            border-color: var(--border-light) !important;
         }
-        table.dataTable tbody tr:nth-child(even) {
-            background-color: #f8f9fa;
+        table.dataTable tbody tr:nth-child(even) td {
+            background-color: var(--table-stripe) !important;
         }
-        table.dataTable tbody tr:hover {
-            background-color: #fff3cd !important;
+        table.dataTable tbody tr:hover td {
+            background-color: var(--table-hover) !important;
         }
-        table.dataTable tbody tr.selected {
-            background-color: #d4edda !important;
+        table.dataTable tbody tr.selected td {
+            background-color: var(--table-selected) !important;
         }
         .dataTables_filter input {
             padding: 6px 12px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             margin-left: 8px;
+            background: var(--bg-input);
+            color: var(--text-primary);
         }
         .dataTables_length select {
             padding: 6px 12px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             margin: 0 8px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+        }
+        .dataTables_info, .dataTables_paginate {
+            color: var(--text-secondary) !important;
+        }
+        .dataTables_paginate .paginate_button {
+            color: var(--text-primary) !important;
+        }
+        .dataTables_paginate .paginate_button.current {
+            background: #CC0000 !important;
+            color: white !important;
+            border-color: #CC0000 !important;
+        }
+        .dataTables_paginate .paginate_button:hover {
+            background: var(--table-hover) !important;
+            color: var(--text-primary) !important;
         }
         .stats-grid {
             display: grid;
@@ -332,11 +428,12 @@ export function renderDashboard(): string {
             margin: 20px 0;
         }
         .stat-card {
-            background: white;
+            background: var(--bg-card);
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px var(--shadow-color);
             border-left: 4px solid #CC0000;
+            transition: background 0.3s;
         }
         .stat-value {
             font-size: 32px;
@@ -345,13 +442,13 @@ export function renderDashboard(): string {
             margin: 10px 0;
         }
         .stat-label {
-            color: #666;
+            color: var(--text-secondary);
             font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .stat-detail {
-            color: #999;
+            color: var(--text-muted);
             font-size: 12px;
             margin-top: 8px;
         }
@@ -362,22 +459,27 @@ export function renderDashboard(): string {
             display: flex;
             justify-content: space-between;
             padding: 5px 0;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-primary);
         }
         .field-item:last-child {
             border-bottom: none;
         }
         .danger-zone {
-            background: #fff3f3;
-            border: 1px solid #ffcccc;
+            background: var(--danger-bg);
+            border: 1px solid var(--danger-border);
             padding: 15px;
             border-radius: 8px;
             margin-top: 20px;
+            transition: background 0.3s, border-color 0.3s;
         }
         .danger-zone h3 {
             color: #c00;
             margin-bottom: 10px;
             font-size: 16px;
+        }
+        .danger-zone p {
+            color: var(--text-secondary);
         }
         .danger-btn {
             background: #dc3545;
@@ -395,10 +497,10 @@ export function renderDashboard(): string {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: white;
+            background: var(--bg-card);
             padding: 16px 24px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px var(--shadow-color);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -423,13 +525,14 @@ export function renderDashboard(): string {
         }
         .toast-message {
             flex: 1;
-            color: #333;
+            color: var(--text-primary);
         }
         .toast-close {
             cursor: pointer;
             opacity: 0.5;
             font-size: 20px;
             flex-shrink: 0;
+            color: var(--text-secondary);
         }
         .toast-close:hover {
             opacity: 1;
@@ -450,27 +553,27 @@ export function renderDashboard(): string {
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.6);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 9999;
         }
         .modal {
-            background: white;
+            background: var(--bg-card);
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px var(--shadow-color);
             max-width: 500px;
             width: 90%;
         }
         .modal h3 {
             margin: 0 0 15px 0;
-            color: #333;
+            color: var(--text-primary);
         }
         .modal p {
             margin: 0 0 20px 0;
-            color: #666;
+            color: var(--text-secondary);
         }
         .modal-buttons {
             display: flex;
@@ -510,7 +613,10 @@ export function renderDashboard(): string {
                     <div class="subtitle">Mitgliederverwaltung • "Wir sind Untereuerheim"</div>
                 </div>
             </div>
-            <a href="/logout" class="logout-btn">Abmelden</a>
+            <div class="header-actions">
+                <button id="themeToggle" class="theme-toggle" title="Dark Mode umschalten">🌙</button>
+                <a href="/logout" class="logout-btn">Abmelden</a>
+            </div>
         </div>
 
         <div class="actions">
@@ -1110,6 +1216,44 @@ export function renderDashboard(): string {
                 btn.textContent = originalText;
             }
         });
+
+        // Dark mode toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // Initialize theme from localStorage or system preference
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                updateToggleIcon(savedTheme);
+            } else if (prefersDark) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                updateToggleIcon('dark');
+            }
+        }
+        
+        function updateToggleIcon(theme) {
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            themeToggle.title = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+        }
+        
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            if (newTheme === 'light') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+            
+            localStorage.setItem('theme', newTheme);
+            updateToggleIcon(newTheme);
+        });
+        
+        // Initialize theme before other init
+        initTheme();
 
         init();
     </script>
