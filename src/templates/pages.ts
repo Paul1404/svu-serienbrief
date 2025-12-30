@@ -1294,99 +1294,74 @@ export function renderDashboard(): string {
             const btn = this;
             const originalText = btn.textContent;
             const memberCount = selectedRows.size;
-            const CHUNK_SIZE = 30; // Must match server's MAX_MEMBERS_PER_REQUEST
             
             btn.disabled = true;
             btn.textContent = '⏳ Generiere...';
             
-            // Always show loading overlay for PDF generation
-            showLoading(
-                'PDFs werden generiert',
-                'Bereite ' + memberCount + ' Briefe vor...',
-                true
-            );
+            // Show loading overlay for larger operations
+            const showProgressOverlay = memberCount > 10;
+            if (showProgressOverlay) {
+                showLoading(
+                    'PDFs werden generiert',
+                    'Bereite ' + memberCount + ' Briefe vor...',
+                    true
+                );
+                updateLoading('Sende Anfrage an Server...', 10, memberCount + ' Mitglieder ausgewählt');
+            }
 
             try {
                 const memberIds = Array.from(selectedRows);
                 const validityDays = parseInt(document.getElementById('validityDays').value, 10);
                 
-                // Split into chunks to avoid server timeout
-                const chunks = [];
-                for (let i = 0; i < memberIds.length; i += CHUNK_SIZE) {
-                    chunks.push(memberIds.slice(i, i + CHUNK_SIZE));
+                if (showProgressOverlay) {
+                    updateLoading('Server generiert PDFs...', 30, 'Dies kann bei vielen Mitgliedern etwas dauern');
                 }
-                
-                const totalChunks = chunks.length;
-                const downloadedFiles = [];
-                
-                // Process each chunk sequentially
-                for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-                    const chunk = chunks[chunkIndex];
-                    const progress = Math.round(((chunkIndex) / totalChunks) * 80) + 10;
-                    
-                    updateLoading(
-                        'Generiere Teil ' + (chunkIndex + 1) + ' von ' + totalChunks + '...',
-                        progress,
-                        chunk.length + ' Mitglieder in diesem Teil'
-                    );
-                    
-                    const response = await fetch('/letters/generate-pdfs', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ memberIds: chunk, validityDays })
-                    });
 
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.error || 'Fehler bei Teil ' + (chunkIndex + 1));
-                    }
-                    
-                    // Get filename from Content-Disposition header
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    let filename = 'serienbriefe_teil' + (chunkIndex + 1) + '.zip';
-                    if (contentDisposition) {
-                        const match = contentDisposition.match(/filename="(.+)"/);
-                        if (match) {
-                            filename = match[1];
-                            // Add part number if multiple chunks
-                            if (totalChunks > 1) {
-                                filename = filename.replace('.zip', '_teil' + (chunkIndex + 1) + '.zip');
-                            }
-                        }
-                    }
-                    
-                    const blob = await response.blob();
-                    downloadedFiles.push({ blob, filename });
+                const response = await fetch('/letters/generate-pdfs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ memberIds, validityDays })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Fehler beim Generieren der PDFs');
                 }
                 
-                updateLoading('Downloads werden gestartet...', 95, downloadedFiles.length + ' ZIP-Dateien');
-                
-                // Download all files
-                for (const file of downloadedFiles) {
-                    const url = window.URL.createObjectURL(file.blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    
-                    // Small delay between downloads
-                    if (downloadedFiles.length > 1) {
-                        await new Promise(r => setTimeout(r, 500));
+                if (showProgressOverlay) {
+                    updateLoading('PDFs generiert! Bereite Download vor...', 80, 'Fast fertig...');
+                }
+
+                // Get filename from Content-Disposition header (server provides detailed timestamp)
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = 'serienbriefe.zip';
+                if (contentDisposition) {
+                    const match = contentDisposition.match(/filename="(.+)"/);
+                    if (match) {
+                        filename = match[1];
                     }
                 }
+
+                // Download the ZIP file
+                const blob = await response.blob();
+                
+                if (showProgressOverlay) {
+                    updateLoading('Starte Download...', 95, 'ZIP-Datei: ' + (blob.size / 1024 / 1024).toFixed(1) + ' MB');
+                }
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
                 
                 hideLoading();
-                
-                if (totalChunks > 1) {
-                    showToast(memberCount + ' PDFs in ' + totalChunks + ' ZIP-Dateien generiert! (Token gültig für ' + validityDays + ' Tage)', 'success');
-                } else {
-                    showToast('PDFs erfolgreich generiert! (Token gültig für ' + validityDays + ' Tage)', 'success');
-                }
+                showToast('PDFs erfolgreich generiert und heruntergeladen! (Token gültig für ' + validityDays + ' Tage)', 'success');
             } catch (error) {
                 hideLoading();
                 showToast('Fehler: ' + error.message, 'error');
