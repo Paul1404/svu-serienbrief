@@ -1130,6 +1130,18 @@ export interface NotFoundStats {
 }
 
 export function render404Page(stats: NotFoundStats): string {
+    // Format time nicely - show µs for sub-millisecond, ms otherwise
+    const formatTime = (ms: number): string => {
+        if (ms < 0.01) return '<10µs';
+        if (ms < 1) return `${Math.round(ms * 1000)}µs`;
+        return `${ms.toFixed(1)}ms`;
+    };
+    
+    const timeDisplay = formatTime(stats.workerCpuTimeMs);
+    const timeForFooter = stats.workerCpuTimeMs < 1 
+        ? `${Math.round(stats.workerCpuTimeMs * 1000)}µs` 
+        : `${stats.workerCpuTimeMs.toFixed(2)}ms`;
+    
     return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -1564,7 +1576,7 @@ export function render404Page(stats: NotFoundStats): string {
             <div class="cards">
                 <div class="card">
                     <div class="card-label">🚀 Worker CPU</div>
-                    <div class="card-value success">${stats.workerCpuTimeMs.toFixed(2)}ms</div>
+                    <div class="card-value success">${timeDisplay}</div>
                     <div class="card-detail">Zeit bis zur Antwort</div>
                 </div>
                 <div class="card">
@@ -1584,7 +1596,7 @@ export function render404Page(stats: NotFoundStats): string {
                 <div class="perf-item">
                     <span class="perf-dot green"></span>
                     <span class="perf-label">Latenz:</span>
-                    <span class="perf-value">${stats.workerCpuTimeMs < 1 ? '<1' : stats.workerCpuTimeMs.toFixed(1)}ms</span>
+                    <span class="perf-value">${timeDisplay}</span>
                 </div>
                 <div class="perf-item">
                     <span class="perf-dot blue"></span>
@@ -1601,7 +1613,7 @@ export function render404Page(stats: NotFoundStats): string {
         
         <div class="footer">
             <p class="footer-joke">
-                Die Seite gibt's nicht, aber diese 404 kam in ${stats.workerCpuTimeMs.toFixed(2)}ms 
+                Die Seite gibt's nicht, aber diese 404 kam in ${timeForFooter} 
                 von ${escapeHtml(stats.colo || 'der Cloud')} zu dir. Nicht schlecht, oder?
             </p>
             <div class="footer-logo">
