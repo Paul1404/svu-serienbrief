@@ -16,11 +16,14 @@ const letters = new Hono<{ Bindings: Env }>();
  */
 letters.post('/generate-pdfs', async (c) => {
 	try {
-		const { memberIds } = await c.req.json();
+		const { memberIds, validityDays = 90 } = await c.req.json();
 
 		if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
 			return jsonError('Keine Mitglieder-IDs angegeben', 400);
 		}
+		
+		// Validate validity days (min 7, max 730 = 2 years)
+		const tokenValidityDays = Math.min(Math.max(Number(validityDays) || 90, 7), 730);
 
 		// Fetch member data
 		const placeholders = memberIds.map(() => '?').join(',');
@@ -45,7 +48,7 @@ letters.post('/generate-pdfs', async (c) => {
 				
 				// Store token in database
 				const now = Date.now();
-				const expiresAt = now + (90 * 24 * 60 * 60 * 1000); // 90 days
+				const expiresAt = now + (tokenValidityDays * 24 * 60 * 60 * 1000);
 				await c.env.svu_prod01.prepare(`
 					INSERT INTO member_tokens (member_id, token, generated_at, expires_at, regenerated_count)
 					VALUES (?, ?, ?, ?, 0)

@@ -247,6 +247,34 @@ export function renderDashboard(): string {
             width: 18px;
             height: 18px;
         }
+        .validity-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 2px solid #e0e0e0;
+        }
+        .validity-selector label {
+            font-size: 13px;
+            color: #666;
+            white-space: nowrap;
+        }
+        .validity-selector select {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            background: #f8f8f8;
+            cursor: pointer;
+        }
+        .validity-selector select:focus {
+            outline: none;
+            border-color: #CC0000;
+        }
         .info {
             background: #fff3cd;
             padding: 15px;
@@ -487,6 +515,16 @@ export function renderDashboard(): string {
 
         <div class="actions">
             <button id="generatePdfsBtn" class="action-btn" disabled>PDFs für ausgewählte Mitglieder generieren (<span id="selectedCount">0</span>)</button>
+            <div class="validity-selector">
+                <label for="validityDays">Token gültig:</label>
+                <select id="validityDays">
+                    <option value="30">30 Tage</option>
+                    <option value="60">60 Tage</option>
+                    <option value="90" selected>90 Tage</option>
+                    <option value="180">180 Tage</option>
+                    <option value="365">1 Jahr</option>
+                </select>
+            </div>
             <a href="/letters/preview/demo" class="action-btn secondary" target="_blank">Brief-Vorschau</a>
             <button id="refreshBtn" class="action-btn secondary icon" title="Tabelle aktualisieren">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -975,13 +1013,14 @@ export function renderDashboard(): string {
 
             try {
                 const memberIds = Array.from(selectedRows);
+                const validityDays = parseInt(document.getElementById('validityDays').value, 10);
 
                 const response = await fetch('/letters/generate-pdfs', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ memberIds })
+                    body: JSON.stringify({ memberIds, validityDays })
                 });
 
                 if (!response.ok) {
@@ -989,18 +1028,28 @@ export function renderDashboard(): string {
                     throw new Error(error.error || 'Fehler beim Generieren der PDFs');
                 }
 
+                // Get filename from Content-Disposition header (server provides detailed timestamp)
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = 'serienbriefe.zip';
+                if (contentDisposition) {
+                    const match = contentDisposition.match(/filename="(.+)"/);
+                    if (match) {
+                        filename = match[1];
+                    }
+                }
+
                 // Download the ZIP file
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'serienbriefe_' + new Date().toISOString().split('T')[0] + '.zip';
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
 
-                showToast('PDFs erfolgreich generiert und heruntergeladen!', 'success');
+                showToast('PDFs erfolgreich generiert und heruntergeladen! (Token gültig für ' + validityDays + ' Tage)', 'success');
             } catch (error) {
                 showToast('Fehler: ' + error.message, 'error');
             } finally {
