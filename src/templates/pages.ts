@@ -1648,535 +1648,239 @@ export function renderDashboard(): string {
 
 export interface NotFoundStats {
     requestedPath: string;
-    colo?: string;
-    country?: string;
-    city?: string;
 }
 
 export function render404Page(stats: NotFoundStats): string {
-    const edgeLocation = stats.city && stats.country 
-        ? `${stats.city}, ${stats.country}` 
-        : (stats.colo || 'Edge Server');
+    // Check if this looks like a QR code link attempt
+    const isQrAttempt = stats.requestedPath.startsWith('/update/');
     
     return `<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - Seite nicht gefunden | SV 1945 Untereuerheim</title>
+    <title>Seite nicht gefunden | SV 1945 Untereuerheim</title>
     <link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap');
-        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        :root {
-            --bg-dark: #0a0a0f;
-            --bg-card: #12121a;
-            --bg-card-hover: #1a1a25;
-            --accent: #CC0000;
-            --accent-glow: rgba(204, 0, 0, 0.3);
-            --text: #e4e4e7;
-            --text-dim: #71717a;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --info: #3b82f6;
-            --purple: #8b5cf6;
-            --orange: #f97316;
-        }
-        
         body {
-            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-dark);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
             min-height: 100vh;
-            color: var(--text);
-            overflow-x: hidden;
-            line-height: 1.6;
-        }
-        
-        /* Animated background */
-        .bg-pattern {
-            position: fixed;
-            inset: 0;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(204, 0, 0, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 40%);
-            z-index: -1;
-        }
-        
-        .grid-overlay {
-            position: fixed;
-            inset: 0;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 60px 60px;
-            z-index: -1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
         }
         
         .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 50px 20px;
+            max-width: 550px;
+            width: 100%;
+            text-align: center;
         }
         
-        /* Header */
-        .header {
-            text-align: center;
-            margin-bottom: 50px;
+        .logo {
+            width: 80px;
+            height: auto;
+            margin-bottom: 30px;
         }
         
         .error-code {
-            font-size: 140px;
+            font-size: 100px;
             font-weight: 700;
+            color: #CC0000;
             line-height: 1;
-            background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, #666 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 20px;
-            animation: shimmer 3s ease-in-out infinite;
-        }
-        
-        @keyframes shimmer {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.2); }
+            margin-bottom: 10px;
         }
         
         h1 {
-            font-size: 32px;
+            font-size: 24px;
             font-weight: 600;
             margin-bottom: 15px;
+            color: #222;
         }
         
-        .subtitle {
-            color: var(--text-dim);
-            font-size: 18px;
-            max-width: 500px;
-            margin: 0 auto 30px;
+        .message {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
         }
         
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 28px;
-            background: var(--accent);
-            color: white;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px var(--accent-glow);
-        }
-        
-        /* Section titles */
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: var(--text-dim);
-            margin: 50px 0 25px;
-        }
-        
-        .section-title::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(90deg, rgba(255,255,255,0.15), transparent);
-        }
-        
-        /* Explanation cards */
-        .explainer-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-        
-        @media (max-width: 700px) {
-            .explainer-grid { grid-template-columns: 1fr; }
-        }
-        
-        .explainer-card {
-            background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 16px;
-            padding: 28px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .explainer-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--card-accent, var(--accent));
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .explainer-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(255,255,255,0.1);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-        
-        .explainer-card:hover::before {
-            opacity: 1;
-        }
-        
-        .explainer-card.worker { --card-accent: var(--warning); }
-        .explainer-card.d1 { --card-accent: var(--info); }
-        .explainer-card.edge { --card-accent: var(--success); }
-        .explainer-card.speed { --card-accent: var(--purple); }
-        
-        .card-icon {
-            font-size: 40px;
-            margin-bottom: 16px;
-            display: block;
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+            text-align: left;
         }
         
         .card-title {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--text);
-        }
-        
-        .card-text {
-            font-size: 15px;
-            color: var(--text-dim);
-            line-height: 1.7;
-        }
-        
-        .card-text strong {
-            color: var(--text);
-        }
-        
-        /* Animated flow diagram */
-        .flow-container {
-            background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 16px;
-            padding: 35px;
-            margin-top: 30px;
-        }
-        
-        .flow-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 25px;
-            text-align: center;
-        }
-        
-        .flow {
+            margin-bottom: 15px;
+            color: #333;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .flow-step {
-            display: flex;
-            flex-direction: column;
             align-items: center;
             gap: 10px;
-            animation: fadeInUp 0.6s ease-out backwards;
         }
         
-        .flow-step:nth-child(1) { animation-delay: 0.1s; }
-        .flow-step:nth-child(2) { animation-delay: 0.3s; }
-        .flow-step:nth-child(3) { animation-delay: 0.5s; }
-        .flow-step:nth-child(4) { animation-delay: 0.7s; }
-        .flow-step:nth-child(5) { animation-delay: 0.9s; }
-        
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #CC0000;
+            border-radius: 2px;
         }
         
-        .flow-icon {
-            width: 70px;
-            height: 70px;
-            border-radius: 16px;
+        .tip-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .tip-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            color: #555;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .tip-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .tip-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            background: #f5f5f5;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .flow-icon:hover {
-            transform: scale(1.1);
-        }
-        
-        .flow-icon.you { background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3); }
-        .flow-icon.edge { background: linear-gradient(135deg, #f59e0b, #f97316); box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3); }
-        .flow-icon.worker { background: linear-gradient(135deg, #CC0000, #991b1b); box-shadow: 0 8px 25px rgba(204, 0, 0, 0.3); }
-        .flow-icon.d1 { background: linear-gradient(135deg, #3b82f6, #1d4ed8); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3); }
-        .flow-icon.response { background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 8px 25px rgba(34, 197, 94, 0.3); }
-        
-        .flow-label {
             font-size: 12px;
-            font-weight: 500;
-            color: var(--text-dim);
-            text-align: center;
         }
         
-        .flow-arrow {
-            font-size: 24px;
-            color: var(--text-dim);
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 0.4; transform: translateX(0); }
-            50% { opacity: 1; transform: translateX(5px); }
-        }
-        
-        /* Your request info */
-        .your-request {
-            background: linear-gradient(135deg, rgba(204, 0, 0, 0.1), rgba(59, 130, 246, 0.1));
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 16px;
-            padding: 25px;
-            margin-top: 30px;
-        }
-        
-        .your-request-title {
-            font-size: 14px;
+        .btn {
+            display: inline-block;
+            padding: 14px 32px;
+            background: #CC0000;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--text-dim);
-            margin-bottom: 18px;
+            font-size: 15px;
+            transition: all 0.2s ease;
         }
         
-        .request-details {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 25px;
+        .btn:hover {
+            background: #a00;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(204,0,0,0.25);
         }
         
-        .request-item {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+        .contact {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
         }
         
-        .request-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-dim);
-        }
-        
-        .request-value {
-            font-family: 'JetBrains Mono', monospace;
+        .contact-text {
             font-size: 14px;
-            color: var(--text);
+            color: #888;
+            margin-bottom: 8px;
         }
         
-        .request-value.path {
-            color: var(--warning);
-            word-break: break-all;
+        .contact-link {
+            color: #CC0000;
+            text-decoration: none;
+            font-weight: 500;
         }
         
-        .request-value.location {
-            color: var(--success);
+        .contact-link:hover {
+            text-decoration: underline;
         }
         
-        /* Footer */
         .footer {
-            text-align: center;
-            margin-top: 60px;
-            padding-top: 30px;
-            border-top: 1px solid rgba(255,255,255,0.06);
-        }
-        
-        .footer-text {
-            font-size: 14px;
-            color: var(--text-dim);
-            margin-bottom: 15px;
-        }
-        
-        .footer-logo {
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            color: var(--text-dim);
+            margin-top: 40px;
             font-size: 13px;
-        }
-        
-        .footer-logo img {
-            width: 35px;
-            height: auto;
-            opacity: 0.6;
-            transition: opacity 0.3s;
-        }
-        
-        .footer-logo:hover img {
-            opacity: 1;
-        }
-        
-        /* Fun fact badge */
-        .fun-fact {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(139, 92, 246, 0.15);
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            padding: 12px 20px;
-            border-radius: 50px;
-            font-size: 13px;
-            color: var(--purple);
-            margin-top: 15px;
-        }
-        
-        .fun-fact::before {
-            content: '💡';
+            color: #999;
         }
     </style>
 </head>
 <body>
-    <div class="bg-pattern"></div>
-    <div class="grid-overlay"></div>
-    
     <div class="container">
-        <div class="header">
-            <div class="error-code">404</div>
-            <h1>Seite nicht gefunden</h1>
-            <p class="subtitle">
-                Diese Seite gibt es leider nicht – aber da du schonmal hier bist: 
-                Schau dir an, wie diese Website funktioniert!
-            </p>
-            <a href="/" class="btn">
-                ← Zurück zur Startseite
-            </a>
+        <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SV Untereuerheim Logo" class="logo">
+        
+        <div class="error-code">404</div>
+        <h1>Seite nicht gefunden</h1>
+        
+        ${isQrAttempt ? `
+        <p class="message">
+            Der Link aus Ihrem QR-Code konnte leider nicht gefunden werden. 
+            Dies kann verschiedene Ursachen haben.
+        </p>
+        
+        <div class="card">
+            <h2 class="card-title">Was Sie tun können</h2>
+            <ul class="tip-list">
+                <li>
+                    <span class="tip-icon">1</span>
+                    <span><strong>QR-Code erneut scannen</strong> – Achten Sie darauf, dass der gesamte Code im Bild ist und gut beleuchtet wird.</span>
+                </li>
+                <li>
+                    <span class="tip-icon">2</span>
+                    <span><strong>Link prüfen</strong> – Falls der Link abgetippt wurde, überprüfen Sie bitte die Schreibweise.</span>
+                </li>
+                <li>
+                    <span class="tip-icon">3</span>
+                    <span><strong>Gültigkeit prüfen</strong> – Der Link könnte abgelaufen sein. Wenden Sie sich an den Verein für einen neuen Link.</span>
+                </li>
+                <li>
+                    <span class="tip-icon">4</span>
+                    <span><strong>Brief beschädigt?</strong> – Falls der QR-Code beschädigt oder verschmiert ist, kontaktieren Sie uns bitte.</span>
+                </li>
+            </ul>
         </div>
+        ` : `
+        <p class="message">
+            Die angeforderte Seite existiert leider nicht oder wurde verschoben.
+        </p>
         
-        <div class="section-title">Wie funktioniert diese Seite?</div>
-        
-        <div class="explainer-grid">
-            <div class="explainer-card worker">
-                <span class="card-icon">⚡</span>
-                <h3 class="card-title">Cloudflare Workers</h3>
-                <p class="card-text">
-                    Kleine Programme, die <strong>direkt am Edge</strong> laufen – 
-                    also auf Servern in deiner Nähe, nicht irgendwo weit weg. 
-                    Dadurch ist alles super schnell!
-                </p>
-            </div>
-            
-            <div class="explainer-card d1">
-                <span class="card-icon">🗄️</span>
-                <h3 class="card-title">D1 Datenbank</h3>
-                <p class="card-text">
-                    Eine <strong>SQLite-Datenbank</strong>, die auch am Edge läuft. 
-                    Hier speichern wir Mitgliederdaten – sicher, schnell und 
-                    ohne klassischen Server.
-                </p>
-            </div>
-            
-            <div class="explainer-card edge">
-                <span class="card-icon">🌍</span>
-                <h3 class="card-title">Edge Computing</h3>
-                <p class="card-text">
-                    Deine Anfrage wurde von <strong>${escapeHtml(edgeLocation)}</strong> 
-                    bearbeitet – einem Server ganz in deiner Nähe. 
-                    Cloudflare hat über 300 solcher Standorte weltweit!
-                </p>
-            </div>
-            
-            <div class="explainer-card speed">
-                <span class="card-icon">🏎️</span>
-                <h3 class="card-title">Warum so schnell?</h3>
-                <p class="card-text">
-                    Keine langen Wege zu Rechenzentren. Der Code startet in 
-                    <strong>unter 1ms</strong>, weil er bereits auf dem nächsten 
-                    Server bereit steht!
-                </p>
-            </div>
+        <div class="card">
+            <h2 class="card-title">Mögliche Ursachen</h2>
+            <ul class="tip-list">
+                <li>
+                    <span class="tip-icon">1</span>
+                    <span>Die Adresse wurde falsch eingegeben oder enthält einen Tippfehler.</span>
+                </li>
+                <li>
+                    <span class="tip-icon">2</span>
+                    <span>Die Seite wurde verschoben oder existiert nicht mehr.</span>
+                </li>
+                <li>
+                    <span class="tip-icon">3</span>
+                    <span>Der Link, dem Sie gefolgt sind, ist veraltet.</span>
+                </li>
+            </ul>
         </div>
+        `}
         
-        <!-- Animated flow diagram -->
-        <div class="flow-container">
-            <h3 class="flow-title">So kam diese Seite zu dir:</h3>
-            <div class="flow">
-                <div class="flow-step">
-                    <div class="flow-icon you">👤</div>
-                    <span class="flow-label">Du<br>(${escapeHtml(stats.city || 'irgendwo')})</span>
-                </div>
-                <span class="flow-arrow">→</span>
-                <div class="flow-step">
-                    <div class="flow-icon edge">🌐</div>
-                    <span class="flow-label">Edge Server<br>(${escapeHtml(stats.colo || 'Cloudflare')})</span>
-                </div>
-                <span class="flow-arrow">→</span>
-                <div class="flow-step">
-                    <div class="flow-icon worker">⚡</div>
-                    <span class="flow-label">Worker<br>(Code läuft)</span>
-                </div>
-                <span class="flow-arrow">→</span>
-                <div class="flow-step">
-                    <div class="flow-icon d1">🗄️</div>
-                    <span class="flow-label">D1<br>(Datenbank)</span>
-                </div>
-                <span class="flow-arrow">→</span>
-                <div class="flow-step">
-                    <div class="flow-icon response">✨</div>
-                    <span class="flow-label">Fertig!<br>(Diese Seite)</span>
-                </div>
-            </div>
-        </div>
+        <a href="https://sv-untereuerheim.de" class="btn">Zur Vereinswebsite</a>
         
-        <!-- Your request details -->
-        <div class="your-request">
-            <h3 class="your-request-title">Deine Anfrage</h3>
-            <div class="request-details">
-                <div class="request-item">
-                    <span class="request-label">Gesuchte Seite</span>
-                    <span class="request-value path">${escapeHtml(stats.requestedPath)}</span>
-                </div>
-                <div class="request-item">
-                    <span class="request-label">Bearbeitet von</span>
-                    <span class="request-value location">${escapeHtml(stats.colo || 'Edge')} ${stats.country ? `(${escapeHtml(stats.country)})` : ''}</span>
-                </div>
-                <div class="request-item">
-                    <span class="request-label">Technologie</span>
-                    <span class="request-value">Cloudflare Workers + D1</span>
-                </div>
-            </div>
-            <div class="fun-fact">
-                Wusstest du? Cloudflare Workers starten in unter 5ms – schneller als ein Lidschlag (300ms)!
-            </div>
+        <div class="contact">
+            <p class="contact-text">Bei Fragen oder Problemen:</p>
+            <a href="mailto:info@sv-untereuerheim.de" class="contact-link">info@sv-untereuerheim.de</a>
         </div>
         
         <div class="footer">
-            <p class="footer-text">
-                Auch wenn diese Seite nicht existiert – cool, dass du jetzt weißt, wie alles funktioniert! 🎓
-            </p>
-            <div class="footer-logo">
-                <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SVU Logo">
-                <span>SV 1945 Untereuerheim e.V.</span>
-            </div>
+            SV 1945 Untereuerheim e.V.
         </div>
     </div>
 </body>

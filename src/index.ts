@@ -35,16 +35,7 @@ function isKnownRoute(pathname: string): boolean {
 // Helper to render 404 page
 function render404(c: Context<{ Bindings: Env }>): Response {
 	const url = new URL(c.req.url);
-	const cf = c.req.raw.cf as { colo?: string; country?: string; city?: string } | undefined;
-	
-	const stats: NotFoundStats = {
-		requestedPath: url.pathname,
-		colo: cf?.colo,
-		country: cf?.country,
-		city: cf?.city,
-	};
-	
-	return c.html(render404Page(stats), 404);
+	return c.html(render404Page({ requestedPath: url.pathname }), 404);
 }
 
 
