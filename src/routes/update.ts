@@ -319,7 +319,7 @@ function renderUpdateForm(member: any, token: string): string {
 			border: 2px solid #e0e0e0;
 			border-radius: 6px;
 			font-size: 16px;
-			transition: border-color 0.3s;
+			transition: border-color 0.3s, background-color 0.3s;
 		}
 		input:focus {
 			outline: none;
@@ -328,6 +328,29 @@ function renderUpdateForm(member: any, token: string): string {
 		.readonly {
 			background: #f5f5f5;
 			color: #666;
+		}
+		/* Empty field indicator */
+		.form-group.is-empty input:not(.readonly) {
+			border-color: #ffc107;
+			background: #fffdf5;
+		}
+		.form-group.is-empty input:not(.readonly):focus {
+			border-color: #CC0000;
+			background: white;
+		}
+		.empty-badge {
+			display: inline-block;
+			background: #ffc107;
+			color: #000;
+			font-size: 10px;
+			font-weight: 600;
+			padding: 2px 8px;
+			border-radius: 10px;
+			margin-left: 8px;
+			vertical-align: middle;
+		}
+		.form-group:not(.is-empty) .empty-badge {
+			display: none;
 		}
 		button {
 			width: 100%;
@@ -382,6 +405,10 @@ function renderUpdateForm(member: any, token: string): string {
 				<h2>Ihre Daten aktualisieren</h2>
 				<p>Bitte überprüfen Sie Ihre Daten und korrigieren Sie diese bei Bedarf. 
 				Felder mit grauem Hintergrund können nicht geändert werden.</p>
+				<p style="margin-top: 10px; font-size: 13px;">
+					<span style="display: inline-block; background: #ffc107; color: #000; padding: 2px 8px; border-radius: 10px; font-weight: 600; font-size: 10px;">LEER</span>
+					<span style="color: #666;"> = Bitte ergänzen Sie diese Angabe, falls vorhanden</span>
+				</p>
 			</div>
 
 			<div class="member-info">
@@ -405,48 +432,48 @@ function renderUpdateForm(member: any, token: string): string {
 					<input type="text" value="${escapeHtml(member.Nachname || '')}" class="readonly" readonly>
 				</div>
 
-				<div class="form-group">
-					<label for="Strasse">Straße und Hausnummer</label>
+				<div class="form-group${!member.Strasse ? ' is-empty' : ''}">
+					<label for="Strasse">Straße und Hausnummer${!member.Strasse ? '<span class="empty-badge">LEER</span>' : ''}</label>
 					<input type="text" id="Strasse" name="Strasse" value="${escapeHtml(member.Strasse || '')}">
 				</div>
 
-				<div class="form-group">
-					<label for="PLZ">Postleitzahl</label>
+				<div class="form-group${!member.PLZ ? ' is-empty' : ''}">
+					<label for="PLZ">Postleitzahl${!member.PLZ ? '<span class="empty-badge">LEER</span>' : ''}</label>
 					<input type="text" id="PLZ" name="PLZ" value="${escapeHtml(member.PLZ?.toString() || '')}">
 				</div>
 
-				<div class="form-group">
-					<label for="Ort">Ort</label>
+				<div class="form-group${!member.Ort ? ' is-empty' : ''}">
+					<label for="Ort">Ort${!member.Ort ? '<span class="empty-badge">LEER</span>' : ''}</label>
 					<input type="text" id="Ort" name="Ort" value="${escapeHtml(member.Ort || '')}">
 				</div>
 
-				<div class="form-group">
-					<label for="Telefon">Telefon</label>
+				<div class="form-group${!member.Telefon ? ' is-empty' : ''}">
+					<label for="Telefon">Telefon${!member.Telefon ? '<span class="empty-badge">LEER</span>' : ''}</label>
 					<input type="tel" id="Telefon" name="Telefon" value="${escapeHtml(member.Telefon || '')}">
 				</div>
 
-				<div class="form-group">
-					<label for="Mobil">Mobil</label>
+				<div class="form-group${!member.Mobil ? ' is-empty' : ''}">
+					<label for="Mobil">Mobil${!member.Mobil ? '<span class="empty-badge">LEER</span>' : ''}</label>
 					<input type="tel" id="Mobil" name="Mobil" value="${escapeHtml(member.Mobil || '')}">
 				</div>
 
-				<div class="form-group">
-					<label for="EMail">E-Mail</label>
+				<div class="form-group${!member.EMail ? ' is-empty' : ''}">
+					<label for="EMail">E-Mail${!member.EMail ? '<span class="empty-badge">LEER</span>' : ''}</label>
 					<input type="email" id="EMail" name="EMail" value="${escapeHtml(member.EMail || '')}">
 				</div>
 
-				<div class="form-group">
-					<label for="IBAN">IBAN</label>
+				<div class="form-group${!member.IBAN ? ' is-empty' : ''}">
+					<label for="IBAN">IBAN${!member.IBAN ? '<span class="empty-badge">LEER</span>' : ''}</label>
 					<input type="text" id="IBAN" name="IBAN" value="${escapeHtml(member.IBAN || '')}">
 				</div>
 
-				<div class="form-group">
-					<label for="BIC">BIC</label>
+				<div class="form-group${!member.BIC ? ' is-empty' : ''}">
+					<label for="BIC">BIC${!member.BIC ? '<span class="empty-badge">LEER</span>' : ''}</label>
 					<input type="text" id="BIC" name="BIC" value="${escapeHtml(member.BIC || '')}">
 				</div>
 
-				<div class="form-group">
-					<label for="Bankbezeichnung">Bank</label>
+				<div class="form-group${!member.Bankbezeichnung ? ' is-empty' : ''}">
+					<label for="Bankbezeichnung">Bank${!member.Bankbezeichnung ? '<span class="empty-badge">LEER</span>' : ''}</label>
 					<input type="text" id="Bankbezeichnung" name="Bankbezeichnung" value="${escapeHtml(member.Bankbezeichnung || '')}">
 				</div>
 
@@ -460,6 +487,18 @@ function renderUpdateForm(member: any, token: string): string {
 	</div>
 
 	<script>
+		// Update empty indicators when user types
+		document.querySelectorAll('#updateForm input:not(.readonly)').forEach(input => {
+			input.addEventListener('input', function() {
+				const formGroup = this.closest('.form-group');
+				if (this.value.trim()) {
+					formGroup.classList.remove('is-empty');
+				} else {
+					formGroup.classList.add('is-empty');
+				}
+			});
+		});
+
 		document.getElementById('updateForm').addEventListener('submit', async (e) => {
 			e.preventDefault();
 			
