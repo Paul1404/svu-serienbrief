@@ -11,10 +11,10 @@ import { PDFDocument, rgb, StandardFonts, PDFArray, PDFName } from 'pdf-lib';
 
 const letters = new Hono<{ Bindings: Env }>();
 
-// Batch size for SQL queries (SQLite has ~999 variable limit)
-const SQL_BATCH_SIZE = 100;
+// Batch size for SQL queries (D1 has stricter limits than SQLite's 999)
+const SQL_BATCH_SIZE = 50;
 // Batch size for PDF generation (memory management)
-const PDF_BATCH_SIZE = 20;
+const PDF_BATCH_SIZE = 10;
 
 /**
  * Generate PDFs for selected members and return as ZIP
@@ -31,16 +31,42 @@ letters.post('/generate-pdfs', async (c) => {
 		const tokenValidityDays = Math.min(Math.max(Number(validityDays) || 90, 7), 730);
 
 		// Fetch member data in batches to avoid SQL variable limits
+		// Use separate queries for AdrNr and MitglNr to avoid doubling placeholders
 		const allMembers: any[] = [];
+		const seenIds = new Set<string>();
+		
 		for (let i = 0; i < memberIds.length; i += SQL_BATCH_SIZE) {
 			const batchIds = memberIds.slice(i, i + SQL_BATCH_SIZE);
 			const placeholders = batchIds.map(() => '?').join(',');
-			const result = await c.env.svu_prod01.prepare(
-				`SELECT * FROM auswertung WHERE AdrNr IN (${placeholders}) OR MitglNr IN (${placeholders})`
-			).bind(...batchIds, ...batchIds).all();
 			
-			if (result.results) {
-				allMembers.push(...result.results);
+			// First query: lookup by AdrNr
+			const result1 = await c.env.svu_prod01.prepare(
+				`SELECT * FROM auswertung WHERE AdrNr IN (${placeholders})`
+			).bind(...batchIds).all();
+			
+			if (result1.results) {
+				for (const member of result1.results as any[]) {
+					const id = String(member.AdrNr || member.MitglNr);
+					if (!seenIds.has(id)) {
+						seenIds.add(id);
+						allMembers.push(member);
+					}
+				}
+			}
+			
+			// Second query: lookup by MitglNr (for any not found by AdrNr)
+			const result2 = await c.env.svu_prod01.prepare(
+				`SELECT * FROM auswertung WHERE MitglNr IN (${placeholders})`
+			).bind(...batchIds).all();
+			
+			if (result2.results) {
+				for (const member of result2.results as any[]) {
+					const id = String(member.AdrNr || member.MitglNr);
+					if (!seenIds.has(id)) {
+						seenIds.add(id);
+						allMembers.push(member);
+					}
+				}
 			}
 		}
 
