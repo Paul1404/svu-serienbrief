@@ -33,7 +33,7 @@ function isKnownRoute(pathname: string): boolean {
 }
 
 // Helper to render 404 page
-function render404(c: Context<{ Bindings: Env }>, startTime: number): Response {
+function render404(c: Context<{ Bindings: Env }>): Response {
 	const url = new URL(c.req.url);
 	const cf = c.req.raw.cf as { colo?: string; country?: string; city?: string } | undefined;
 	
@@ -43,17 +43,10 @@ function render404(c: Context<{ Bindings: Env }>, startTime: number): Response {
 		colo: cf?.colo,
 		country: cf?.country,
 		city: cf?.city,
-		workerCpuTimeMs: performance.now() - startTime,
 	};
 	
 	return c.html(render404Page(stats), 404);
 }
-
-// Track request start time for all requests
-app.use('*', async (c: Context<{ Bindings: Env }>, next: Next) => {
-	c.set('startTime', performance.now());
-	await next();
-});
 
 // Public 404 for unknown routes (before auth, so everyone sees it)
 app.use('*', async (c: Context<{ Bindings: Env }>, next: Next) => {
@@ -61,8 +54,7 @@ app.use('*', async (c: Context<{ Bindings: Env }>, next: Next) => {
 	
 	if (!isKnownRoute(url.pathname)) {
 		// Unknown route - show 404 immediately (no auth needed)
-		const startTime = c.get('startTime') || performance.now();
-		return render404(c, startTime);
+		return render404(c);
 	}
 	
 	await next();
@@ -89,8 +81,7 @@ app.route('/letters', letters);
 
 // Fallback 404 for authenticated users hitting unknown sub-routes
 app.notFound((c) => {
-	const startTime = c.get('startTime') || performance.now();
-	return render404(c, startTime);
+	return render404(c);
 });
 
 export default app;

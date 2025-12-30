@@ -1257,6 +1257,76 @@ export function renderDashboard(): string {
 
         init();
     </script>
+    <script>
+        // Measure real network timing using Navigation Timing API
+        function measureTiming() {
+            const perf = performance.getEntriesByType('navigation')[0];
+            if (!perf) {
+                // Fallback for older browsers
+                setTimeout(measureTiming, 100);
+                return;
+            }
+            
+            const formatMs = (ms) => {
+                if (ms < 0 || isNaN(ms)) return '0ms';
+                if (ms < 1) return '<1ms';
+                return ms.toFixed(1) + 'ms';
+            };
+            
+            // Calculate individual phases
+            const dns = perf.domainLookupEnd - perf.domainLookupStart;
+            const tcp = perf.connectEnd - perf.connectStart;
+            const tls = perf.secureConnectionStart > 0 ? (perf.connectEnd - perf.secureConnectionStart) : 0;
+            const request = perf.responseStart - perf.requestStart;
+            const ttfb = perf.responseStart - perf.fetchStart; // Time to first byte
+            const download = perf.responseEnd - perf.responseStart;
+            const total = perf.responseEnd - perf.fetchStart;
+            
+            // Update the display
+            document.getElementById('rtt-value').textContent = formatMs(total);
+            document.getElementById('dns-value').textContent = formatMs(dns);
+            document.getElementById('tcp-value').textContent = formatMs(tcp);
+            document.getElementById('tls-value').textContent = formatMs(tls);
+            document.getElementById('request-value').textContent = formatMs(request);
+            document.getElementById('ttfb-value').textContent = formatMs(ttfb);
+            document.getElementById('download-value').textContent = formatMs(download);
+            document.getElementById('total-display').textContent = formatMs(total);
+            
+            // Update speed indicator
+            const speedDot = document.getElementById('speed-dot');
+            if (total < 50) {
+                speedDot.className = 'perf-dot green';
+                document.getElementById('rtt-detail').textContent = 'Extrem schnell! 🚀';
+            } else if (total < 100) {
+                speedDot.className = 'perf-dot green';
+                document.getElementById('rtt-detail').textContent = 'Sehr schnell! ⚡';
+            } else if (total < 200) {
+                speedDot.className = 'perf-dot yellow';
+                document.getElementById('rtt-detail').textContent = 'Schnell 👍';
+            } else {
+                speedDot.className = 'perf-dot yellow';
+                document.getElementById('rtt-detail').textContent = 'Normal';
+            }
+            
+            // Fun comparison in footer
+            const blinks = Math.floor(300 / total); // 300ms is avg blink
+            const footer = document.getElementById('footer-joke');
+            if (total < 50) {
+                footer.textContent = 'Diese 404 kam in ' + formatMs(total) + ' – schneller als ein Augenzwinkern (300ms)! Du könntest ' + blinks + 'x laden während du blinzelst.';
+            } else if (total < 100) {
+                footer.textContent = 'Ladezeit: ' + formatMs(total) + ' – Davon waren ' + formatMs(ttfb) + ' Netzwerk-Latenz zum Edge-Server.';
+            } else {
+                footer.textContent = 'Ladezeit: ' + formatMs(total) + ' – TTFB: ' + formatMs(ttfb) + ', Download: ' + formatMs(download);
+            }
+        }
+        
+        // Run when page is fully loaded
+        if (document.readyState === 'complete') {
+            measureTiming();
+        } else {
+            window.addEventListener('load', () => setTimeout(measureTiming, 0));
+        }
+    </script>
 </body>
 </html>`;
 }
@@ -1268,24 +1338,9 @@ export interface NotFoundStats {
     colo?: string;
     country?: string;
     city?: string;
-    
-    // Performance
-    workerCpuTimeMs: number;
 }
 
 export function render404Page(stats: NotFoundStats): string {
-    // Format time nicely - show µs for sub-millisecond, ms otherwise
-    const formatTime = (ms: number): string => {
-        if (ms < 0.01) return '<10µs';
-        if (ms < 1) return `${Math.round(ms * 1000)}µs`;
-        return `${ms.toFixed(1)}ms`;
-    };
-    
-    const timeDisplay = formatTime(stats.workerCpuTimeMs);
-    const timeForFooter = stats.workerCpuTimeMs < 1 
-        ? `${Math.round(stats.workerCpuTimeMs * 1000)}µs` 
-        : `${stats.workerCpuTimeMs.toFixed(2)}ms`;
-    
     return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -1716,15 +1771,15 @@ export function render404Page(stats: NotFoundStats): string {
         
         <div class="dashboard">
             <!-- Speed Stats -->
-            <div class="section-title">⚡ Edge Performance</div>
+            <div class="section-title">⚡ Netzwerk Performance (echte Messung)</div>
             <div class="cards">
                 <div class="card">
-                    <div class="card-label">🚀 Worker CPU</div>
-                    <div class="card-value success">${timeDisplay}</div>
-                    <div class="card-detail">Zeit bis zur Antwort</div>
+                    <div class="card-label">🌐 Round-Trip Zeit</div>
+                    <div class="card-value success" id="rtt-value">Messe...</div>
+                    <div class="card-detail" id="rtt-detail">Gesamte Anfrage inkl. Netzwerk</div>
                 </div>
                 <div class="card">
-                    <div class="card-label">🌍 Edge Server</div>
+                    <div class="card-label">🌍 Edge Standort</div>
                     <div class="card-value info">${escapeHtml(stats.colo || '???')}</div>
                     <div class="card-detail">${escapeHtml(stats.city || 'Cloudflare Edge')}${stats.country ? `, ${escapeHtml(stats.country)}` : ''}</div>
                 </div>
@@ -1735,12 +1790,41 @@ export function render404Page(stats: NotFoundStats): string {
                 </div>
             </div>
             
+            <!-- Detailed timing breakdown -->
+            <div class="section-title">📊 Timing Breakdown</div>
+            <div class="cards">
+                <div class="card">
+                    <div class="card-label">🔗 DNS Lookup</div>
+                    <div class="card-value" id="dns-value" style="font-size: 24px;">--</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">🔌 TCP Verbindung</div>
+                    <div class="card-value" id="tcp-value" style="font-size: 24px;">--</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">🔒 TLS Handshake</div>
+                    <div class="card-value" id="tls-value" style="font-size: 24px;">--</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">📤 Request senden</div>
+                    <div class="card-value" id="request-value" style="font-size: 24px;">--</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">⏳ Warten (TTFB)</div>
+                    <div class="card-value" id="ttfb-value" style="font-size: 24px;">--</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">📥 Download</div>
+                    <div class="card-value" id="download-value" style="font-size: 24px;">--</div>
+                </div>
+            </div>
+            
             <!-- Performance Bar -->
             <div class="perf-bar">
                 <div class="perf-item">
-                    <span class="perf-dot green"></span>
-                    <span class="perf-label">Latenz:</span>
-                    <span class="perf-value">${timeDisplay}</span>
+                    <span class="perf-dot" id="speed-dot"></span>
+                    <span class="perf-label">Gesamt:</span>
+                    <span class="perf-value" id="total-display">--</span>
                 </div>
                 <div class="perf-item">
                     <span class="perf-dot blue"></span>
@@ -1748,17 +1832,16 @@ export function render404Page(stats: NotFoundStats): string {
                     <span class="perf-value">${escapeHtml(stats.colo || 'Global')}</span>
                 </div>
                 <div class="perf-item">
-                    <span class="perf-dot ${stats.workerCpuTimeMs < 5 ? 'green' : stats.workerCpuTimeMs < 20 ? 'yellow' : 'red'}"></span>
-                    <span class="perf-label">Status:</span>
-                    <span class="perf-value">${stats.workerCpuTimeMs < 5 ? 'Blitzschnell ⚡' : stats.workerCpuTimeMs < 20 ? 'Schnell 🚀' : 'OK 👍'}</span>
+                    <span class="perf-dot blue"></span>
+                    <span class="perf-label">Netzwerk:</span>
+                    <span class="perf-value">300+ Standorte weltweit</span>
                 </div>
             </div>
         </div>
         
         <div class="footer">
-            <p class="footer-joke">
-                Die Seite gibt's nicht, aber diese 404 kam in ${timeForFooter} 
-                von ${escapeHtml(stats.colo || 'der Cloud')} zu dir. Nicht schlecht, oder?
+            <p class="footer-joke" id="footer-joke">
+                Messe Netzwerk-Latenz...
             </p>
             <div class="footer-logo">
                 <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SVU">
