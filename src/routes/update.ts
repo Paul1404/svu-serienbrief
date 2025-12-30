@@ -565,13 +565,15 @@ function renderSuccessPage(message?: string): string {
 </html>`;
 }
 
-function renderErrorPage(message: string): string {
+function renderErrorPage(message: string, isExpired: boolean = false): string {
+	const isInvalidLink = message.includes('Ungültiger') || message.includes('abgelaufen');
+	
 	return `<!DOCTYPE html>
 <html lang="de">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Fehler</title>
+	<title>${isExpired ? 'Link abgelaufen' : 'Fehler'} - SV Untereuerheim</title>
 	<link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
 	<style>
 		* { margin: 0; padding: 0; box-sizing: border-box; }
@@ -592,20 +594,95 @@ function renderErrorPage(message: string): string {
 			text-align: center;
 			max-width: 500px;
 		}
+		.error-icon {
+			width: 80px;
+			height: 80px;
+			background: ${isInvalidLink ? '#ffc107' : '#dc3545'};
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin: 0 auto 20px;
+			font-size: 40px;
+		}
 		h1 {
 			color: #CC0000;
 			margin-bottom: 15px;
+			font-size: 24px;
 		}
-		p {
-			color: #666;
+		.message {
+			color: #333;
+			font-size: 16px;
 			line-height: 1.6;
+			margin-bottom: 25px;
+		}
+		.help-box {
+			background: #f8f9fa;
+			border-left: 4px solid #CC0000;
+			padding: 20px;
+			text-align: left;
+			border-radius: 4px;
+			margin-bottom: 25px;
+		}
+		.help-box h3 {
+			color: #CC0000;
+			font-size: 14px;
+			margin-bottom: 12px;
+		}
+		.help-box ul {
+			color: #666;
+			font-size: 14px;
+			line-height: 1.8;
+			margin-left: 20px;
+		}
+		.help-box li {
+			margin-bottom: 5px;
+		}
+		.contact-info {
+			background: #e8f4fd;
+			padding: 15px;
+			border-radius: 8px;
+			font-size: 14px;
+			color: #333;
+		}
+		.contact-info strong {
+			color: #CC0000;
+		}
+		.footer {
+			margin-top: 25px;
+			padding-top: 20px;
+			border-top: 1px solid #eee;
+			font-size: 12px;
+			color: #999;
 		}
 	</style>
 </head>
 <body>
 	<div class="container">
-		<h1>Fehler</h1>
-		<p>${escapeHtml(message)}</p>
+		<div class="error-icon">${isInvalidLink ? '🔗' : '⚠️'}</div>
+		<h1>${isInvalidLink ? 'Link ungültig oder abgelaufen' : 'Fehler'}</h1>
+		<p class="message">${escapeHtml(message)}</p>
+		
+		${isInvalidLink ? `
+		<div class="help-box">
+			<h3>Was könnte passiert sein?</h3>
+			<ul>
+				<li>Der Link ist abgelaufen (nach 90 Tagen)</li>
+				<li>Der QR-Code wurde nicht vollständig gescannt</li>
+				<li>Der Link wurde falsch abgetippt</li>
+				<li>Es wurde bereits ein neuer Link für Sie erstellt</li>
+			</ul>
+		</div>
+		
+		<div class="contact-info">
+			<strong>Benötigen Sie einen neuen Link?</strong><br>
+			Bitte kontaktieren Sie den Verein, um einen neuen Aktualisierungslink zu erhalten.
+		</div>
+		` : ''}
+		
+		<div class="footer">
+			SV 1945 Untereuerheim e.V. • "Wir sind Untereuerheim"
+		</div>
 	</div>
 </body>
 </html>`;
