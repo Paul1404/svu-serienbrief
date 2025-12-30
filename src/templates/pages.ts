@@ -1680,14 +1680,14 @@ export function render404Page(stats: NotFoundStats): string {
             <h1>Seite nicht gefunden</h1>
             <p class="subtitle">
                 Diese Seite gibt es leider nicht – aber da du schonmal hier bist: 
-                Schau dir an, wie diese Website funktioniert! 🚀
+                Schau dir an, wie diese Website funktioniert!
             </p>
             <a href="/" class="btn">
                 ← Zurück zur Startseite
             </a>
         </div>
         
-        <div class="section-title">🧠 Wie funktioniert diese Seite?</div>
+        <div class="section-title">Wie funktioniert diese Seite?</div>
         
         <div class="explainer-grid">
             <div class="explainer-card worker">
@@ -1764,7 +1764,7 @@ export function render404Page(stats: NotFoundStats): string {
         
         <!-- Your request details -->
         <div class="your-request">
-            <h3 class="your-request-title">📡 Deine Anfrage</h3>
+            <h3 class="your-request-title">Deine Anfrage</h3>
             <div class="request-details">
                 <div class="request-item">
                     <span class="request-label">Gesuchte Seite</span>
@@ -1790,7 +1790,7 @@ export function render404Page(stats: NotFoundStats): string {
             </p>
             <div class="footer-logo">
                 <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SVU Logo">
-                <span>SV 1945 Untereuerheim e.V. • Serverless mit ❤️</span>
+                <span>SV 1945 Untereuerheim e.V.</span>
             </div>
         </div>
     </div>
