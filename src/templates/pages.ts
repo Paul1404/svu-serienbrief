@@ -1240,8 +1240,10 @@ export function renderDashboard(): string {
                             title: 'Aktionen',
                             data: null,
                             orderable: false,
+                            className: 'dt-nowrap',
                             render: function(data, type, row) {
-                                return '<button class="action-btn regenerate-token" data-id="' + row.member_id + '">Token neu generieren</button>';
+                                return '<button class="action-btn regenerate-token" data-id="' + row.member_id + '" style="margin-right: 8px;">Neu</button>' +
+                                       '<button class="action-btn secondary delete-token" data-id="' + row.member_id + '" data-name="' + (row.Vorname || '') + ' ' + (row.Nachname || '') + '" style="background: #dc3545; border-color: #dc3545;">Löschen</button>';
                             }
                         }
                     ],
@@ -1268,9 +1270,9 @@ export function renderDashboard(): string {
                 $('#token-table').on('click', '.regenerate-token', async function() {
                     const memberId = $(this).data('id');
                     const btn = $(this);
-                    const originalText = btn.text();
+                    const originalText = btn.html();
                     
-                    btn.prop('disabled', true).text('Generiere...');
+                    btn.prop('disabled', true).text('...');
                     
                     try {
                         const response = await fetch('/api/regenerate-token/' + memberId, {
@@ -1288,7 +1290,41 @@ export function renderDashboard(): string {
                     } catch (error) {
                         showToast('Fehler: ' + error.message, 'error');
                     } finally {
-                        btn.prop('disabled', false).text(originalText);
+                        btn.prop('disabled', false).html(originalText);
+                    }
+                });
+
+                // Handle token deletion
+                $('#token-table').on('click', '.delete-token', async function() {
+                    const memberId = $(this).data('id');
+                    const memberName = $(this).data('name');
+                    const btn = $(this);
+                    
+                    const confirmed = await showConfirm(
+                        'Token löschen?',
+                        'Möchten Sie das Token für "' + memberName + '" wirklich löschen? Das Mitglied kann dann nicht mehr auf seinen Datenänderungslink zugreifen.'
+                    );
+                    
+                    if (!confirmed) return;
+                    
+                    const originalText = btn.html();
+                    btn.prop('disabled', true).text('...');
+                    
+                    try {
+                        const response = await fetch('/api/delete-token/' + memberId, {
+                            method: 'DELETE'
+                        });
+                        
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.error || 'Fehler beim Löschen');
+                        }
+                        
+                        showToast('Token erfolgreich gelöscht', 'success');
+                        await loadTokenStatus();
+                    } catch (error) {
+                        showToast('Fehler: ' + error.message, 'error');
+                        btn.prop('disabled', false).html(originalText);
                     }
                 });
 

@@ -331,8 +331,33 @@ api.post('/regenerate-token/:memberId', async (c) => {
 			message: 'Token erfolgreich neu generiert'
 		});
 	} catch (error: any) {
+		console.error('Error regenerating token:', error);
+		return jsonResponse({ error: error.message }, 500);
+	}
+});
+
+// Delete token for a specific member
+api.delete('/delete-token/:memberId', async (c) => {
+	try {
+		const memberId = c.req.param('memberId');
+		
+		const result = await c.env.svu_prod01.prepare(`
+			DELETE FROM member_tokens WHERE member_id = ?
+		`).bind(memberId).run();
+		
 		console.log({
-			event: 'token_regenerate_error',
+			event: 'token_deleted',
+			member_id: memberId,
+			ip: c.req.header('cf-connecting-ip')
+		});
+		
+		return jsonResponse({
+			success: true,
+			message: 'Token erfolgreich gelöscht'
+		});
+	} catch (error: any) {
+		console.log({
+			event: 'token_delete_error',
 			error: error.message
 		});
 		return jsonError(error.message, 500);
