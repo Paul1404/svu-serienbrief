@@ -68,7 +68,8 @@ letters.post('/generate-pdfs', async (c) => {
 		const zipContent = createZipFromPdfFiles(pdfFiles);
 
 		const now = new Date();
-		const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
+		const pad = (num: number) => num.toString().padStart(2, '0');
+		const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
 		const filename = `serienbriefe_${timestamp}.zip`;
 
 		return new Response(zipContent, {
