@@ -705,7 +705,7 @@ export function renderDashboard(): string {
                     <option value="365">1 Jahr</option>
                 </select>
             </div>
-            <a href="/letters/preview/demo" class="action-btn secondary" target="_blank">Brief-Vorschau</a>
+            <a href="/letters/preview/demo" class="action-btn secondary" target="_blank">Demo-Vorschau</a>
             <button id="refreshBtn" class="action-btn secondary icon" title="Tabelle aktualisieren">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="23 4 23 10 17 10"></polyline>

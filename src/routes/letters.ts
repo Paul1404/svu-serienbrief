@@ -670,24 +670,36 @@ letters.get('/generate', async (c) => {
 });
 
 /**
- * Generate letter HTML for a specific member (for preview)
+ * Generate letter HTML preview with DEMO data only (no real member data)
  */
-letters.get('/preview/:token', async (c) => {
+letters.get('/preview/demo', async (c) => {
 	try {
-		const token = c.req.param('token');
 		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
 
-		// For preview, we'll just use the first member
-		const result = await c.env.svu_prod01.prepare(
-			`SELECT * FROM auswertung LIMIT 1`
-		).first();
+		// Use fake demo data - NEVER real member data!
+		const demoMember = {
+			AdrNr: 12345,
+			MitglNr: 'M-12345',
+			Anrede: 'Herr',
+			Vorname: 'Max',
+			Nachname: 'Mustermann',
+			Strasse: 'Musterstraße 123',
+			PLZ: '97508',
+			Ort: 'Grettstadt',
+			Telefon: '09729/123456',
+			Mobil: '0170/1234567',
+			EMail: 'max.mustermann@example.com',
+			Geburtsdatum: '01.01.1985',
+			IBAN: 'DE89 3704 0044 0532 0130 00',
+			BIC: 'COBADEFFXXX',
+			Bankbezeichnung: 'Commerzbank',
+			Eintritt: '01.01.2020',
+			Abteilung: 'Fußball, Tennis',
+			Funktionen: 'Mitglied',
+		};
 
-		if (!result) {
-			return c.html('<h1>Keine Mitglieder gefunden</h1>', 404);
-		}
-
-		const updateUrl = `${baseUrl}/update/${token}`;
-		const html = renderLetterHTML(result, updateUrl);
+		const demoUpdateUrl = `${baseUrl}/update/DEMO-TOKEN-BEISPIEL`;
+		const html = renderLetterHTML(demoMember, demoUpdateUrl, true);
 
 		return c.html(html);
 	} catch (error: any) {
@@ -698,21 +710,51 @@ letters.get('/preview/:token', async (c) => {
 /**
  * Render letter HTML with member data and QR code
  */
-function renderLetterHTML(member: any, updateUrl: string): string {
+function renderLetterHTML(member: any, updateUrl: string, isDemo: boolean = false): string {
 	const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(updateUrl)}`;
+	
+	const demoWatermark = isDemo ? `
+		.demo-watermark {
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%) rotate(-30deg);
+			font-size: 100px;
+			font-weight: bold;
+			color: rgba(204, 0, 0, 0.1);
+			pointer-events: none;
+			z-index: 0;
+			white-space: nowrap;
+		}
+		.demo-banner {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			background: linear-gradient(90deg, #CC0000, #ff4444);
+			color: white;
+			text-align: center;
+			padding: 10px;
+			font-weight: 600;
+			z-index: 1001;
+		}
+		body { padding-top: 60px; }
+	` : '';
 	
 	return `<!DOCTYPE html>
 <html lang="de">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Mitgliederdaten - ${member.Vorname} ${member.Nachname}</title>
+	<title>${isDemo ? 'DEMO - ' : ''}Mitgliederdaten - ${member.Vorname} ${member.Nachname}</title>
 	<style>
 		@page { size: A4; margin: 2cm; }
 		@media print {
-			body { margin: 0; }
+			body { margin: 0; padding-top: 0 !important; }
 			.no-print { display: none; }
 			.print-button { display: none; }
+			.demo-banner { display: none; }
+			.demo-watermark { display: none; }
 		}
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		body {
@@ -723,7 +765,9 @@ function renderLetterHTML(member: any, updateUrl: string): string {
 			margin: 0 auto;
 			padding: 20px;
 			background: white;
+			position: relative;
 		}
+		${demoWatermark}
 		.print-button {
 			position: fixed;
 			top: 20px;
@@ -847,6 +891,8 @@ function renderLetterHTML(member: any, updateUrl: string): string {
 	</style>
 </head>
 <body>
+	${isDemo ? '<div class="demo-banner">⚠️ DEMO-VORSCHAU - Dies sind Beispieldaten, keine echten Mitgliederdaten!</div>' : ''}
+	${isDemo ? '<div class="demo-watermark">MUSTER</div>' : ''}
 	<button class="print-button no-print" onclick="window.print()">🖨️ Als PDF drucken</button>
 	
 	<div class="header">
