@@ -364,4 +364,123 @@ api.delete('/delete-token/:memberId', async (c) => {
 	}
 });
 
+// Bulk delete tokens - single request for multiple tokens
+api.post('/bulk-delete-tokens', async (c) => {
+	try {
+		const body = await c.req.json();
+		const memberIds: string[] = body.memberIds || [];
+		
+		if (memberIds.length === 0) {
+			return jsonError('Keine Token-IDs angegeben', 400);
+		}
+		
+		// Use batched DELETE for efficiency (D1 has variable limits)
+		const BATCH_SIZE = 50;
+		let deletedCount = 0;
+		
+		for (let i = 0; i < memberIds.length; i += BATCH_SIZE) {
+			const batch = memberIds.slice(i, i + BATCH_SIZE);
+			const placeholders = batch.map(() => '?').join(',');
+			
+			const result = await c.env.svu_prod01.prepare(`
+				DELETE FROM member_tokens WHERE member_id IN (${placeholders})
+			`).bind(...batch).run();
+			
+			deletedCount += result.meta?.changes || batch.length;
+		}
+		
+		console.log({
+			event: 'bulk_tokens_deleted',
+			count: deletedCount,
+			ip: c.req.header('cf-connecting-ip')
+		});
+		
+		return jsonResponse({
+			success: true,
+			deletedCount,
+			message: `${deletedCount} Token erfolgreich gelöscht`
+		});
+	} catch (error: any) {
+		console.log({
+			event: 'bulk_token_delete_error',
+			error: error.message
+		});
+		return jsonError(error.message, 500);
+	}
+});
+
+// Bulk regenerate tokens - single request for multiple tokens
+api.post('/bulk-regenerate-tokens', async (c) => {
+	try {
+		const body = await c.req.json();
+		const memberIds: string[] = body.memberIds || [];
+		const validityDays = Math.min(Math.max(body.validityDays || 90, 7), 365);
+		
+		if (memberIds.length === 0) {
+			return jsonError('Keine Token-IDs angegeben', 400);
+		}
+		
+		const { generateMemberToken } = await import('../utils/tokens');
+		const secret = c.env.ADMIN_PASSWORD;
+		const baseUrl = new URL(c.req.url).origin;
+		const now = Date.now();
+		const expiresAt = now + (validityDays * 24 * 60 * 60 * 1000);
+		
+		// Generate all tokens and prepare batch insert
+		const tokenData: Array<{ memberId: string; token: string; updateUrl: string }> = [];
+		
+		for (const memberId of memberIds) {
+			const token = await generateMemberToken(memberId, secret);
+			tokenData.push({
+				memberId,
+				token,
+				updateUrl: `${baseUrl}/update/${token}`
+			});
+		}
+		
+		// Batch upsert tokens (D1 has variable limits)
+		const BATCH_SIZE = 25; // Lower for upserts with more bindings
+		
+		for (let i = 0; i < tokenData.length; i += BATCH_SIZE) {
+			const batch = tokenData.slice(i, i + BATCH_SIZE);
+			
+			// Build batch upsert statement
+			const values = batch.map(() => '(?, ?, ?, ?, 0)').join(', ');
+			const bindings: any[] = [];
+			batch.forEach(item => {
+				bindings.push(item.memberId, item.token, now, expiresAt);
+			});
+			
+			await c.env.svu_prod01.prepare(`
+				INSERT INTO member_tokens (member_id, token, generated_at, expires_at, regenerated_count)
+				VALUES ${values}
+				ON CONFLICT(member_id) DO UPDATE SET
+					token = excluded.token,
+					generated_at = excluded.generated_at,
+					expires_at = excluded.expires_at,
+					regenerated_count = regenerated_count + 1
+			`).bind(...bindings).run();
+		}
+		
+		console.log({
+			event: 'bulk_tokens_regenerated',
+			count: tokenData.length,
+			ip: c.req.header('cf-connecting-ip')
+		});
+		
+		return jsonResponse({
+			success: true,
+			regeneratedCount: tokenData.length,
+			tokens: tokenData.map(t => ({ memberId: t.memberId, updateUrl: t.updateUrl })),
+			message: `${tokenData.length} Token erfolgreich neu generiert`
+		});
+	} catch (error: any) {
+		console.log({
+			event: 'bulk_token_regenerate_error',
+			error: error.message
+		});
+		return jsonError(error.message, 500);
+	}
+});
+
 export default api;

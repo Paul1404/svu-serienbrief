@@ -1509,7 +1509,7 @@ export function renderDashboard(): string {
             }
         });
 
-        // Handle bulk token regeneration
+        // Handle bulk token regeneration - single API call for all tokens
         document.getElementById('regenerateTokensBtn').addEventListener('click', async function() {
             if (selectedTokens.size === 0) {
                 showToast('Bitte wählen Sie mindestens ein Token aus.', 'warning');
@@ -1529,30 +1529,19 @@ export function renderDashboard(): string {
             btn.textContent = 'Generiere...';
 
             try {
-                const tokenIds = Array.from(selectedTokens);
-                let successCount = 0;
-                let errorCount = 0;
-
-                for (const memberId of tokenIds) {
-                    try {
-                        const response = await fetch('/api/regenerate-token/' + memberId, {
-                            method: 'POST'
-                        });
-                        if (response.ok) {
-                            successCount++;
-                        } else {
-                            errorCount++;
-                        }
-                    } catch (e) {
-                        errorCount++;
-                    }
+                const response = await fetch('/api/bulk-regenerate-tokens', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ memberIds: Array.from(selectedTokens) })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Fehler beim Generieren');
                 }
-
-                if (errorCount > 0) {
-                    showToast(successCount + ' Token generiert, ' + errorCount + ' Fehler', 'warning');
-                } else {
-                    showToast(successCount + ' Token erfolgreich neu generiert', 'success');
-                }
+                
+                const result = await response.json();
+                showToast(result.message, 'success');
                 
                 selectedTokens.clear();
                 await loadTokenStatus();
@@ -1564,7 +1553,7 @@ export function renderDashboard(): string {
             }
         });
 
-        // Handle bulk token deletion
+        // Handle bulk token deletion - single API call for all tokens
         document.getElementById('deleteTokensBtn').addEventListener('click', async function() {
             if (selectedTokens.size === 0) {
                 showToast('Bitte wählen Sie mindestens ein Token aus.', 'warning');
@@ -1584,30 +1573,19 @@ export function renderDashboard(): string {
             btn.textContent = 'Lösche...';
 
             try {
-                const tokenIds = Array.from(selectedTokens);
-                let successCount = 0;
-                let errorCount = 0;
-
-                for (const memberId of tokenIds) {
-                    try {
-                        const response = await fetch('/api/delete-token/' + memberId, {
-                            method: 'DELETE'
-                        });
-                        if (response.ok) {
-                            successCount++;
-                        } else {
-                            errorCount++;
-                        }
-                    } catch (e) {
-                        errorCount++;
-                    }
+                const response = await fetch('/api/bulk-delete-tokens', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ memberIds: Array.from(selectedTokens) })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Fehler beim Löschen');
                 }
-
-                if (errorCount > 0) {
-                    showToast(successCount + ' Token gelöscht, ' + errorCount + ' Fehler', 'warning');
-                } else {
-                    showToast(successCount + ' Token erfolgreich gelöscht', 'success');
-                }
+                
+                const result = await response.json();
+                showToast(result.message, 'success');
                 
                 selectedTokens.clear();
                 await loadTokenStatus();
