@@ -11,7 +11,8 @@ const pages = new Hono<{ Bindings: Env }>();
 
 // Login page
 pages.get('/login', (c) => {
-	return c.html(renderLoginPage());
+	const sessionExpired = c.req.query('expired') === '1';
+	return c.html(renderLoginPage({ sessionExpired }));
 });
 
 // Handle login form submission
@@ -29,7 +30,7 @@ pages.post('/login', async (c) => {
 				reason: 'missing_admin_password_config',
 				client_ip: clientIP
 			});
-			return c.html(renderLoginPage('Server configuration error'), 500);
+			return c.html(renderLoginPage({ error: 'Server configuration error' }), 500);
 		}
 
 		if (password !== c.env.ADMIN_PASSWORD) {
@@ -41,7 +42,7 @@ pages.post('/login', async (c) => {
 			});
 			// Add a small delay to prevent brute force attacks
 			await new Promise(resolve => setTimeout(resolve, 1000));
-			return c.html(renderLoginPage('Ungültiges Passwort'), 401);
+			return c.html(renderLoginPage({ error: 'Ungültiges Passwort' }), 401);
 		}
 
 		const { sessionId, expires } = await createSession(c.env.svu_prod01, clientIP, userAgent);
@@ -68,7 +69,7 @@ pages.post('/login', async (c) => {
 			error: error.message,
 			stack: error.stack
 		});
-		return c.html(renderLoginPage('Login fehlgeschlagen: ' + error.message), 500);
+		return c.html(renderLoginPage({ error: 'Login fehlgeschlagen: ' + error.message }), 500);
 	}
 });
 

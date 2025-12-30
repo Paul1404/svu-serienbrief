@@ -4,7 +4,9 @@
 
 import { escapeHtml } from '../utils/helpers';
 
-export function renderLoginPage(error?: string): string {
+export function renderLoginPage(options?: { error?: string; sessionExpired?: boolean }): string {
+    const { error, sessionExpired } = options || {};
+    
     return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -95,6 +97,22 @@ export function renderLoginPage(error?: string): string {
             border-left: 4px solid #c00;
             font-size: 14px;
         }
+        .info {
+            background: #fff8e6;
+            color: #856404;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .info-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -105,6 +123,7 @@ export function renderLoginPage(error?: string): string {
         <h1>SV 1945 Untereuerheim e.V.</h1>
         <div class="subtitle">Mitgliederverwaltung</div>
         
+        ${sessionExpired ? `<div class="info"><span class="info-icon">⏱️</span><span>Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.</span></div>` : ''}
         ${error ? `<div class="error">${escapeHtml(error)}</div>` : ''}
         
         <form method="POST" action="/login">

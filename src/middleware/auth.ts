@@ -199,10 +199,22 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 	const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
 	const userAgent = c.req.header('user-agent') || '';
 
-	if (!sessionId || !(await validateSession(c.env.svu_prod01, sessionId, ipAddress, userAgent))) {
+	// Determine why auth failed (for UX messaging)
+	let authFailReason: 'no_cookie' | 'expired' | null = null;
+	
+	if (!sessionId) {
+		authFailReason = 'no_cookie';
+	} else {
+		const isValid = await validateSession(c.env.svu_prod01, sessionId, ipAddress, userAgent);
+		if (!isValid) {
+			authFailReason = 'expired';
+		}
+	}
+	
+	if (authFailReason) {
 		console.log({
 			event: 'auth_failed',
-			reason: !sessionId ? 'no_session_cookie' : 'invalid_session',
+			reason: authFailReason === 'no_cookie' ? 'no_session_cookie' : 'invalid_session',
 			path: url.pathname,
 			method: c.req.method,
 			ip: ipAddress,
@@ -218,11 +230,21 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 		// Store the original URL to redirect back after login
 		const returnTo = url.pathname + url.search;
 		
+		// Build redirect URL with session expired message if applicable
+		const loginParams = new URLSearchParams();
+		
+		// Only show "expired" message if user HAD a session cookie (not first visit)
+		if (authFailReason === 'expired') {
+			loginParams.set('expired', '1');
+		}
+		
 		// Don't include /login or /logout in the return path
 		if (returnTo !== '/login' && returnTo !== '/logout') {
-			return c.redirect(`/login?return=${encodeURIComponent(returnTo)}`);
+			loginParams.set('return', returnTo);
 		}
-		return c.redirect('/login');
+		
+		const queryString = loginParams.toString();
+		return c.redirect(`/login${queryString ? '?' + queryString : ''}`);
 	}
 
 	console.log({
