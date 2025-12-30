@@ -1067,3 +1067,561 @@ export function renderDashboard(): string {
 </body>
 </html>`;
 }
+
+export interface NotFoundStats {
+    // Request info
+    requestedPath: string;
+    method: string;
+    timestamp: string;
+    cfRay?: string;
+    colo?: string;
+    country?: string;
+    city?: string;
+    
+    // D1 Database stats
+    totalMembers: number;
+    totalTokens: number;
+    totalChanges: number;
+    totalSessions: number;
+    totalAccesses: number;
+    
+    // Computed stats
+    dbQueryTimeMs: number;
+    workerCpuTimeMs: number;
+}
+
+export function render404Page(stats: NotFoundStats): string {
+    const timestamp = new Date(stats.timestamp);
+    const formattedTime = timestamp.toLocaleString('de-DE', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short'
+    });
+    
+    return `<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Seite nicht gefunden (aber vieles andere schon!) | SV 1945 Untereuerheim</title>
+    <link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-card-hover: #1a1a25;
+            --accent: #CC0000;
+            --accent-glow: rgba(204, 0, 0, 0.3);
+            --text: #e4e4e7;
+            --text-dim: #71717a;
+            --success: #22c55e;
+            --warning: #eab308;
+            --info: #3b82f6;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+        
+        /* Animated grid background */
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(204, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(204, 0, 0, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            z-index: -1;
+        }
+        
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        /* Glowing orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+            animation: float 10s ease-in-out infinite;
+        }
+        
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent);
+            top: -100px;
+            right: -100px;
+        }
+        
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: #3b82f6;
+            bottom: -50px;
+            left: -50px;
+            animation-delay: -5s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -30px) scale(1.1); }
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        /* Header section */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .error-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(204, 0, 0, 0.1);
+            border: 1px solid rgba(204, 0, 0, 0.3);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--accent);
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+            50% { box-shadow: 0 0 20px 5px var(--accent-glow); }
+        }
+        
+        .error-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: blink 1s ease-in-out infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .error-code {
+            font-size: 120px;
+            font-weight: 700;
+            line-height: 1;
+            background: linear-gradient(180deg, #fff 0%, #999 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 16px;
+            max-width: 500px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px var(--accent-glow);
+        }
+        
+        /* Stats dashboard */
+        .dashboard {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            margin: 30px 0 15px;
+        }
+        
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent);
+        }
+        
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .card-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .card-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .card-value.accent { color: var(--accent); }
+        .card-value.success { color: var(--success); }
+        .card-value.warning { color: var(--warning); }
+        .card-value.info { color: var(--info); }
+        
+        .card-detail {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 8px;
+        }
+        
+        /* Request info panel */
+        .request-panel {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .request-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 20px;
+            background: rgba(204, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .method-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: var(--accent);
+            color: white;
+        }
+        
+        .request-path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--text);
+            word-break: break-all;
+        }
+        
+        .request-body {
+            padding: 15px 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+        
+        .request-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .request-item-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+        }
+        
+        .request-item-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text);
+        }
+        
+        /* Performance bar */
+        .perf-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-top: 20px;
+        }
+        
+        .perf-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .perf-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .perf-dot.green { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .perf-dot.yellow { background: var(--warning); box-shadow: 0 0 10px var(--warning); }
+        .perf-dot.blue { background: var(--info); box-shadow: 0 0 10px var(--info); }
+        
+        .perf-label {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        
+        .perf-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text);
+        }
+        
+        /* Footer joke */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .footer-joke {
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 15px;
+        }
+        
+        .footer-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+        
+        .footer-logo img {
+            width: 30px;
+            height: auto;
+            opacity: 0.5;
+        }
+        
+        /* Terminal-style timestamp */
+        .terminal {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            background: rgba(0,0,0,0.3);
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: inline-block;
+        }
+        
+        .terminal::before {
+            content: '$ ';
+            color: var(--success);
+        }
+        
+        /* Live counter animation */
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card-value {
+            animation: countUp 0.5s ease-out;
+        }
+        
+        .cards .card:nth-child(1) .card-value { animation-delay: 0.1s; }
+        .cards .card:nth-child(2) .card-value { animation-delay: 0.2s; }
+        .cards .card:nth-child(3) .card-value { animation-delay: 0.3s; }
+        .cards .card:nth-child(4) .card-value { animation-delay: 0.4s; }
+        .cards .card:nth-child(5) .card-value { animation-delay: 0.5s; }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="error-badge">HTTP ${escapeHtml(stats.method)} REQUEST FAILED</div>
+            <div class="error-code">404</div>
+            <h1>Seite nicht gefunden</h1>
+            <p class="subtitle">
+                Die angeforderte Seite existiert nicht. Aber keine Sorge – 
+                wir haben trotzdem <em>sehr wichtige</em> Daten für Sie gesammelt! 🤓
+            </p>
+            <a href="/" class="btn">
+                <span>←</span>
+                Zurück zur Startseite
+            </a>
+            <div class="terminal">render_404_page --with-unnecessary-stats --verbose</div>
+        </div>
+        
+        <div class="dashboard">
+            <!-- Failed Request Info -->
+            <div class="section-title">📡 Fehlgeschlagene Anfrage</div>
+            <div class="request-panel">
+                <div class="request-header">
+                    <span class="method-badge">${escapeHtml(stats.method)}</span>
+                    <span class="request-path">${escapeHtml(stats.requestedPath)}</span>
+                </div>
+                <div class="request-body">
+                    <div class="request-item">
+                        <span class="request-item-label">Zeitstempel</span>
+                        <span class="request-item-value">${escapeHtml(formattedTime)}</span>
+                    </div>
+                    <div class="request-item">
+                        <span class="request-item-label">CF-Ray</span>
+                        <span class="request-item-value">${escapeHtml(stats.cfRay || 'N/A')}</span>
+                    </div>
+                    <div class="request-item">
+                        <span class="request-item-label">Edge Location</span>
+                        <span class="request-item-value">${escapeHtml(stats.colo || 'Unknown')} ${stats.country ? `(${escapeHtml(stats.country)})` : ''}</span>
+                    </div>
+                    <div class="request-item">
+                        <span class="request-item-label">Stadt</span>
+                        <span class="request-item-value">${escapeHtml(stats.city || 'Unknown')}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- D1 Database Stats -->
+            <div class="section-title">🗄️ D1 Datenbank-Statistiken (völlig unnötig, aber beeindruckend)</div>
+            <div class="cards">
+                <div class="card">
+                    <div class="card-label">👥 Mitglieder</div>
+                    <div class="card-value accent">${stats.totalMembers.toLocaleString('de-DE')}</div>
+                    <div class="card-detail">registrierte Vereinsmitglieder</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">🎟️ Aktive Tokens</div>
+                    <div class="card-value info">${stats.totalTokens.toLocaleString('de-DE')}</div>
+                    <div class="card-detail">gültige Zugangstoken</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">📝 Änderungen</div>
+                    <div class="card-value warning">${stats.totalChanges.toLocaleString('de-DE')}</div>
+                    <div class="card-detail">protokollierte Datenänderungen</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">🔐 Admin-Sessions</div>
+                    <div class="card-value success">${stats.totalSessions.toLocaleString('de-DE')}</div>
+                    <div class="card-detail">aktive Sitzungen</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">👁️ Portal-Zugriffe</div>
+                    <div class="card-value">${stats.totalAccesses.toLocaleString('de-DE')}</div>
+                    <div class="card-detail">Mitglieder-Seitenaufrufe</div>
+                </div>
+            </div>
+            
+            <!-- Performance -->
+            <div class="perf-bar">
+                <div class="perf-item">
+                    <span class="perf-dot green"></span>
+                    <span class="perf-label">DB Query:</span>
+                    <span class="perf-value">${stats.dbQueryTimeMs.toFixed(2)}ms</span>
+                </div>
+                <div class="perf-item">
+                    <span class="perf-dot blue"></span>
+                    <span class="perf-label">Worker CPU:</span>
+                    <span class="perf-value">${stats.workerCpuTimeMs.toFixed(2)}ms</span>
+                </div>
+                <div class="perf-item">
+                    <span class="perf-dot yellow"></span>
+                    <span class="perf-label">Status:</span>
+                    <span class="perf-value">Overengineered ✓</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-joke">
+                "Wir haben Ihre Seite nicht gefunden, aber immerhin wissen wir jetzt, 
+                wie viele Mitglieder wir haben. Das ist doch auch was!" 
+                <br>— Unser Backend-Entwickler, wahrscheinlich
+            </p>
+            <div class="footer-logo">
+                <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SVU">
+                <span>SV 1945 Untereuerheim e.V. • "Wir sind Untereuerheim"</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+}
