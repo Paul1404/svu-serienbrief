@@ -7,7 +7,7 @@ import type { Env } from '../types';
 import { generateMemberToken } from '../utils/tokens';
 import { jsonResponse, jsonError } from '../utils/helpers';
 import { zipSync } from 'fflate';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, PDFArray, PDFName } from 'pdf-lib';
 
 const letters = new Hono<{ Bindings: Env }>();
 
@@ -261,13 +261,12 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 		const linkRef = pdfDoc.context.register(pdfDoc.context.obj(linkAnnotation));
 		const existingAnnots = page.node.lookup(pdfDoc.context.obj('Annots'));
 		
-		if (existingAnnots) {
+		if (existingAnnots instanceof PDFArray) {
 			// Append to existing annotations
-			const annotsArray = existingAnnots.dict?.get(pdfDoc.context.obj('Annots')) || [];
-			page.node.set(pdfDoc.context.obj('Annots'), pdfDoc.context.obj([linkRef]));
+			existingAnnots.push(linkRef);
 		} else {
 			// Create new annotations array
-			page.node.set(pdfDoc.context.obj('Annots'), pdfDoc.context.obj([linkRef]));
+			page.node.set(PDFName.of('Annots'), pdfDoc.context.obj([linkRef]));
 		}
 	}
 
