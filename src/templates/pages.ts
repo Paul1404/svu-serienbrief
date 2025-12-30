@@ -360,6 +360,23 @@ export function renderDashboard(): string {
             font-size: 14px;
             color: var(--text-primary);
         }
+        .dataTables_wrapper label,
+        .dataTables_wrapper .dataTables_length label,
+        .dataTables_wrapper .dataTables_filter label,
+        .dataTables_wrapper .dataTables_info,
+        div.dt-container .dt-info,
+        div.dt-container .dt-length,
+        div.dt-container .dt-search,
+        div.dt-container .dt-length label,
+        div.dt-container .dt-search label {
+            color: var(--text-secondary) !important;
+        }
+        .dataTables_wrapper select,
+        .dataTables_wrapper input,
+        div.dt-container select,
+        div.dt-container input {
+            color: var(--text-primary) !important;
+        }
         table.dataTable {
             border: 1px solid var(--border-light) !important;
             width: 100% !important;
@@ -433,6 +450,32 @@ export function renderDashboard(): string {
             border-color: var(--border-color) !important;
         }
         .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: var(--text-primary) !important;
+        }
+        .dataTables_wrapper .dataTables_paginate span .paginate_button {
+            color: var(--text-primary) !important;
+        }
+        div.dataTables_wrapper div.dataTables_length label,
+        div.dataTables_wrapper div.dataTables_filter label,
+        div.dataTables_wrapper div.dataTables_info {
+            color: var(--text-secondary) !important;
+        }
+        /* DataTables 2.x pagination overrides */
+        div.dt-container .dt-paging .dt-paging-button {
+            color: var(--text-primary) !important;
+            background: transparent !important;
+            border: 1px solid var(--border-color) !important;
+        }
+        div.dt-container .dt-paging .dt-paging-button.current {
+            background: #CC0000 !important;
+            color: white !important;
+            border-color: #CC0000 !important;
+        }
+        div.dt-container .dt-paging .dt-paging-button.disabled {
+            color: var(--text-muted) !important;
+        }
+        div.dt-container .dt-paging .dt-paging-button:hover:not(.disabled):not(.current) {
+            background: var(--table-hover) !important;
             color: var(--text-primary) !important;
         }
         .stats-grid {
