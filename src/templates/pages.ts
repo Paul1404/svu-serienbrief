@@ -943,9 +943,18 @@ export function renderDashboard(): string {
                 document.getElementById('tableInfo').innerHTML = 
                     '<strong>Mitgliederdatenbank</strong> - ' + data.data.length + ' Mitglieder';
 
+                // Helper to normalize member ID (removes .0 from floats, handles missing IDs)
+                function normalizeMemberId(member) {
+                    const raw = member.AdrNr || member.MitglNr;
+                    if (raw === null || raw === undefined) return null;
+                    // Convert to string and remove trailing .0 from floats
+                    const str = String(raw);
+                    return str.endsWith('.0') ? str.slice(0, -2) : str;
+                }
+
                 // Enrich data with access information
                 const enrichedData = data.data.map(member => {
-                    const memberId = member.AdrNr || member.MitglNr;
+                    const memberId = normalizeMemberId(member);
                     const stats = accessStats[memberId];
                     return {
                         ...member,
@@ -964,7 +973,8 @@ export function renderDashboard(): string {
                         className: 'dt-center',
                         width: '40px',
                         render: function(data, type, row) {
-                            const memberId = row.AdrNr || row.MitglNr;
+                            const memberId = normalizeMemberId(row);
+                            if (!memberId) return '<span style="color: #999;">-</span>';
                             return '<input type="checkbox" class="row-select" data-id="' + memberId + '">';
                         }
                     },

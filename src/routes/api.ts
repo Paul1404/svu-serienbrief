@@ -8,6 +8,15 @@ import { sanitizeIdentifier, jsonResponse, jsonError } from '../utils/helpers';
 
 const api = new Hono<{ Bindings: Env }>();
 
+/**
+ * Normalize member ID - removes .0 from floats
+ */
+function normalizeMemberId(id: any): string {
+	if (id === null || id === undefined) return '';
+	const str = String(id);
+	return str.endsWith('.0') ? str.slice(0, -2) : str;
+}
+
 // Get paginated data
 api.get('/data', async (c) => {
 	try {
@@ -295,7 +304,8 @@ api.get('/token-status', async (c) => {
 // Regenerate token for a specific member
 api.post('/regenerate-token/:memberId', async (c) => {
 	try {
-		const memberId = c.req.param('memberId');
+		const memberId = normalizeMemberId(c.req.param('memberId'));
+		if (!memberId) return jsonError('Ungültige Mitglieds-ID', 400);
 		const secret = c.env.ADMIN_PASSWORD;
 		
 		// Import generateMemberToken
@@ -339,7 +349,8 @@ api.post('/regenerate-token/:memberId', async (c) => {
 // Delete token for a specific member
 api.delete('/delete-token/:memberId', async (c) => {
 	try {
-		const memberId = c.req.param('memberId');
+		const memberId = normalizeMemberId(c.req.param('memberId'));
+		if (!memberId) return jsonError('Ungültige Mitglieds-ID', 400);
 		
 		const result = await c.env.svu_prod01.prepare(`
 			DELETE FROM member_tokens WHERE member_id = ?
@@ -368,7 +379,10 @@ api.delete('/delete-token/:memberId', async (c) => {
 api.post('/bulk-delete-tokens', async (c) => {
 	try {
 		const body = await c.req.json();
-		const memberIds: string[] = body.memberIds || [];
+		const rawIds: any[] = body.memberIds || [];
+		
+		// Normalize all member IDs (remove .0 from floats)
+		const memberIds = rawIds.map(id => normalizeMemberId(id)).filter(id => id !== '');
 		
 		if (memberIds.length === 0) {
 			return jsonError('Keine Token-IDs angegeben', 400);
@@ -413,8 +427,11 @@ api.post('/bulk-delete-tokens', async (c) => {
 api.post('/bulk-regenerate-tokens', async (c) => {
 	try {
 		const body = await c.req.json();
-		const memberIds: string[] = body.memberIds || [];
+		const rawIds: any[] = body.memberIds || [];
 		const validityDays = Math.min(Math.max(body.validityDays || 90, 7), 365);
+		
+		// Normalize all member IDs (remove .0 from floats)
+		const memberIds = rawIds.map(id => normalizeMemberId(id)).filter(id => id !== '');
 		
 		if (memberIds.length === 0) {
 			return jsonError('Keine Token-IDs angegeben', 400);

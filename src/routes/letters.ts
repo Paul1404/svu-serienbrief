@@ -18,6 +18,16 @@ const SQL_BATCH_SIZE = 50;
 const PDF_BATCH_SIZE = 10;
 
 /**
+ * Normalize member ID - removes .0 from floats, handles missing IDs
+ */
+function normalizeMemberId(member: any): string | null {
+	const raw = member.AdrNr || member.MitglNr;
+	if (raw === null || raw === undefined) return null;
+	const str = String(raw);
+	return str.endsWith('.0') ? str.slice(0, -2) : str;
+}
+
+/**
  * Generate PDFs for selected members and return as ZIP
  */
 letters.post('/generate-pdfs', async (c) => {
@@ -47,8 +57,8 @@ letters.post('/generate-pdfs', async (c) => {
 			
 			if (result1.results) {
 				for (const member of result1.results as any[]) {
-					const id = String(member.AdrNr || member.MitglNr);
-					if (!seenIds.has(id)) {
+					const id = normalizeMemberId(member);
+					if (id && !seenIds.has(id)) {
 						seenIds.add(id);
 						allMembers.push(member);
 					}
@@ -62,8 +72,8 @@ letters.post('/generate-pdfs', async (c) => {
 			
 			if (result2.results) {
 				for (const member of result2.results as any[]) {
-					const id = String(member.AdrNr || member.MitglNr);
-					if (!seenIds.has(id)) {
+					const id = normalizeMemberId(member);
+					if (id && !seenIds.has(id)) {
 						seenIds.add(id);
 						allMembers.push(member);
 					}
@@ -97,7 +107,11 @@ letters.post('/generate-pdfs', async (c) => {
 			
 			const batchResults = await Promise.all(
 				batch.map(async (member: any) => {
-					const memberId = member.AdrNr || member.MitglNr;
+					const memberId = normalizeMemberId(member);
+					if (!memberId) {
+						console.warn('Skipping member without ID:', member.Vorname, member.Nachname);
+						return null;
+					}
 					const token = await generateMemberToken(memberId, secret);
 					const updateUrl = `${baseUrl}/update/${token}`;
 					
@@ -123,7 +137,8 @@ letters.post('/generate-pdfs', async (c) => {
 				})
 			);
 			
-			pdfFiles.push(...batchResults);
+			// Filter out nulls (members without valid IDs)
+			pdfFiles.push(...batchResults.filter((r): r is { filename: string; data: Uint8Array } => r !== null));
 		}
 
 		// Create ZIP with PDF files
