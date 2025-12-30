@@ -789,6 +789,11 @@ export function renderDashboard(): string {
         <div class="content" style="margin-top: 30px;">
             <h2 style="margin-bottom: 20px;">Token Status</h2>
             <div id="tokenInfo" class="info">Lade Token-Informationen...</div>
+            <div class="action-bar" style="margin: 15px 0; display: flex; gap: 10px; align-items: center;">
+                <span id="tokenSelectedCount" style="font-weight: 600;">0</span> Token ausgewählt
+                <button id="regenerateTokensBtn" class="action-btn" disabled>Neu generieren</button>
+                <button id="deleteTokensBtn" class="action-btn" style="background: #dc3545; border-color: #dc3545;" disabled>Löschen</button>
+            </div>
             <table id="token-table" class="display" style="width:100%"></table>
         </div>
 
@@ -812,6 +817,7 @@ export function renderDashboard(): string {
         let table = null;
         let changesTable = null;
         let selectedRows = new Set();
+        let selectedTokens = new Set();
 
         // Toast notification system
         function showToast(message, type = 'info') {
@@ -1088,6 +1094,12 @@ export function renderDashboard(): string {
             document.getElementById('generatePdfsBtn').disabled = selectedRows.size === 0;
         }
 
+        function updateTokenSelectedCount() {
+            document.getElementById('tokenSelectedCount').textContent = selectedTokens.size;
+            document.getElementById('regenerateTokensBtn').disabled = selectedTokens.size === 0;
+            document.getElementById('deleteTokensBtn').disabled = selectedTokens.size === 0;
+        }
+
         async function loadStats() {
             try {
                 const response = await fetch('/api/stats');
@@ -1236,9 +1248,23 @@ export function renderDashboard(): string {
                     $('#token-table').empty();
                 }
 
+                // Clear selection when reloading
+                selectedTokens.clear();
+                updateTokenSelectedCount();
+
                 tokenTable = $('#token-table').DataTable({
                     data: tokens,
                     columns: [
+                        {
+                            title: '<input type="checkbox" id="selectAllTokens">',
+                            data: null,
+                            orderable: false,
+                            className: 'dt-center',
+                            render: function(data, type, row) {
+                                const checked = selectedTokens.has(row.member_id) ? 'checked' : '';
+                                return '<input type="checkbox" class="token-checkbox" data-id="' + row.member_id + '" ' + checked + '>';
+                            }
+                        },
                         { title: 'Mitglieds-ID', data: 'member_id' },
                         {
                             title: 'Name',
@@ -1278,16 +1304,6 @@ export function renderDashboard(): string {
                             title: 'Neu generiert',
                             data: 'regenerated_count',
                             className: 'dt-center'
-                        },
-                        {
-                            title: 'Aktionen',
-                            data: null,
-                            orderable: false,
-                            className: 'dt-nowrap',
-                            render: function(data, type, row) {
-                                return '<button class="action-btn regenerate-token" data-id="' + row.member_id + '" style="margin-right: 8px;">Neu</button>' +
-                                       '<button class="action-btn secondary delete-token" data-id="' + row.member_id + '" data-name="' + (row.Vorname || '') + ' ' + (row.Nachname || '') + '" style="background: #dc3545; border-color: #dc3545;">Löschen</button>';
-                            }
                         }
                     ],
                     pageLength: 50,
@@ -1305,70 +1321,35 @@ export function renderDashboard(): string {
                             previous: 'Zurück'
                         }
                     },
-                    order: [[3, 'desc']],
+                    order: [[4, 'desc']],
                     scrollX: true
                 });
 
-                // Handle token regeneration
-                $('#token-table').on('click', '.regenerate-token', async function() {
-                    const memberId = $(this).data('id');
-                    const btn = $(this);
-                    const originalText = btn.html();
-                    
-                    btn.prop('disabled', true).text('...');
-                    
-                    try {
-                        const response = await fetch('/api/regenerate-token/' + memberId, {
-                            method: 'POST'
-                        });
-                        
-                        if (!response.ok) {
-                            const error = await response.json();
-                            throw new Error(error.error || 'Fehler beim Generieren');
+                // Handle select all tokens checkbox
+                $('#token-table').on('click', '#selectAllTokens', function() {
+                    const isChecked = $(this).prop('checked');
+                    $('#token-table .token-checkbox').each(function() {
+                        $(this).prop('checked', isChecked);
+                        const id = $(this).data('id');
+                        if (isChecked) {
+                            selectedTokens.add(id);
+                        } else {
+                            selectedTokens.delete(id);
                         }
-                        
-                        const result = await response.json();
-                        showToast('Token neu generiert! URL: ' + result.updateUrl, 'success');
-                        await loadTokenStatus();
-                    } catch (error) {
-                        showToast('Fehler: ' + error.message, 'error');
-                    } finally {
-                        btn.prop('disabled', false).html(originalText);
-                    }
+                    });
+                    updateTokenSelectedCount();
                 });
 
-                // Handle token deletion
-                $('#token-table').on('click', '.delete-token', async function() {
-                    const memberId = $(this).data('id');
-                    const memberName = $(this).data('name');
-                    const btn = $(this);
-                    
-                    const confirmed = await showConfirm(
-                        'Token löschen?',
-                        'Möchten Sie das Token für "' + memberName + '" wirklich löschen? Das Mitglied kann dann nicht mehr auf seinen Datenänderungslink zugreifen.'
-                    );
-                    
-                    if (!confirmed) return;
-                    
-                    const originalText = btn.html();
-                    btn.prop('disabled', true).text('...');
-                    
-                    try {
-                        const response = await fetch('/api/delete-token/' + memberId, {
-                            method: 'DELETE'
-                        });
-                        
-                        if (!response.ok) {
-                            const error = await response.json();
-                            throw new Error(error.error || 'Fehler beim Löschen');
-                        }
-                        
-                        showToast('Token erfolgreich gelöscht', 'success');
-                        await loadTokenStatus();
-                    } catch (error) {
-                        showToast('Fehler: ' + error.message, 'error');
-                        btn.prop('disabled', false).html(originalText);
+                // Handle individual token checkbox
+                $('#token-table').on('click', '.token-checkbox', function() {
+                    const id = $(this).data('id');
+                    if ($(this).prop('checked')) {
+                        selectedTokens.add(id);
+                    } else {
+                        selectedTokens.delete(id);
+                        $('#selectAllTokens').prop('checked', false);
                     }
+                    updateTokenSelectedCount();
                 });
 
             } catch (error) {
@@ -1509,6 +1490,116 @@ export function renderDashboard(): string {
                 showToast('Verlauf und Statistiken erfolgreich gelöscht!', 'success');
                 await loadChangeHistory();
                 await loadStats();
+            } catch (error) {
+                showToast('Fehler: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+
+        // Handle bulk token regeneration
+        document.getElementById('regenerateTokensBtn').addEventListener('click', async function() {
+            if (selectedTokens.size === 0) {
+                showToast('Bitte wählen Sie mindestens ein Token aus.', 'warning');
+                return;
+            }
+
+            const confirmed = await showConfirm(
+                'Token neu generieren',
+                'Möchten Sie ' + selectedTokens.size + ' Token wirklich neu generieren? Die alten Links werden ungültig.'
+            );
+            
+            if (!confirmed) return;
+
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Generiere...';
+
+            try {
+                const tokenIds = Array.from(selectedTokens);
+                let successCount = 0;
+                let errorCount = 0;
+
+                for (const memberId of tokenIds) {
+                    try {
+                        const response = await fetch('/api/regenerate-token/' + memberId, {
+                            method: 'POST'
+                        });
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            errorCount++;
+                        }
+                    } catch (e) {
+                        errorCount++;
+                    }
+                }
+
+                if (errorCount > 0) {
+                    showToast(successCount + ' Token generiert, ' + errorCount + ' Fehler', 'warning');
+                } else {
+                    showToast(successCount + ' Token erfolgreich neu generiert', 'success');
+                }
+                
+                selectedTokens.clear();
+                await loadTokenStatus();
+            } catch (error) {
+                showToast('Fehler: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+
+        // Handle bulk token deletion
+        document.getElementById('deleteTokensBtn').addEventListener('click', async function() {
+            if (selectedTokens.size === 0) {
+                showToast('Bitte wählen Sie mindestens ein Token aus.', 'warning');
+                return;
+            }
+
+            const confirmed = await showConfirm(
+                'Token löschen',
+                'Möchten Sie ' + selectedTokens.size + ' Token wirklich löschen? Die betroffenen Mitglieder können dann nicht mehr auf ihre Datenänderungslinks zugreifen.'
+            );
+            
+            if (!confirmed) return;
+
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Lösche...';
+
+            try {
+                const tokenIds = Array.from(selectedTokens);
+                let successCount = 0;
+                let errorCount = 0;
+
+                for (const memberId of tokenIds) {
+                    try {
+                        const response = await fetch('/api/delete-token/' + memberId, {
+                            method: 'DELETE'
+                        });
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            errorCount++;
+                        }
+                    } catch (e) {
+                        errorCount++;
+                    }
+                }
+
+                if (errorCount > 0) {
+                    showToast(successCount + ' Token gelöscht, ' + errorCount + ' Fehler', 'warning');
+                } else {
+                    showToast(successCount + ' Token erfolgreich gelöscht', 'success');
+                }
+                
+                selectedTokens.clear();
+                await loadTokenStatus();
             } catch (error) {
                 showToast('Fehler: ' + error.message, 'error');
             } finally {
