@@ -39,7 +39,6 @@ function render404(c: Context<{ Bindings: Env }>): Response {
 	
 	const stats: NotFoundStats = {
 		requestedPath: url.pathname,
-		method: c.req.method,
 		colo: cf?.colo,
 		country: cf?.country,
 		city: cf?.city,
@@ -47,6 +46,7 @@ function render404(c: Context<{ Bindings: Env }>): Response {
 	
 	return c.html(render404Page(stats), 404);
 }
+
 
 // Public 404 for unknown routes (before auth, so everyone sees it)
 app.use('*', async (c: Context<{ Bindings: Env }>, next: Next) => {
