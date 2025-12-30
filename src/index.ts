@@ -35,33 +35,10 @@ app.route('/api', api);
 // Protected letter generation routes
 app.route('/letters', letters);
 
-// Custom 404 page with absurdly over-engineered stats
-app.notFound(async (c) => {
+// Custom 404 page focused on speed metrics
+app.notFound((c) => {
 	const startTime = performance.now();
 	const url = new URL(c.req.url);
-	
-	// Helper to safely query a table (returns 0 if table doesn't exist)
-	const safeCount = async (query: string): Promise<number> => {
-		try {
-			const result = await c.env.svu_prod01.prepare(query).first();
-			return (result as any)?.count ?? 0;
-		} catch {
-			return 0; // Table doesn't exist or other error
-		}
-	};
-	
-	// Fetch ALL the stats because why not? 🤓
-	const dbStart = performance.now();
-	
-	const [members, tokens, changes, sessions, accesses] = await Promise.all([
-		safeCount('SELECT COUNT(*) as count FROM auswertung'),
-		safeCount('SELECT COUNT(*) as count FROM member_tokens WHERE expires_at > datetime("now")'),
-		safeCount('SELECT COUNT(*) as count FROM member_changes_log'),
-		safeCount('SELECT COUNT(*) as count FROM admin_sessions'),
-		safeCount('SELECT COUNT(*) as count FROM member_access_log'),
-	]);
-	
-	const dbQueryTimeMs = performance.now() - dbStart;
 	
 	// Extract Cloudflare request info
 	const cf = c.req.raw.cf as { colo?: string; country?: string; city?: string } | undefined;
@@ -69,19 +46,9 @@ app.notFound(async (c) => {
 	const stats: NotFoundStats = {
 		requestedPath: url.pathname,
 		method: c.req.method,
-		timestamp: new Date().toISOString(),
-		cfRay: c.req.header('cf-ray'),
 		colo: cf?.colo,
 		country: cf?.country,
 		city: cf?.city,
-		
-		totalMembers: members,
-		totalTokens: tokens,
-		totalChanges: changes,
-		totalSessions: sessions,
-		totalAccesses: accesses,
-		
-		dbQueryTimeMs,
 		workerCpuTimeMs: performance.now() - startTime,
 	};
 	

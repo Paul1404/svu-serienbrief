@@ -1121,37 +1121,15 @@ export interface NotFoundStats {
     // Request info
     requestedPath: string;
     method: string;
-    timestamp: string;
-    cfRay?: string;
     colo?: string;
     country?: string;
     city?: string;
     
-    // D1 Database stats
-    totalMembers: number;
-    totalTokens: number;
-    totalChanges: number;
-    totalSessions: number;
-    totalAccesses: number;
-    
-    // Computed stats
-    dbQueryTimeMs: number;
+    // Performance
     workerCpuTimeMs: number;
 }
 
 export function render404Page(stats: NotFoundStats): string {
-    const timestamp = new Date(stats.timestamp);
-    const formattedTime = timestamp.toLocaleString('de-DE', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZoneName: 'short'
-    });
-    
     return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -1567,107 +1545,68 @@ export function render404Page(stats: NotFoundStats): string {
     
     <div class="container">
         <div class="header">
-            <div class="error-badge">HTTP ${escapeHtml(stats.method)} REQUEST FAILED</div>
+            <div class="error-badge">HTTP ${escapeHtml(stats.method)} • ${escapeHtml(stats.colo || 'EDGE')}</div>
             <div class="error-code">404</div>
             <h1>Seite nicht gefunden</h1>
             <p class="subtitle">
-                Die angeforderte Seite existiert nicht. Aber keine Sorge – 
-                wir haben trotzdem <em>sehr wichtige</em> Daten für Sie gesammelt! 🤓
+                Diese Seite existiert leider nicht – aber hey, wenigstens 
+                war diese Fehlermeldung <em>blitzschnell</em>! ⚡
             </p>
             <a href="/" class="btn">
                 <span>←</span>
                 Zurück zur Startseite
             </a>
-            <div class="terminal">render_404_page --with-unnecessary-stats --verbose</div>
         </div>
         
         <div class="dashboard">
-            <!-- Failed Request Info -->
-            <div class="section-title">📡 Fehlgeschlagene Anfrage</div>
-            <div class="request-panel">
-                <div class="request-header">
-                    <span class="method-badge">${escapeHtml(stats.method)}</span>
-                    <span class="request-path">${escapeHtml(stats.requestedPath)}</span>
-                </div>
-                <div class="request-body">
-                    <div class="request-item">
-                        <span class="request-item-label">Zeitstempel</span>
-                        <span class="request-item-value">${escapeHtml(formattedTime)}</span>
-                    </div>
-                    <div class="request-item">
-                        <span class="request-item-label">CF-Ray</span>
-                        <span class="request-item-value">${escapeHtml(stats.cfRay || 'N/A')}</span>
-                    </div>
-                    <div class="request-item">
-                        <span class="request-item-label">Edge Location</span>
-                        <span class="request-item-value">${escapeHtml(stats.colo || 'Unknown')} ${stats.country ? `(${escapeHtml(stats.country)})` : ''}</span>
-                    </div>
-                    <div class="request-item">
-                        <span class="request-item-label">Stadt</span>
-                        <span class="request-item-value">${escapeHtml(stats.city || 'Unknown')}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- D1 Database Stats -->
-            <div class="section-title">🗄️ D1 Datenbank-Statistiken (völlig unnötig, aber beeindruckend)</div>
+            <!-- Speed Stats -->
+            <div class="section-title">⚡ Edge Performance</div>
             <div class="cards">
                 <div class="card">
-                    <div class="card-label">👥 Mitglieder</div>
-                    <div class="card-value accent">${stats.totalMembers.toLocaleString('de-DE')}</div>
-                    <div class="card-detail">registrierte Vereinsmitglieder</div>
+                    <div class="card-label">🚀 Worker CPU</div>
+                    <div class="card-value success">${stats.workerCpuTimeMs.toFixed(2)}ms</div>
+                    <div class="card-detail">Zeit bis zur Antwort</div>
                 </div>
                 <div class="card">
-                    <div class="card-label">🎟️ Aktive Tokens</div>
-                    <div class="card-value info">${stats.totalTokens.toLocaleString('de-DE')}</div>
-                    <div class="card-detail">gültige Zugangstoken</div>
+                    <div class="card-label">🌍 Edge Server</div>
+                    <div class="card-value info">${escapeHtml(stats.colo || '???')}</div>
+                    <div class="card-detail">${escapeHtml(stats.city || 'Cloudflare Edge')}${stats.country ? `, ${escapeHtml(stats.country)}` : ''}</div>
                 </div>
                 <div class="card">
-                    <div class="card-label">📝 Änderungen</div>
-                    <div class="card-value warning">${stats.totalChanges.toLocaleString('de-DE')}</div>
-                    <div class="card-detail">protokollierte Datenänderungen</div>
-                </div>
-                <div class="card">
-                    <div class="card-label">🔐 Admin-Sessions</div>
-                    <div class="card-value success">${stats.totalSessions.toLocaleString('de-DE')}</div>
-                    <div class="card-detail">aktive Sitzungen</div>
-                </div>
-                <div class="card">
-                    <div class="card-label">👁️ Portal-Zugriffe</div>
-                    <div class="card-value">${stats.totalAccesses.toLocaleString('de-DE')}</div>
-                    <div class="card-detail">Mitglieder-Seitenaufrufe</div>
+                    <div class="card-label">📍 Anfrage</div>
+                    <div class="card-value warning" style="font-size: 16px; word-break: break-all;">${escapeHtml(stats.requestedPath)}</div>
+                    <div class="card-detail">${escapeHtml(stats.method)} Request</div>
                 </div>
             </div>
             
-            <!-- Performance -->
+            <!-- Performance Bar -->
             <div class="perf-bar">
                 <div class="perf-item">
                     <span class="perf-dot green"></span>
-                    <span class="perf-label">DB Query:</span>
-                    <span class="perf-value">${stats.dbQueryTimeMs.toFixed(2)}ms</span>
+                    <span class="perf-label">Latenz:</span>
+                    <span class="perf-value">${stats.workerCpuTimeMs < 1 ? '<1' : stats.workerCpuTimeMs.toFixed(1)}ms</span>
                 </div>
                 <div class="perf-item">
                     <span class="perf-dot blue"></span>
-                    <span class="perf-label">Worker CPU:</span>
-                    <span class="perf-value">${stats.workerCpuTimeMs.toFixed(2)}ms</span>
+                    <span class="perf-label">Edge:</span>
+                    <span class="perf-value">${escapeHtml(stats.colo || 'Global')}</span>
                 </div>
                 <div class="perf-item">
-                    <span class="perf-dot yellow"></span>
+                    <span class="perf-dot ${stats.workerCpuTimeMs < 5 ? 'green' : stats.workerCpuTimeMs < 20 ? 'yellow' : 'red'}"></span>
                     <span class="perf-label">Status:</span>
-                    <span class="perf-value">Overengineered ✓</span>
+                    <span class="perf-value">${stats.workerCpuTimeMs < 5 ? 'Blitzschnell ⚡' : stats.workerCpuTimeMs < 20 ? 'Schnell 🚀' : 'OK 👍'}</span>
                 </div>
             </div>
         </div>
         
         <div class="footer">
             <p class="footer-joke">
-                "Wir haben Ihre Seite nicht gefunden, aber immerhin wissen wir jetzt, 
-                wie viele Mitglieder wir haben. Das ist doch auch was!" 
-                <br>— Unser Backend-Entwickler, wahrscheinlich
+                Die Seite gibt's nicht, aber diese 404 kam in ${stats.workerCpuTimeMs.toFixed(2)}ms 
+                von ${escapeHtml(stats.colo || 'der Cloud')} zu dir. Nicht schlecht, oder?
             </p>
             <div class="footer-logo">
                 <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SVU">
-                <span>SV 1945 Untereuerheim e.V. • "Wir sind Untereuerheim"</span>
+                <span>SV 1945 Untereuerheim e.V. • Powered by Cloudflare Workers</span>
             </div>
         </div>
     </div>
