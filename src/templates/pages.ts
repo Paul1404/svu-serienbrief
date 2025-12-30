@@ -682,6 +682,67 @@ export function renderDashboard(): string {
         let changesTable = null;
         let selectedRows = new Set();
 
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            // Remove existing toasts
+            document.querySelectorAll('.toast').forEach(t => t.remove());
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.innerHTML = 
+                '<span class="toast-icon">' + icons[type] + '</span>' +
+                '<span class="toast-message">' + message + '</span>' +
+                '<span class="toast-close">×</span>';
+            
+            document.body.appendChild(toast);
+            
+            toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'slideIn 0.3s ease reverse';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // Confirmation modal
+        function showConfirm(title, message) {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML = 
+                    '<div class="modal">' +
+                        '<h3>' + title + '</h3>' +
+                        '<p>' + message + '</p>' +
+                        '<div class="modal-buttons">' +
+                            '<button class="modal-btn secondary" data-action="cancel">Abbrechen</button>' +
+                            '<button class="modal-btn primary" data-action="confirm">Bestätigen</button>' +
+                        '</div>' +
+                    '</div>';
+                
+                document.body.appendChild(overlay);
+                
+                overlay.addEventListener('click', (e) => {
+                    const action = e.target.dataset.action;
+                    if (action === 'confirm') {
+                        resolve(true);
+                        overlay.remove();
+                    } else if (action === 'cancel' || e.target === overlay) {
+                        resolve(false);
+                        overlay.remove();
+                    }
+                });
+            });
+        }
+
         async function init() {
             try {
                 document.getElementById('tableInfo').innerHTML = 
