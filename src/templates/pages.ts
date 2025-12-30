@@ -791,7 +791,6 @@ export function renderDashboard(): string {
             <div id="tokenInfo" class="info">Lade Token-Informationen...</div>
             <div class="action-bar" style="margin: 15px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <span id="tokenSelectedCount" style="font-weight: 600;">0</span> Token ausgewählt
-                <button id="selectAllTokensBtn" class="action-btn secondary">Alle auswählen</button>
                 <button id="regenerateTokensBtn" class="action-btn" disabled>Neu generieren</button>
                 <button id="deleteTokensBtn" class="action-btn" style="background: #dc3545; border-color: #dc3545;" disabled>Löschen</button>
             </div>
@@ -1075,6 +1074,39 @@ export function renderDashboard(): string {
                     updateSelectedCount();
                 });
 
+                // Token table event handlers (delegated from document level so they persist across table reloads)
+                // Handle select all tokens checkbox - selects ALL tokens across all pages
+                $(document).off('change', '#selectAllTokens').on('change', '#selectAllTokens', function() {
+                    if (!tokenTable) return;
+                    
+                    const isChecked = $(this).prop('checked');
+                    const allData = tokenTable.rows().data().toArray();
+                    
+                    if (isChecked) {
+                        allData.forEach(function(row) {
+                            selectedTokens.add(row.member_id);
+                        });
+                    } else {
+                        selectedTokens.clear();
+                    }
+                    
+                    // Update visible checkboxes on current page
+                    $('#token-table .token-checkbox').prop('checked', isChecked);
+                    updateTokenSelectedCount();
+                });
+
+                // Handle individual token checkbox
+                $(document).off('change', '.token-checkbox').on('change', '.token-checkbox', function() {
+                    const id = $(this).data('id');
+                    if ($(this).prop('checked')) {
+                        selectedTokens.add(id);
+                    } else {
+                        selectedTokens.delete(id);
+                        $('#selectAllTokens').prop('checked', false);
+                    }
+                    updateTokenSelectedCount();
+                });
+
                 // Load change history
                 await loadChangeHistory();
                 
@@ -1326,43 +1358,6 @@ export function renderDashboard(): string {
                     scrollX: true
                 });
 
-                // Handle select all tokens checkbox - selects ALL tokens across all pages
-                $('#token-table').on('click', '#selectAllTokens', function() {
-                    const isChecked = $(this).prop('checked');
-                    
-                    // Get all data from DataTable (not just visible rows)
-                    const allData = tokenTable.rows().data().toArray();
-                    
-                    if (isChecked) {
-                        // Select all tokens
-                        allData.forEach(function(row) {
-                            selectedTokens.add(row.member_id);
-                        });
-                    } else {
-                        // Deselect all tokens
-                        selectedTokens.clear();
-                    }
-                    
-                    // Update visible checkboxes on current page
-                    $('#token-table .token-checkbox').each(function() {
-                        $(this).prop('checked', isChecked);
-                    });
-                    
-                    updateTokenSelectedCount();
-                });
-
-                // Handle individual token checkbox
-                $('#token-table').on('click', '.token-checkbox', function() {
-                    const id = $(this).data('id');
-                    if ($(this).prop('checked')) {
-                        selectedTokens.add(id);
-                    } else {
-                        selectedTokens.delete(id);
-                        $('#selectAllTokens').prop('checked', false);
-                    }
-                    updateTokenSelectedCount();
-                });
-
             } catch (error) {
                 document.getElementById('tokenInfo').innerHTML = 
                     '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler beim Laden der Token: ' + error.message + '</div>';
@@ -1595,32 +1590,6 @@ export function renderDashboard(): string {
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
-        });
-
-        // Handle "Select All Tokens" button
-        document.getElementById('selectAllTokensBtn').addEventListener('click', function() {
-            if (!tokenTable) return;
-            
-            const allData = tokenTable.rows().data().toArray();
-            const allSelected = selectedTokens.size === allData.length;
-            
-            if (allSelected) {
-                // Deselect all
-                selectedTokens.clear();
-                this.textContent = 'Alle auswählen';
-            } else {
-                // Select all
-                allData.forEach(function(row) {
-                    selectedTokens.add(row.member_id);
-                });
-                this.textContent = 'Auswahl aufheben';
-            }
-            
-            // Update visible checkboxes
-            $('#token-table .token-checkbox').prop('checked', !allSelected);
-            $('#selectAllTokens').prop('checked', !allSelected);
-            
-            updateTokenSelectedCount();
         });
 
         // Dark mode toggle
