@@ -8,6 +8,7 @@ import { generateMemberToken } from '../utils/tokens';
 import { jsonResponse, jsonError } from '../utils/helpers';
 import { zipSync } from 'fflate';
 import { PDFDocument, rgb, StandardFonts, PDFArray, PDFName } from 'pdf-lib';
+import { encode as encodeQR } from 'uqr';
 
 const letters = new Hono<{ Bindings: Env }>();
 
@@ -99,7 +100,6 @@ letters.post('/generate-pdfs', async (c) => {
 					const memberId = member.AdrNr || member.MitglNr;
 					const token = await generateMemberToken(memberId, secret);
 					const updateUrl = `${baseUrl}/update/${token}`;
-					const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(updateUrl)}`;
 					
 					// Store token in database
 					const now = Date.now();
@@ -114,7 +114,8 @@ letters.post('/generate-pdfs', async (c) => {
 							regenerated_count = regenerated_count + 1
 					`).bind(memberId, token, now, expiresAt).run();
 					
-					const pdfBytes = await generateLetterPDF(member, updateUrl, qrCodeUrl, cachedLogoBytes);
+					// QR code is now generated locally inside generateLetterPDF (no external API!)
+					const pdfBytes = await generateLetterPDF(member, updateUrl, cachedLogoBytes);
 					
 					const filename = `Brief_${member.Nachname}_${member.Vorname}_${memberId}.pdf`.replace(/[^a-zA-Z0-9_.-]/g, '_');
 					
@@ -153,7 +154,6 @@ letters.post('/generate-pdfs', async (c) => {
 async function generateLetterPDF(
 	member: any, 
 	updateUrl: string, 
-	qrCodeUrl: string,
 	cachedLogoBytes?: Uint8Array | null
 ): Promise<Uint8Array> {
 	const pdfDoc = await PDFDocument.create();
@@ -181,14 +181,13 @@ async function generateLetterPDF(
 		console.warn('Could not embed club logo:', e);
 	}
 
-	// Fetch and embed QR code
-	let qrImage = null;
+	// Generate QR code locally using uqr (no external API call!)
+	let qrMatrix: boolean[][] | null = null;
 	try {
-		const qrResponse = await fetch(qrCodeUrl);
-		const qrImageBytes = await qrResponse.arrayBuffer();
-		qrImage = await pdfDoc.embedPng(new Uint8Array(qrImageBytes));
+		const qrResult = encodeQR(updateUrl);
+		qrMatrix = qrResult.data;
 	} catch (e) {
-		console.warn('Could not embed QR code:', e);
+		console.warn('Could not generate QR code:', e);
 	}
 
 	// Draw club logo (top left)
@@ -246,19 +245,40 @@ async function generateLetterPDF(
 		addressY -= 12;
 	});
 
-	// QR Code (if available) - positioned on the right side
-	const qrReservedSpace = qrImage ? 180 : 0;
-	if (qrImage) {
+	// QR Code (if available) - positioned on the right side, drawn as vector
+	const qrReservedSpace = qrMatrix ? 180 : 0;
+	if (qrMatrix) {
 		const qrSize = 100;
 		const qrX = width - margin - qrSize;
 		const qrY = yPosition - 40;
 		
-		page.drawImage(qrImage, {
+		// Draw QR code using rectangles (vector-based, no external API!)
+		const moduleCount = qrMatrix.length;
+		const moduleSize = qrSize / moduleCount;
+		
+		// Draw white background
+		page.drawRectangle({
 			x: qrX,
 			y: qrY - qrSize,
 			width: qrSize,
 			height: qrSize,
+			color: rgb(1, 1, 1),
 		});
+		
+		// Draw black modules
+		for (let row = 0; row < moduleCount; row++) {
+			for (let col = 0; col < moduleCount; col++) {
+				if (qrMatrix[row][col]) {
+					page.drawRectangle({
+						x: qrX + col * moduleSize,
+						y: qrY - qrSize + (moduleCount - 1 - row) * moduleSize,
+						width: moduleSize,
+						height: moduleSize,
+						color: rgb(0, 0, 0),
+					});
+				}
+			}
+		}
 		
 		// QR code description
 		let qrTextY = qrY - qrSize - 10;
