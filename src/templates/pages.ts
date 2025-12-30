@@ -601,6 +601,80 @@ export function renderDashboard(): string {
         .modal-btn.secondary:hover {
             background: #5a6268;
         }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            backdrop-filter: blur(4px);
+        }
+        .loading-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 40px 50px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            max-width: 400px;
+            width: 90%;
+        }
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border-color);
+            border-top-color: #CC0000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+        .loading-message {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        .loading-progress {
+            background: var(--border-color);
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .loading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #CC0000, #ff4444);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            animation: progressPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes progressPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .loading-stats {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .loading-tip {
+            margin-top: 20px;
+            padding: 12px;
+            background: var(--info-bg);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
@@ -741,6 +815,50 @@ export function renderDashboard(): string {
                     }
                 });
             });
+        }
+
+        // Loading overlay for long operations
+        let loadingOverlay = null;
+        
+        function showLoading(title, message, showProgress = false) {
+            hideLoading();
+            
+            loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = 
+                '<div class="loading-card">' +
+                    '<div class="loading-spinner"></div>' +
+                    '<div class="loading-title">' + title + '</div>' +
+                    '<div class="loading-message" id="loadingMessage">' + message + '</div>' +
+                    (showProgress ? 
+                        '<div class="loading-progress"><div class="loading-progress-bar" id="loadingProgressBar" style="width: 0%"></div></div>' +
+                        '<div class="loading-stats" id="loadingStats"></div>' : '') +
+                    '<div class="loading-tip">💡 Tipp: Bei vielen Mitgliedern kann dies einige Minuten dauern.</div>' +
+                '</div>';
+            
+            document.body.appendChild(loadingOverlay);
+        }
+        
+        function updateLoading(message, progress = null, stats = null) {
+            const msgEl = document.getElementById('loadingMessage');
+            if (msgEl) msgEl.textContent = message;
+            
+            if (progress !== null) {
+                const bar = document.getElementById('loadingProgressBar');
+                if (bar) bar.style.width = progress + '%';
+            }
+            
+            if (stats !== null) {
+                const statsEl = document.getElementById('loadingStats');
+                if (statsEl) statsEl.textContent = stats;
+            }
+        }
+        
+        function hideLoading() {
+            if (loadingOverlay) {
+                loadingOverlay.remove();
+                loadingOverlay = null;
+            }
         }
 
         async function init() {
@@ -1175,12 +1293,29 @@ export function renderDashboard(): string {
 
             const btn = this;
             const originalText = btn.textContent;
+            const memberCount = selectedRows.size;
+            
             btn.disabled = true;
-            btn.textContent = '⏳ PDFs werden generiert...';
+            btn.textContent = '⏳ Generiere...';
+            
+            // Show loading overlay for larger operations
+            const showProgressOverlay = memberCount > 10;
+            if (showProgressOverlay) {
+                showLoading(
+                    'PDFs werden generiert',
+                    'Bereite ' + memberCount + ' Briefe vor...',
+                    true
+                );
+                updateLoading('Sende Anfrage an Server...', 10, memberCount + ' Mitglieder ausgewählt');
+            }
 
             try {
                 const memberIds = Array.from(selectedRows);
                 const validityDays = parseInt(document.getElementById('validityDays').value, 10);
+                
+                if (showProgressOverlay) {
+                    updateLoading('Server generiert PDFs...', 30, 'Dies kann bei vielen Mitgliedern etwas dauern');
+                }
 
                 const response = await fetch('/letters/generate-pdfs', {
                     method: 'POST',
@@ -1193,6 +1328,10 @@ export function renderDashboard(): string {
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.error || 'Fehler beim Generieren der PDFs');
+                }
+                
+                if (showProgressOverlay) {
+                    updateLoading('PDFs generiert! Bereite Download vor...', 80, 'Fast fertig...');
                 }
 
                 // Get filename from Content-Disposition header (server provides detailed timestamp)
@@ -1207,6 +1346,11 @@ export function renderDashboard(): string {
 
                 // Download the ZIP file
                 const blob = await response.blob();
+                
+                if (showProgressOverlay) {
+                    updateLoading('Starte Download...', 95, 'ZIP-Datei: ' + (blob.size / 1024 / 1024).toFixed(1) + ' MB');
+                }
+                
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -1215,9 +1359,11 @@ export function renderDashboard(): string {
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
-
+                
+                hideLoading();
                 showToast('PDFs erfolgreich generiert und heruntergeladen! (Token gültig für ' + validityDays + ' Tage)', 'success');
             } catch (error) {
+                hideLoading();
                 showToast('Fehler: ' + error.message, 'error');
             } finally {
                 btn.disabled = false;

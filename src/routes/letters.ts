@@ -11,6 +11,11 @@ import { PDFDocument, rgb, StandardFonts, PDFArray, PDFName } from 'pdf-lib';
 
 const letters = new Hono<{ Bindings: Env }>();
 
+// Batch size for SQL queries (SQLite has ~999 variable limit)
+const SQL_BATCH_SIZE = 100;
+// Batch size for PDF generation (memory management)
+const PDF_BATCH_SIZE = 20;
+
 /**
  * Generate PDFs for selected members and return as ZIP
  */
@@ -25,47 +30,74 @@ letters.post('/generate-pdfs', async (c) => {
 		// Validate validity days (min 7, max 730 = 2 years)
 		const tokenValidityDays = Math.min(Math.max(Number(validityDays) || 90, 7), 730);
 
-		// Fetch member data
-		const placeholders = memberIds.map(() => '?').join(',');
-		const result = await c.env.svu_prod01.prepare(
-			`SELECT * FROM auswertung WHERE AdrNr IN (${placeholders}) OR MitglNr IN (${placeholders})`
-		).bind(...memberIds, ...memberIds).all();
+		// Fetch member data in batches to avoid SQL variable limits
+		const allMembers: any[] = [];
+		for (let i = 0; i < memberIds.length; i += SQL_BATCH_SIZE) {
+			const batchIds = memberIds.slice(i, i + SQL_BATCH_SIZE);
+			const placeholders = batchIds.map(() => '?').join(',');
+			const result = await c.env.svu_prod01.prepare(
+				`SELECT * FROM auswertung WHERE AdrNr IN (${placeholders}) OR MitglNr IN (${placeholders})`
+			).bind(...batchIds, ...batchIds).all();
+			
+			if (result.results) {
+				allMembers.push(...result.results);
+			}
+		}
 
-		if (!result.results || result.results.length === 0) {
+		if (allMembers.length === 0) {
 			return jsonError('Keine Mitglieder gefunden', 404);
 		}
 
 		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
 		const secret = c.env.ADMIN_PASSWORD;
 
-		// Generate PDFs for each member
-		const pdfFiles: Array<{ filename: string; data: Uint8Array }> = await Promise.all(
-			result.results.map(async (member: any) => {
-				const memberId = member.AdrNr || member.MitglNr;
-				const token = await generateMemberToken(memberId, secret);
-				const updateUrl = `${baseUrl}/update/${token}`;
-				const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(updateUrl)}`;
-				
-				// Store token in database
-				const now = Date.now();
-				const expiresAt = now + (tokenValidityDays * 24 * 60 * 60 * 1000);
-				await c.env.svu_prod01.prepare(`
-					INSERT INTO member_tokens (member_id, token, generated_at, expires_at, regenerated_count)
-					VALUES (?, ?, ?, ?, 0)
-					ON CONFLICT(member_id) DO UPDATE SET
-						token = excluded.token,
-						generated_at = excluded.generated_at,
-						expires_at = excluded.expires_at,
-						regenerated_count = regenerated_count + 1
-				`).bind(memberId, token, now, expiresAt).run();
-				
-				const pdfBytes = await generateLetterPDF(member, updateUrl, qrCodeUrl);
-				
-				const filename = `Brief_${member.Nachname}_${member.Vorname}_${memberId}.pdf`.replace(/[^a-zA-Z0-9_.-]/g, '_');
-				
-				return { filename, data: pdfBytes };
-			})
-		);
+		// Pre-fetch club logo once (instead of 471 times!)
+		let cachedLogoBytes: Uint8Array | null = null;
+		try {
+			const logoResponse = await fetch('https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png');
+			if (logoResponse.ok) {
+				cachedLogoBytes = new Uint8Array(await logoResponse.arrayBuffer());
+			}
+		} catch (e) {
+			console.warn('Could not pre-fetch club logo:', e);
+		}
+
+		// Generate PDFs in batches to manage memory
+		const pdfFiles: Array<{ filename: string; data: Uint8Array }> = [];
+		
+		for (let i = 0; i < allMembers.length; i += PDF_BATCH_SIZE) {
+			const batch = allMembers.slice(i, i + PDF_BATCH_SIZE);
+			
+			const batchResults = await Promise.all(
+				batch.map(async (member: any) => {
+					const memberId = member.AdrNr || member.MitglNr;
+					const token = await generateMemberToken(memberId, secret);
+					const updateUrl = `${baseUrl}/update/${token}`;
+					const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(updateUrl)}`;
+					
+					// Store token in database
+					const now = Date.now();
+					const expiresAt = now + (tokenValidityDays * 24 * 60 * 60 * 1000);
+					await c.env.svu_prod01.prepare(`
+						INSERT INTO member_tokens (member_id, token, generated_at, expires_at, regenerated_count)
+						VALUES (?, ?, ?, ?, 0)
+						ON CONFLICT(member_id) DO UPDATE SET
+							token = excluded.token,
+							generated_at = excluded.generated_at,
+							expires_at = excluded.expires_at,
+							regenerated_count = regenerated_count + 1
+					`).bind(memberId, token, now, expiresAt).run();
+					
+					const pdfBytes = await generateLetterPDF(member, updateUrl, qrCodeUrl, cachedLogoBytes);
+					
+					const filename = `Brief_${member.Nachname}_${member.Vorname}_${memberId}.pdf`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+					
+					return { filename, data: pdfBytes };
+				})
+			);
+			
+			pdfFiles.push(...batchResults);
+		}
 
 		// Create ZIP with PDF files
 		const zipContent = createZipFromPdfFiles(pdfFiles);
@@ -92,7 +124,12 @@ letters.post('/generate-pdfs', async (c) => {
 /**
  * Generate a DIN A4 letter PDF for a member
  */
-async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: string): Promise<Uint8Array> {
+async function generateLetterPDF(
+	member: any, 
+	updateUrl: string, 
+	qrCodeUrl: string,
+	cachedLogoBytes?: Uint8Array | null
+): Promise<Uint8Array> {
 	const pdfDoc = await PDFDocument.create();
 	const page = pdfDoc.addPage([595.28, 841.89]); // A4 size in points
 	
@@ -104,12 +141,16 @@ async function generateLetterPDF(member: any, updateUrl: string, qrCodeUrl: stri
 	const lineHeight = 14;
 	let yPosition = height - margin;
 
-	// Fetch and embed club logo
+	// Embed club logo (use cached bytes if available)
 	let clubLogo = null;
 	try {
-		const logoResponse = await fetch('https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png');
-		const logoImageBytes = await logoResponse.arrayBuffer();
-		clubLogo = await pdfDoc.embedPng(new Uint8Array(logoImageBytes));
+		if (cachedLogoBytes) {
+			clubLogo = await pdfDoc.embedPng(cachedLogoBytes);
+		} else {
+			const logoResponse = await fetch('https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png');
+			const logoImageBytes = await logoResponse.arrayBuffer();
+			clubLogo = await pdfDoc.embedPng(new Uint8Array(logoImageBytes));
+		}
 	} catch (e) {
 		console.warn('Could not embed club logo:', e);
 	}
