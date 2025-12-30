@@ -12,10 +12,11 @@ import { PDFDocument, rgb, StandardFonts, PDFArray, PDFName } from 'pdf-lib';
 const letters = new Hono<{ Bindings: Env }>();
 
 // Batch size for SQL queries (D1 has stricter limits than SQLite's 999)
-// Using 50 because we bind each ID twice (AdrNr and MitglNr) = 100 variables per batch
 const SQL_BATCH_SIZE = 50;
 // Batch size for PDF generation (memory management)
-const PDF_BATCH_SIZE = 10;
+const PDF_BATCH_SIZE = 5;
+// Maximum members per request (to avoid CPU timeout)
+const MAX_MEMBERS_PER_REQUEST = 30;
 
 /**
  * Generate PDFs for selected members and return as ZIP
@@ -26,6 +27,14 @@ letters.post('/generate-pdfs', async (c) => {
 
 		if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
 			return jsonError('Keine Mitglieder-IDs angegeben', 400);
+		}
+		
+		// Enforce maximum members per request to avoid CPU timeout
+		if (memberIds.length > MAX_MEMBERS_PER_REQUEST) {
+			return jsonError(
+				`Zu viele Mitglieder (${memberIds.length}). Maximum: ${MAX_MEMBERS_PER_REQUEST} pro Anfrage. Bitte kleinere Gruppen auswählen.`,
+				400
+			);
 		}
 		
 		// Validate validity days (min 7, max 730 = 2 years)
