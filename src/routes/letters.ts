@@ -37,7 +37,7 @@ letters.post('/generate-pdfs', async (c) => {
 		if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
 			return jsonError('Keine Mitglieder-IDs angegeben', 400);
 		}
-		
+
 		// Validate validity days (min 7, max 730 = 2 years)
 		const tokenValidityDays = Math.min(Math.max(Number(validityDays) || 90, 7), 730);
 
@@ -69,7 +69,7 @@ letters.post('/generate-pdfs', async (c) => {
 			const result2 = await c.env.svu_prod01.prepare(
 				`SELECT * FROM auswertung WHERE MitglNr IN (${placeholders})`
 			).bind(...batchIds).all();
-			
+
 			if (result2.results) {
 				for (const member of result2.results as any[]) {
 					const id = normalizeMemberId(member);
@@ -112,30 +112,30 @@ letters.post('/generate-pdfs', async (c) => {
 						console.warn('Skipping member without ID:', member.Vorname, member.Nachname);
 						return null;
 					}
-					const token = await generateMemberToken(memberId, secret);
-					const updateUrl = `${baseUrl}/update/${token}`;
-					
-					// Store token in database
-					const now = Date.now();
+				const token = await generateMemberToken(memberId, secret);
+				const updateUrl = `${baseUrl}/update/${token}`;
+				
+				// Store token in database
+				const now = Date.now();
 					const expiresAt = now + (tokenValidityDays * 24 * 60 * 60 * 1000);
-					await c.env.svu_prod01.prepare(`
-						INSERT INTO member_tokens (member_id, token, generated_at, expires_at, regenerated_count)
-						VALUES (?, ?, ?, ?, 0)
-						ON CONFLICT(member_id) DO UPDATE SET
-							token = excluded.token,
-							generated_at = excluded.generated_at,
-							expires_at = excluded.expires_at,
-							regenerated_count = regenerated_count + 1
-					`).bind(memberId, token, now, expiresAt).run();
-					
+				await c.env.svu_prod01.prepare(`
+					INSERT INTO member_tokens (member_id, token, generated_at, expires_at, regenerated_count)
+					VALUES (?, ?, ?, ?, 0)
+					ON CONFLICT(member_id) DO UPDATE SET
+						token = excluded.token,
+						generated_at = excluded.generated_at,
+						expires_at = excluded.expires_at,
+						regenerated_count = regenerated_count + 1
+				`).bind(memberId, token, now, expiresAt).run();
+				
 					// QR code is now generated locally inside generateLetterPDF (no external API!)
 					const pdfBytes = await generateLetterPDF(member, updateUrl, cachedLogoBytes);
-					
-					const filename = `Brief_${member.Nachname}_${member.Vorname}_${memberId}.pdf`.replace(/[^a-zA-Z0-9_.-]/g, '_');
-					
-					return { filename, data: pdfBytes };
-				})
-			);
+				
+				const filename = `Brief_${member.Nachname}_${member.Vorname}_${memberId}.pdf`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+				
+				return { filename, data: pdfBytes };
+			})
+		);
 			
 			// Filter out nulls (members without valid IDs)
 			pdfFiles.push(...batchResults.filter((r): r is { filename: string; data: Uint8Array } => r !== null));
@@ -188,9 +188,9 @@ async function generateLetterPDF(
 		if (cachedLogoBytes) {
 			clubLogo = await pdfDoc.embedPng(cachedLogoBytes);
 		} else {
-			const logoResponse = await fetch('https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png');
-			const logoImageBytes = await logoResponse.arrayBuffer();
-			clubLogo = await pdfDoc.embedPng(new Uint8Array(logoImageBytes));
+		const logoResponse = await fetch('https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png');
+		const logoImageBytes = await logoResponse.arrayBuffer();
+		clubLogo = await pdfDoc.embedPng(new Uint8Array(logoImageBytes));
 		}
 	} catch (e) {
 		console.warn('Could not embed club logo:', e);

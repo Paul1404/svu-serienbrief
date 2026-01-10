@@ -94,8 +94,12 @@ update.post('/:token', async (c) => {
 		// Allowed fields for update
 		const allowedFields = [
 			'Strasse', 'PLZ', 'Ort', 'Telefon', 'Mobil', 
-			'EMail', 'IBAN', 'BIC', 'Bankbezeichnung'
+			'EMail', 'IBAN', 'BIC', 'Bankbezeichnung',
+			'Geburtsdatum', 'funktion_rolle', 'funktion_beginn', 'funktion_ende'
 		];
+		
+		// Comment field is handled separately
+		const commentField = 'aenderungskommentar';
 
 		// Fetch current values before processing
 		const currentMember = await c.env.svu_prod01.prepare(
@@ -155,6 +159,22 @@ update.post('/:token', async (c) => {
 					}
 				}
 				
+				// Validate date format (YYYY-MM-DD)
+				if (field === 'Geburtsdatum' && newValue && newValue !== oldValue) {
+					const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+					if (!dateRegex.test(newValue)) {
+						return c.html(renderErrorPage('Ungültiges Datumsformat für Geburtsdatum'), 400);
+					}
+				}
+				
+				// Validate month format (YYYY-MM)
+				if ((field === 'funktion_beginn' || field === 'funktion_ende') && newValue && newValue !== oldValue) {
+					const monthRegex = /^\d{4}-\d{2}$/;
+					if (!monthRegex.test(newValue)) {
+						return c.html(renderErrorPage('Ungültiges Format für Funktionszeitraum (JJJJ-MM erwartet)'), 400);
+					}
+				}
+				
 				updates[field] = newValue;
 				
 				// Track actual changes
@@ -164,8 +184,25 @@ update.post('/:token', async (c) => {
 				}
 			}
 		}
+		
+		// Handle comment field separately - only store if not empty
+		const commentValue = formData.get(commentField);
+		let hasComment = false;
+		if (commentValue) {
+			const commentText = commentValue.toString().trim();
+			if (commentText) {
+				updates[commentField] = commentText;
+				hasComment = true;
+				// Always log comment as a change if it's new content
+				const oldComment = String((currentMember as any)?.[commentField] || '').trim();
+				if (oldComment !== commentText) {
+					actualChanges[commentField] = { old: oldComment, new: commentText };
+					hasChanges = true;
+				}
+			}
+		}
 
-		if (Object.keys(updates).length === 0) {
+		if (Object.keys(updates).length === 0 && !hasComment) {
 			return c.html(renderErrorPage('Keine Daten übermittelt'), 400);
 		}
 
@@ -301,8 +338,31 @@ function renderUpdateForm(member: any, token: string): string {
 		.member-info strong {
 			color: #CC0000;
 		}
+		.form-section {
+			margin-bottom: 30px;
+			padding-bottom: 20px;
+			border-bottom: 1px solid #eee;
+		}
+		.form-section:last-of-type {
+			border-bottom: none;
+		}
+		.section-title {
+			font-size: 14px;
+			font-weight: 600;
+			color: #CC0000;
+			margin-bottom: 15px;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
 		.form-group {
 			margin-bottom: 20px;
+		}
+		.form-row {
+			display: flex;
+			gap: 15px;
+		}
+		.form-row .form-group {
+			flex: 1;
 		}
 		label {
 			display: block;
@@ -313,15 +373,24 @@ function renderUpdateForm(member: any, token: string): string {
 		}
 		input[type="text"],
 		input[type="email"],
-		input[type="tel"] {
+		input[type="tel"],
+		input[type="date"],
+		input[type="month"],
+		select,
+		textarea {
 			width: 100%;
 			padding: 12px;
 			border: 2px solid #e0e0e0;
 			border-radius: 6px;
 			font-size: 16px;
+			font-family: inherit;
 			transition: border-color 0.3s, background-color 0.3s;
 		}
-		input:focus {
+		textarea {
+			min-height: 100px;
+			resize: vertical;
+		}
+		input:focus, select:focus, textarea:focus {
 			outline: none;
 			border-color: #CC0000;
 		}
@@ -330,11 +399,15 @@ function renderUpdateForm(member: any, token: string): string {
 			color: #666;
 		}
 		/* Empty field indicator */
-		.form-group.is-empty input:not(.readonly) {
+		.form-group.is-empty input:not(.readonly),
+		.form-group.is-empty select:not(.readonly),
+		.form-group.is-empty textarea:not(.readonly) {
 			border-color: #ffc107;
 			background: #fffdf5;
 		}
-		.form-group.is-empty input:not(.readonly):focus {
+		.form-group.is-empty input:not(.readonly):focus,
+		.form-group.is-empty select:not(.readonly):focus,
+		.form-group.is-empty textarea:not(.readonly):focus {
 			border-color: #CC0000;
 			background: white;
 		}
@@ -351,6 +424,20 @@ function renderUpdateForm(member: any, token: string): string {
 		}
 		.form-group:not(.is-empty) .empty-badge {
 			display: none;
+		}
+		.hint {
+			font-size: 12px;
+			color: #888;
+			margin-top: 5px;
+		}
+		.comment-hint {
+			background: #e8f4fd;
+			padding: 12px;
+			border-radius: 6px;
+			margin-bottom: 15px;
+			font-size: 13px;
+			color: #0c5460;
+			border-left: 3px solid #17a2b8;
 		}
 		button {
 			width: 100%;
@@ -413,7 +500,8 @@ function renderUpdateForm(member: any, token: string): string {
 
 			<div class="member-info">
 				<strong>Mitglied:</strong> ${escapeHtml(member.Vorname || '')} ${escapeHtml(member.Nachname || '')}<br>
-				<strong>Mitgliedsnummer:</strong> ${escapeHtml(member.MitglNr?.toString() || '-')}
+				<strong>Mitgliedsnummer:</strong> ${escapeHtml(member.MitglNr?.toString() || '-')}<br>
+				<strong>Mitglied seit:</strong> ${escapeHtml(member.eintrittsdatum || member.Eintritt || '-')}
 			</div>
 
 			<div id="successMessage" class="success-message">
@@ -422,59 +510,126 @@ function renderUpdateForm(member: any, token: string): string {
 			<div id="errorMessage" class="error-message"></div>
 
 			<form id="updateForm" method="POST" action="/update/${token}">
-				<div class="form-group">
-					<label>Vorname (nicht änderbar)</label>
-					<input type="text" value="${escapeHtml(member.Vorname || '')}" class="readonly" readonly>
+				<!-- Personal Data Section (Read-only) -->
+				<div class="form-section">
+					<div class="section-title">Persönliche Daten</div>
+					
+					<div class="form-row">
+						<div class="form-group">
+							<label>Vorname (nicht änderbar)</label>
+							<input type="text" value="${escapeHtml(member.Vorname || '')}" class="readonly" readonly>
+						</div>
+						<div class="form-group">
+							<label>Nachname (nicht änderbar)</label>
+							<input type="text" value="${escapeHtml(member.Nachname || '')}" class="readonly" readonly>
+						</div>
+					</div>
+
+					<div class="form-group${!member.Geburtsdatum ? ' is-empty' : ''}">
+						<label for="Geburtsdatum">Geburtsdatum${!member.Geburtsdatum ? '<span class="empty-badge">LEER</span>' : ''}</label>
+						<input type="date" id="Geburtsdatum" name="Geburtsdatum" value="${escapeHtml(member.Geburtsdatum || '')}">
+					</div>
 				</div>
 
-				<div class="form-group">
-					<label>Nachname (nicht änderbar)</label>
-					<input type="text" value="${escapeHtml(member.Nachname || '')}" class="readonly" readonly>
+				<!-- Address Section -->
+				<div class="form-section">
+					<div class="section-title">Adresse</div>
+					
+					<div class="form-group${!member.Strasse ? ' is-empty' : ''}">
+						<label for="Strasse">Straße und Hausnummer${!member.Strasse ? '<span class="empty-badge">LEER</span>' : ''}</label>
+						<input type="text" id="Strasse" name="Strasse" value="${escapeHtml(member.Strasse || '')}">
+					</div>
+
+					<div class="form-row">
+						<div class="form-group${!member.PLZ ? ' is-empty' : ''}" style="flex: 0 0 120px;">
+							<label for="PLZ">PLZ${!member.PLZ ? '<span class="empty-badge">LEER</span>' : ''}</label>
+							<input type="text" id="PLZ" name="PLZ" value="${escapeHtml(member.PLZ?.toString() || '')}">
+						</div>
+						<div class="form-group${!member.Ort ? ' is-empty' : ''}">
+							<label for="Ort">Ort${!member.Ort ? '<span class="empty-badge">LEER</span>' : ''}</label>
+							<input type="text" id="Ort" name="Ort" value="${escapeHtml(member.Ort || '')}">
+						</div>
+					</div>
 				</div>
 
-				<div class="form-group${!member.Strasse ? ' is-empty' : ''}">
-					<label for="Strasse">Straße und Hausnummer${!member.Strasse ? '<span class="empty-badge">LEER</span>' : ''}</label>
-					<input type="text" id="Strasse" name="Strasse" value="${escapeHtml(member.Strasse || '')}">
+				<!-- Contact Section -->
+				<div class="form-section">
+					<div class="section-title">Kontakt</div>
+					
+					<div class="form-row">
+						<div class="form-group${!member.Telefon ? ' is-empty' : ''}">
+							<label for="Telefon">Telefon${!member.Telefon ? '<span class="empty-badge">LEER</span>' : ''}</label>
+							<input type="tel" id="Telefon" name="Telefon" value="${escapeHtml(member.Telefon || '')}">
+						</div>
+						<div class="form-group${!member.Mobil ? ' is-empty' : ''}">
+							<label for="Mobil">Mobil${!member.Mobil ? '<span class="empty-badge">LEER</span>' : ''}</label>
+							<input type="tel" id="Mobil" name="Mobil" value="${escapeHtml(member.Mobil || '')}">
+						</div>
+					</div>
+
+					<div class="form-group${!member.EMail ? ' is-empty' : ''}">
+						<label for="EMail">E-Mail${!member.EMail ? '<span class="empty-badge">LEER</span>' : ''}</label>
+						<input type="email" id="EMail" name="EMail" value="${escapeHtml(member.EMail || '')}">
+					</div>
 				</div>
 
-				<div class="form-group${!member.PLZ ? ' is-empty' : ''}">
-					<label for="PLZ">Postleitzahl${!member.PLZ ? '<span class="empty-badge">LEER</span>' : ''}</label>
-					<input type="text" id="PLZ" name="PLZ" value="${escapeHtml(member.PLZ?.toString() || '')}">
+				<!-- Function/Role Section -->
+				<div class="form-section">
+					<div class="section-title">Funktion im Verein</div>
+					
+					<div class="form-group${!member.funktion_rolle ? ' is-empty' : ''}">
+						<label for="funktion_rolle">Aktuelle Funktion${!member.funktion_rolle ? '<span class="empty-badge">LEER</span>' : ''}</label>
+						<input type="text" id="funktion_rolle" name="funktion_rolle" value="${escapeHtml(member.funktion_rolle || '')}" placeholder="z.B. Trainer, Vorstand, Abteilungsleiter">
+					</div>
+
+					<div class="form-row">
+						<div class="form-group${!member.funktion_beginn ? ' is-empty' : ''}">
+							<label for="funktion_beginn">Beginn${!member.funktion_beginn ? '<span class="empty-badge">LEER</span>' : ''}</label>
+							<input type="month" id="funktion_beginn" name="funktion_beginn" value="${escapeHtml(member.funktion_beginn || '')}">
+							<div class="hint">Format: JJJJ-MM</div>
+						</div>
+						<div class="form-group">
+							<label for="funktion_ende">Ende (leer = bis heute)</label>
+							<input type="month" id="funktion_ende" name="funktion_ende" value="${escapeHtml(member.funktion_ende || '')}">
+							<div class="hint">Leer lassen wenn noch aktiv</div>
+						</div>
+					</div>
 				</div>
 
-				<div class="form-group${!member.Ort ? ' is-empty' : ''}">
-					<label for="Ort">Ort${!member.Ort ? '<span class="empty-badge">LEER</span>' : ''}</label>
-					<input type="text" id="Ort" name="Ort" value="${escapeHtml(member.Ort || '')}">
+				<!-- Bank Section -->
+				<div class="form-section">
+					<div class="section-title">Bankverbindung</div>
+					
+					<div class="form-group${!member.IBAN ? ' is-empty' : ''}">
+						<label for="IBAN">IBAN${!member.IBAN ? '<span class="empty-badge">LEER</span>' : ''}</label>
+						<input type="text" id="IBAN" name="IBAN" value="${escapeHtml(member.IBAN || '')}">
+					</div>
+
+					<div class="form-row">
+						<div class="form-group${!member.BIC ? ' is-empty' : ''}">
+							<label for="BIC">BIC${!member.BIC ? '<span class="empty-badge">LEER</span>' : ''}</label>
+							<input type="text" id="BIC" name="BIC" value="${escapeHtml(member.BIC || '')}">
+						</div>
+						<div class="form-group${!member.Bankbezeichnung ? ' is-empty' : ''}">
+							<label for="Bankbezeichnung">Bank${!member.Bankbezeichnung ? '<span class="empty-badge">LEER</span>' : ''}</label>
+							<input type="text" id="Bankbezeichnung" name="Bankbezeichnung" value="${escapeHtml(member.Bankbezeichnung || '')}">
+						</div>
+					</div>
 				</div>
 
-				<div class="form-group${!member.Telefon ? ' is-empty' : ''}">
-					<label for="Telefon">Telefon${!member.Telefon ? '<span class="empty-badge">LEER</span>' : ''}</label>
-					<input type="tel" id="Telefon" name="Telefon" value="${escapeHtml(member.Telefon || '')}">
-				</div>
-
-				<div class="form-group${!member.Mobil ? ' is-empty' : ''}">
-					<label for="Mobil">Mobil${!member.Mobil ? '<span class="empty-badge">LEER</span>' : ''}</label>
-					<input type="tel" id="Mobil" name="Mobil" value="${escapeHtml(member.Mobil || '')}">
-				</div>
-
-				<div class="form-group${!member.EMail ? ' is-empty' : ''}">
-					<label for="EMail">E-Mail${!member.EMail ? '<span class="empty-badge">LEER</span>' : ''}</label>
-					<input type="email" id="EMail" name="EMail" value="${escapeHtml(member.EMail || '')}">
-				</div>
-
-				<div class="form-group${!member.IBAN ? ' is-empty' : ''}">
-					<label for="IBAN">IBAN${!member.IBAN ? '<span class="empty-badge">LEER</span>' : ''}</label>
-					<input type="text" id="IBAN" name="IBAN" value="${escapeHtml(member.IBAN || '')}">
-				</div>
-
-				<div class="form-group${!member.BIC ? ' is-empty' : ''}">
-					<label for="BIC">BIC${!member.BIC ? '<span class="empty-badge">LEER</span>' : ''}</label>
-					<input type="text" id="BIC" name="BIC" value="${escapeHtml(member.BIC || '')}">
-				</div>
-
-				<div class="form-group${!member.Bankbezeichnung ? ' is-empty' : ''}">
-					<label for="Bankbezeichnung">Bank${!member.Bankbezeichnung ? '<span class="empty-badge">LEER</span>' : ''}</label>
-					<input type="text" id="Bankbezeichnung" name="Bankbezeichnung" value="${escapeHtml(member.Bankbezeichnung || '')}">
+				<!-- Comment Section -->
+				<div class="form-section">
+					<div class="section-title">Mitteilung an den Verein</div>
+					
+					<div class="comment-hint">
+						Falls Angaben wie Vorname, Nachname oder Eintrittsdatum nicht stimmen, 
+						können Sie dies hier mitteilen. Der Verein wird die Änderungen prüfen und durchführen.
+					</div>
+					
+					<div class="form-group">
+						<label for="aenderungskommentar">Ihr Kommentar / Änderungswunsch</label>
+						<textarea id="aenderungskommentar" name="aenderungskommentar" placeholder="z.B. Namensänderung nach Heirat, falsches Eintrittsdatum, etc.">${escapeHtml(member.aenderungskommentar || '')}</textarea>
+					</div>
 				</div>
 
 				<button type="submit">Daten aktualisieren</button>
@@ -488,13 +643,15 @@ function renderUpdateForm(member: any, token: string): string {
 
 	<script>
 		// Update empty indicators when user types
-		document.querySelectorAll('#updateForm input:not(.readonly)').forEach(input => {
+		document.querySelectorAll('#updateForm input:not(.readonly), #updateForm select, #updateForm textarea').forEach(input => {
 			input.addEventListener('input', function() {
 				const formGroup = this.closest('.form-group');
-				if (this.value.trim()) {
-					formGroup.classList.remove('is-empty');
-				} else {
-					formGroup.classList.add('is-empty');
+				if (formGroup) {
+					if (this.value.trim()) {
+						formGroup.classList.remove('is-empty');
+					} else {
+						formGroup.classList.add('is-empty');
+					}
 				}
 			});
 		});

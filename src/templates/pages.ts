@@ -732,6 +732,47 @@ export function renderDashboard(): string {
             font-size: 12px;
             color: var(--text-secondary);
         }
+        
+        /* Comment and change indicators */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        .badge-comment {
+            background: #17a2b8;
+            color: white;
+        }
+        .badge-new {
+            background: #28a745;
+            color: white;
+        }
+        .badge-important {
+            background: #CC0000;
+            color: white;
+        }
+        .change-row-comment {
+            background: rgba(23, 162, 184, 0.08) !important;
+        }
+        .change-row-recent {
+            font-weight: 500;
+        }
+        .comment-text {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .comment-text:hover {
+            white-space: normal;
+            overflow: visible;
+        }
+        .filter-bar {
+            padding: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -746,7 +787,7 @@ export function renderDashboard(): string {
             </div>
             <div class="header-actions">
                 <button id="themeToggle" class="theme-toggle" title="Dark Mode umschalten">🌙</button>
-                <a href="/logout" class="logout-btn">Abmelden</a>
+            <a href="/logout" class="logout-btn">Abmelden</a>
             </div>
         </div>
 
@@ -782,6 +823,16 @@ export function renderDashboard(): string {
         <div class="content" style="margin-top: 30px;">
             <div class="info" id="changesInfo">
                 <strong>Änderungsprotokoll</strong> - Zeigt die letzten Änderungen von Mitgliedern
+            </div>
+            <div class="filter-bar" style="margin: 10px 0; display: flex; gap: 10px; align-items: center;">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="checkbox" id="filterComments" style="cursor: pointer;">
+                    <span style="font-size: 13px;">Nur Kommentare anzeigen</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="checkbox" id="filterRecent" style="cursor: pointer;">
+                    <span style="font-size: 13px;">Nur letzte 7 Tage</span>
+                </label>
             </div>
             <table id="changes-table" class="display" style="width:100%"></table>
         </div>
@@ -1179,6 +1230,8 @@ export function renderDashboard(): string {
             }
         }
 
+        let allChanges = []; // Store all changes for filtering
+        
         async function loadChangeHistory() {
             try {
                 document.getElementById('changesInfo').innerHTML = 
@@ -1188,87 +1241,175 @@ export function renderDashboard(): string {
                 if (!response.ok) throw new Error('Fehler beim Laden der Änderungen');
                 
                 const data = await response.json();
-                const changes = data.changes || [];
+                allChanges = data.changes || [];
+                
+                // Count comments
+                const commentCount = allChanges.filter(c => c.field_name === 'aenderungskommentar').length;
+                
+                // Count recent (last 7 days)
+                const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+                const recentCount = allChanges.filter(c => new Date(c.changed_at + 'Z').getTime() > sevenDaysAgo).length;
 
                 document.getElementById('changesInfo').innerHTML = 
-                    '<strong>Änderungsprotokoll</strong> - ' + changes.length + ' Änderungen';
+                    '<strong>Änderungsprotokoll</strong> - ' + allChanges.length + ' Änderungen' +
+                    (commentCount > 0 ? ' <span class="badge badge-comment">' + commentCount + ' Kommentare</span>' : '') +
+                    (recentCount > 0 ? ' <span class="badge badge-new">' + recentCount + ' neu (7 Tage)</span>' : '');
 
-                // Destroy existing table if it exists
-                if (changesTable) {
-                    changesTable.destroy();
-                    $('#changes-table').empty();
-                }
-
-                changesTable = $('#changes-table').DataTable({
-                    data: changes,
-                    columns: [
-                        {
-                            title: 'Zeitpunkt',
-                            data: 'changed_at',
-                            render: function(data, type) {
-                                if (type === 'display' && data) {
-                                    const date = new Date(data + 'Z');
-                                    return date.toLocaleString('de-DE', {
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    });
-                                }
-                                return data;
-                            }
-                        },
-                        { title: 'Mitglieds-ID', data: 'member_id' },
-                        {
-                            title: 'Name',
-                            data: 'Nachname',
-                            render: function(data, type, row) {
-                                return (row.Vorname || '') + ' ' + (row.Nachname || '');
-                            }
-                        },
-                        { title: 'E-Mail', data: 'EMail' },
-                        { title: 'Feld', data: 'field_name' },
-                        {
-                            title: 'Alter Wert',
-                            data: 'old_value',
-                            render: function(data) {
-                                return data || '<leer>';
-                            }
-                        },
-                        {
-                            title: 'Neuer Wert',
-                            data: 'new_value',
-                            render: function(data) {
-                                return data || '<leer>';
-                            }
-                        },
-                        { title: 'IP-Adresse', data: 'ip_address' }
-                    ],
-                    pageLength: 50,
-                    lengthMenu: [[20, 50, 100, 200], [20, 50, 100, 200]],
-                    language: {
-                        lengthMenu: 'Zeige _MENU_ Einträge',
-                        search: 'Suchen:',
-                        info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
-                        infoEmpty: 'Keine Einträge vorhanden',
-                        infoFiltered: '(gefiltert von _MAX_ Einträgen)',
-                        paginate: {
-                            first: 'Erste',
-                            last: 'Letzte',
-                            next: 'Weiter',
-                            previous: 'Zurück'
-                        }
-                    },
-                    order: [[0, 'desc']],
-                    scrollX: true
-                });
+                renderChangesTable(allChanges);
 
             } catch (error) {
                 document.getElementById('changesInfo').innerHTML = 
                     '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler beim Laden der Änderungen: ' + error.message + '</div>';
             }
         }
+        
+        function renderChangesTable(changes) {
+            // Destroy existing table if it exists
+            if (changesTable) {
+                changesTable.destroy();
+                $('#changes-table').empty();
+            }
+
+            changesTable = $('#changes-table').DataTable({
+                data: changes,
+                columns: [
+                    {
+                        title: 'Zeitpunkt',
+                        data: 'changed_at',
+                        render: function(data, type, row) {
+                            if (type === 'display' && data) {
+                                const date = new Date(data + 'Z');
+                                const now = Date.now();
+                                const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+                                const isRecent = date.getTime() > sevenDaysAgo;
+                                
+                                let output = date.toLocaleString('de-DE', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
+                                
+                                if (isRecent) {
+                                    output += ' <span class="badge badge-new">NEU</span>';
+                                }
+                                
+                                return output;
+                            }
+                            return data;
+                        }
+                    },
+                    { title: 'Mitglieds-ID', data: 'member_id' },
+                    {
+                        title: 'Name',
+                        data: 'Nachname',
+                        render: function(data, type, row) {
+                            return (row.Vorname || '') + ' ' + (row.Nachname || '');
+                        }
+                    },
+                    { title: 'E-Mail', data: 'EMail' },
+                    { 
+                        title: 'Feld', 
+                        data: 'field_name',
+                        render: function(data, type) {
+                            if (type === 'display') {
+                                if (data === 'aenderungskommentar') {
+                                    return '<span style="color: #17a2b8; font-weight: 600;">Kommentar</span>';
+                                }
+                                // Translate field names to German
+                                const fieldNames = {
+                                    'Geburtsdatum': 'Geburtsdatum',
+                                    'funktion_rolle': 'Funktion',
+                                    'funktion_beginn': 'Funktion Beginn',
+                                    'funktion_ende': 'Funktion Ende',
+                                    'eintrittsdatum': 'Eintrittsdatum',
+                                    'Strasse': 'Straße',
+                                    'EMail': 'E-Mail',
+                                    'Bankbezeichnung': 'Bank'
+                                };
+                                return fieldNames[data] || data;
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        title: 'Alter Wert',
+                        data: 'old_value',
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                if (row.field_name === 'aenderungskommentar') return '<em style="color: #999;">-</em>';
+                                return data || '<span style="color: #999;">&lt;leer&gt;</span>';
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        title: 'Neuer Wert / Kommentar',
+                        data: 'new_value',
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                if (row.field_name === 'aenderungskommentar') {
+                                    return '<div class="comment-text" title="' + (data || '').replace(/"/g, '&quot;') + '">' + (data || '') + '</div>';
+                                }
+                                return data || '<span style="color: #999;">&lt;leer&gt;</span>';
+                            }
+                            return data;
+                        }
+                    },
+                    { title: 'IP-Adresse', data: 'ip_address' }
+                ],
+                pageLength: 50,
+                lengthMenu: [[20, 50, 100, 200], [20, 50, 100, 200]],
+                language: {
+                    lengthMenu: 'Zeige _MENU_ Einträge',
+                    search: 'Suchen:',
+                    info: 'Zeige _START_ bis _END_ von _TOTAL_ Einträgen',
+                    infoEmpty: 'Keine Einträge vorhanden',
+                    infoFiltered: '(gefiltert von _MAX_ Einträgen)',
+                    paginate: {
+                        first: 'Erste',
+                        last: 'Letzte',
+                        next: 'Weiter',
+                        previous: 'Zurück'
+                    }
+                },
+                order: [[0, 'desc']],
+                scrollX: true,
+                createdRow: function(row, data) {
+                    if (data.field_name === 'aenderungskommentar') {
+                        $(row).addClass('change-row-comment');
+                    }
+                    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+                    if (new Date(data.changed_at + 'Z').getTime() > sevenDaysAgo) {
+                        $(row).addClass('change-row-recent');
+                    }
+                }
+            });
+        }
+        
+        // Filter change history
+        function applyChangeFilters() {
+            const filterComments = document.getElementById('filterComments').checked;
+            const filterRecent = document.getElementById('filterRecent').checked;
+            
+            let filtered = allChanges;
+            
+            if (filterComments) {
+                filtered = filtered.filter(c => c.field_name === 'aenderungskommentar');
+            }
+            
+            if (filterRecent) {
+                const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+                filtered = filtered.filter(c => new Date(c.changed_at + 'Z').getTime() > sevenDaysAgo);
+            }
+            
+            renderChangesTable(filtered);
+        }
+        
+        // Attach filter event listeners after init
+        document.getElementById('filterComments').addEventListener('change', applyChangeFilters);
+        document.getElementById('filterRecent').addEventListener('change', applyChangeFilters);
 
         let tokenTable = null;
         async function loadTokenStatus() {
@@ -1449,7 +1590,7 @@ export function renderDashboard(): string {
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
-                
+
                 hideLoading();
                 showToast('PDFs erfolgreich generiert und heruntergeladen! (Token gültig für ' + validityDays + ' Tage)', 'success');
             } catch (error) {
