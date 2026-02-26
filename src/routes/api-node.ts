@@ -155,9 +155,9 @@ api.get('/change-history', async (c) => {
 				c.new_value,
 				c.changed_at,
 				c.ip_address,
-				a.Vorname,
-				a.Nachname,
-				a.EMail
+				a."Vorname",
+				a."Nachname",
+				a."EMail"
 			FROM member_changes_log c
 			LEFT JOIN auswertung a ON (c.member_id = a."AdrNr" OR c.member_id = a."MitglNr")
 			ORDER BY c.changed_at DESC
@@ -337,9 +337,9 @@ api.get('/token-status', async (c) => {
 				t.generated_at,
 				t.expires_at,
 				t.regenerated_count,
-				a.Vorname,
-				a.Nachname,
-				a.EMail
+				a."Vorname",
+				a."Nachname",
+				NULL::text as "EMail"
 			FROM member_tokens t
 			LEFT JOIN auswertung a ON (t.member_id = a."AdrNr" OR t.member_id = a."MitglNr")
 			ORDER BY t.generated_at DESC
