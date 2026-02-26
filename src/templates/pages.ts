@@ -1633,6 +1633,7 @@ export function renderDashboard(): string {
 
                 hideLoading();
                 showToast('PDFs erfolgreich generiert und heruntergeladen! (Token gültig für ' + validityDays + ' Tage)', 'success');
+                await init();
             } catch (error) {
                 hideLoading();
                 showToast('Fehler: ' + error.message, 'error');

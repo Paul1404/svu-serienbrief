@@ -341,7 +341,7 @@ api.get('/token-status', async (c) => {
 				a.Nachname,
 				a.EMail
 			FROM member_tokens t
-			LEFT JOIN auswertung a ON (t.member_id = a.AdrNr OR t.member_id = a.MitglNr)
+			LEFT JOIN auswertung a ON (t.member_id = a."AdrNr" OR t.member_id = a."MitglNr")
 			ORDER BY t.generated_at DESC
 		`);
 
