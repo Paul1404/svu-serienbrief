@@ -6,7 +6,6 @@
     "moduleResolution": "node",
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["@cloudflare/workers-types", "node"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,5 +13,12 @@
     "resolveJsonModule": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "src/routes/api.ts",
+    "src/routes/letters.ts",
+    "src/routes/update.ts",
+    "src/index.ts",
+    "src/types.ts"
+  ]
 }
