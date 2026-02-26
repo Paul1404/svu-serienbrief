@@ -4,6 +4,7 @@
 # D1 Import artifacts
 d1-output/
 .wrangler/
+**.sql
 
 # Node
 node_modules/

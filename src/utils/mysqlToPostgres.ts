@@ -356,6 +356,12 @@ function normalizeInsert(
 			rowMap[col] = val || 'NULL';
 		});
 
+		// Skip members who have left (Austritt = exit date is set)
+		const austrittVal = (rowMap['Austritt'] || '').trim();
+		if (austrittVal && austrittVal.toUpperCase() !== 'NULL') {
+			continue;
+		}
+
 		const orderedValues: string[] = [];
 		for (const targetCol of kept) {
 			const sourceCol = targetToSource[targetCol] || targetCol;
