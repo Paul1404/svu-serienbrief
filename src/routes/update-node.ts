@@ -6,6 +6,7 @@
 import { Hono } from 'hono';
 import { validateMemberToken } from '../utils/tokens';
 import { jsonResponse, jsonError, escapeHtml } from '../utils/helpers';
+import { icons } from '../utils/icons';
 import { query, queryOne } from '../db';
 
 const update = new Hono();
@@ -759,11 +760,9 @@ function renderSuccessPage(message?: string): string {
 			justify-content: center;
 			margin: 0 auto 20px;
 		}
-		.success-icon::after {
-			content: "✓";
-			color: white;
-			font-size: 48px;
-			font-weight: bold;
+		.success-icon svg {
+			width: 48px;
+			height: 48px;
 		}
 		h1 {
 			color: #CC0000;
@@ -778,7 +777,7 @@ function renderSuccessPage(message?: string): string {
 </head>
 <body>
 	<div class="container">
-		<div class="success-icon"></div>
+		<div class="success-icon">${icons.checkLarge}</div>
 		<h1>Vielen Dank!</h1>
 		<p>${escapeHtml(displayMessage)}</p>
 		<p>Sie können dieses Fenster nun schließen.</p>
@@ -826,8 +825,9 @@ function renderErrorPage(message: string, isExpired: boolean = false): string {
 			align-items: center;
 			justify-content: center;
 			margin: 0 auto 20px;
-			font-size: 40px;
+			color: ${isInvalidLink ? '#333' : 'white'};
 		}
+		.error-icon svg { width: 40px; height: 40px; }
 		h1 {
 			color: #CC0000;
 			margin-bottom: 15px;
@@ -882,7 +882,7 @@ function renderErrorPage(message: string, isExpired: boolean = false): string {
 </head>
 <body>
 	<div class="container">
-		<div class="error-icon">${isInvalidLink ? '🔗' : '⚠️'}</div>
+		<div class="error-icon">${isInvalidLink ? icons.link : icons.warning}</div>
 		<h1>${isInvalidLink ? 'Link ungültig oder abgelaufen' : 'Fehler'}</h1>
 		<p class="message">${escapeHtml(message)}</p>
 		
