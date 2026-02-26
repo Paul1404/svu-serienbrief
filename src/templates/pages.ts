@@ -1038,6 +1038,14 @@ export function renderDashboard(): string {
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/2.3.6/js/dataTables.min.js"></script>
     <script>
+        // Client-side XSS protection: escape before inserting into innerHTML
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const s = String(text);
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return s.replace(/[&<>"']/g, m => map[m]);
+        }
+
         // Preferred column order; actual columns are derived from API data
         const preferredColumnOrder = ['AdrNr', 'MitglNr', 'Anrede', 'Vorname', 'Nachname', 'Strasse', 'PLZ', 'Ort', 'Telefon', 'Mobil', 'EMail', 'Geburtsdatum', 'IBAN', 'BIC', 'Bankbezeichnung', 'Abteilung', 'Eintritt', 'funktion_rolle', 'eintrittsdatum'];
         let table = null;
@@ -1061,7 +1069,7 @@ export function renderDashboard(): string {
             toast.className = 'toast ' + type;
             toast.innerHTML = 
                 '<span class="toast-icon">' + toastIcons[type] + '</span>' +
-                '<span class="toast-message">' + message + '</span>' +
+                '<span class="toast-message">' + escapeHtml(message) + '</span>' +
                 '<span class="toast-close">×</span>';
             
             document.body.appendChild(toast);
@@ -1083,8 +1091,8 @@ export function renderDashboard(): string {
                 overlay.className = 'modal-overlay';
                 overlay.innerHTML = 
                     '<div class="modal">' +
-                        '<h3>' + title + '</h3>' +
-                        '<p>' + message + '</p>' +
+                        '<h3>' + escapeHtml(title) + '</h3>' +
+                        '<p>' + escapeHtml(message) + '</p>' +
                         '<div class="modal-buttons">' +
                             '<button class="modal-btn secondary" data-action="cancel">Abbrechen</button>' +
                             '<button class="modal-btn primary" data-action="confirm">Bestätigen</button>' +
@@ -1117,8 +1125,8 @@ export function renderDashboard(): string {
             loadingOverlay.innerHTML = 
                 '<div class="loading-card">' +
                     '<div class="loading-spinner"></div>' +
-                    '<div class="loading-title">' + title + '</div>' +
-                    '<div class="loading-message" id="loadingMessage">' + message + '</div>' +
+                    '<div class="loading-title">' + escapeHtml(title) + '</div>' +
+                    '<div class="loading-message" id="loadingMessage">' + escapeHtml(message) + '</div>' +
                     (showProgress ? 
                         '<div class="loading-progress"><div class="loading-progress-bar" id="loadingProgressBar" style="width: 0%"></div></div>' +
                         '<div class="loading-stats" id="loadingStats"></div>' : '') +
@@ -1364,7 +1372,7 @@ export function renderDashboard(): string {
 
             } catch (error) {
                 document.getElementById('tableInfo').innerHTML = 
-                    '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler: ' + error.message + '</div>';
+                    '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler: ' + escapeHtml(error && error.message ? error.message : 'Unbekannter Fehler') + '</div>';
             }
         }
 
@@ -1400,7 +1408,7 @@ export function renderDashboard(): string {
                 let topFieldsHtml = '';
                 if (stats.topFields.length > 0) {
                     const fieldsHtml = stats.topFields.map(field => 
-                        '<div class="field-item"><span>' + field.field_name + '</span><span style="font-weight: 600; color: #CC0000;">' + field.count + 'x</span></div>'
+                        '<div class="field-item"><span>' + escapeHtml(field.field_name) + '</span><span style="font-weight: 600; color: #CC0000;">' + escapeHtml(String(field.count)) + 'x</span></div>'
                     ).join('');
                     
                     topFieldsHtml = '<div class="stat-card" style="margin-top: 20px;"><div class="stat-label" style="margin-bottom: 15px;">Meist geänderte Felder</div><div class="top-fields">' + fieldsHtml + '</div></div>';
@@ -1418,7 +1426,7 @@ export function renderDashboard(): string {
                     '<div class="stat-detail">Änderungen in der letzten Woche</div></div>' +
                     '</div>' + topFieldsHtml;
             } catch (error) {
-                showToast('Fehler beim Laden der Statistiken: ' + error.message, 'error');
+                showToast('Fehler beim Laden der Statistiken: ' + (error && error.message ? error.message : 'Unbekannter Fehler'), 'error');
             }
         }
 
@@ -1451,7 +1459,7 @@ export function renderDashboard(): string {
 
             } catch (error) {
                 document.getElementById('changesInfo').innerHTML = 
-                    '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler beim Laden der Änderungen: ' + error.message + '</div>';
+                    '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler beim Laden der Änderungen: ' + escapeHtml(error && error.message ? error.message : 'Unbekannter Fehler') + '</div>';
             }
         }
         
@@ -1706,7 +1714,7 @@ export function renderDashboard(): string {
 
             } catch (error) {
                 document.getElementById('tokenInfo').innerHTML = 
-                    '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler beim Laden der Token: ' + error.message + '</div>';
+                    '<div style="background: #ffe7e7; color: #c00; padding: 15px; border-radius: 4px;">Fehler beim Laden der Token: ' + escapeHtml(error && error.message ? error.message : 'Unbekannter Fehler') + '</div>';
             }
         }
 
@@ -1791,7 +1799,7 @@ export function renderDashboard(): string {
                 await init();
             } catch (error) {
                 hideLoading();
-                showToast('Fehler: ' + error.message, 'error');
+                showToast('Fehler: ' + (error && error.message ? error.message : 'Unbekannter Fehler'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
@@ -1838,15 +1846,15 @@ export function renderDashboard(): string {
                 }
 
                 importResult.style.display = 'block';
-                importResult.innerHTML = '<div class="info" style="border-left-color: #28a745;"><strong>Import erfolgreich</strong> - ' + (data.message || '') + '</div>';
+                importResult.innerHTML = '<div class="info" style="border-left-color: #28a745;"><strong>Import erfolgreich</strong> - ' + escapeHtml(data.message || '') + '</div>';
                 importResult.className = '';
 
                 showToast(data.message || 'Import abgeschlossen', 'success');
                 await init();
             } catch (error) {
                 importResult.style.display = 'block';
-                importResult.innerHTML = '<div style="background: var(--danger-bg); color: #dc3545; padding: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>Fehler</strong> - ' + error.message + '</div>';
-                showToast('Fehler: ' + error.message, 'error');
+                importResult.innerHTML = '<div style="background: var(--danger-bg); color: #dc3545; padding: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>Fehler</strong> - ' + escapeHtml(error && error.message ? error.message : 'Unbekannter Fehler') + '</div>';
+                showToast('Fehler: ' + (error && error.message ? error.message : 'Unbekannter Fehler'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
@@ -1877,7 +1885,7 @@ export function renderDashboard(): string {
                 showToast(data.message || 'Daten gelöscht', 'success');
                 await init();
             } catch (error) {
-                showToast('Fehler: ' + error.message, 'error');
+                showToast('Fehler: ' + (error && error.message ? error.message : 'Unbekannter Fehler'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
@@ -1895,7 +1903,7 @@ export function renderDashboard(): string {
                 await init();
                 showToast('Tabelle erfolgreich aktualisiert', 'success');
             } catch (error) {
-                showToast('Fehler beim Aktualisieren: ' + error.message, 'error');
+                showToast('Fehler beim Aktualisieren: ' + (error && error.message ? error.message : 'Unbekannter Fehler'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.style.opacity = '1';
@@ -1930,7 +1938,7 @@ export function renderDashboard(): string {
                 await loadChangeHistory();
                 await loadStats();
             } catch (error) {
-                showToast('Fehler: ' + error.message, 'error');
+                showToast('Fehler: ' + (error && error.message ? error.message : 'Unbekannter Fehler'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
@@ -1974,7 +1982,7 @@ export function renderDashboard(): string {
                 selectedTokens.clear();
                 await loadTokenStatus();
             } catch (error) {
-                showToast('Fehler: ' + error.message, 'error');
+                showToast('Fehler: ' + (error && error.message ? error.message : 'Unbekannter Fehler'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
@@ -2013,12 +2021,12 @@ export function renderDashboard(): string {
                 }
                 
                 const result = await response.json();
-                showToast(result.message, 'success');
+                showToast(result.message || 'Erfolgreich', 'success');
                 
                 selectedTokens.clear();
                 await loadTokenStatus();
             } catch (error) {
-                showToast('Fehler: ' + error.message, 'error');
+                showToast('Fehler: ' + (error && error.message ? error.message : 'Unbekannter Fehler'), 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;

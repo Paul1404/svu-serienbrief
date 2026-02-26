@@ -3,10 +3,18 @@
  * Ported from Cloudflare D1 to Postgres/Neon.
  */
 
+import crypto from 'crypto';
 import { Hono } from 'hono';
 import { renderLoginPage } from '../templates/pages';
 import { createSession } from '../middleware/auth';
 import { query } from '../db';
+
+function timingSafeEqual(a: string, b: string): boolean {
+	const bufA = Buffer.from(a, 'utf8');
+	const bufB = Buffer.from(b, 'utf8');
+	if (bufA.length !== bufB.length) return false;
+	return crypto.timingSafeEqual(bufA, bufB);
+}
 
 const pages = new Hono();
 
@@ -36,7 +44,8 @@ pages.post('/login', async (c) => {
 			return c.html(renderLoginPage({ error: 'Server configuration error' }), 500);
 		}
 
-		if (password !== adminPassword) {
+		const passwordStr = typeof password === 'string' ? password : '';
+		if (!timingSafeEqual(passwordStr, adminPassword)) {
 			console.log({
 				event: 'login_failed',
 				reason: 'invalid_password',
@@ -72,7 +81,7 @@ pages.post('/login', async (c) => {
 			error: error.message,
 			stack: error.stack
 		});
-		return c.html(renderLoginPage({ error: 'Login fehlgeschlagen: ' + error.message }), 500);
+		return c.html(renderLoginPage({ error: 'Login fehlgeschlagen' }), 500);
 	}
 });
 
