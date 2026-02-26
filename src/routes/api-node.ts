@@ -18,10 +18,11 @@ function normalizeMemberId(id: any): string {
 
 // Get paginated data
 api.get('/data', async (c) => {
+	const page = parseInt(c.req.query('page') || '1');
+	const limit = parseInt(c.req.query('limit') || '50');
+	const offset = (page - 1) * limit;
+
 	try {
-		const page = parseInt(c.req.query('page') || '1');
-		const limit = parseInt(c.req.query('limit') || '50');
-		const offset = (page - 1) * limit;
 
 		const startTime = Date.now();
 		const result = await query<any>(
