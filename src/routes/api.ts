@@ -342,7 +342,7 @@ api.post('/regenerate-token/:memberId', async (c) => {
 		});
 	} catch (error: any) {
 		console.error('Error regenerating token:', error);
-		return jsonResponse({ error: error.message }, 500);
+		return jsonError(error.message, 500);
 	}
 });
 

@@ -25,7 +25,7 @@ pages.post('/login', async (c) => {
 		const userAgent = c.req.header('user-agent') || 'unknown';
 		const country = (c.req.raw as any)?.cf?.country || 'unknown';
 
-		const adminPassword = (c.get('adminPassword') as string | undefined) || process.env.ADMIN_PASSWORD || '';
+		const adminPassword = process.env.ADMIN_PASSWORD || '';
 
 		if (!adminPassword) {
 			console.log({

@@ -310,10 +310,7 @@ api.post('/regenerate-token/:memberId', async (c) => {
 		const memberId = normalizeMemberId(c.req.param('memberId'));
 		if (!memberId) return jsonError('Ungültige Mitglieds-ID', 400);
 
-		const secret =
-			(c.get('adminPassword') as string | undefined) ||
-			process.env.ADMIN_PASSWORD ||
-			'';
+		const secret = process.env.ADMIN_PASSWORD || '';
 
 		const { generateMemberToken } = await import('../utils/tokens');
 
@@ -349,7 +346,7 @@ api.post('/regenerate-token/:memberId', async (c) => {
 		});
 	} catch (error: any) {
 		console.error('Error regenerating token:', error);
-		return jsonResponse({ error: error.message }, 500);
+		return jsonError(error.message, 500);
 	}
 });
 
@@ -449,10 +446,7 @@ api.post('/bulk-regenerate-tokens', async (c) => {
 		}
 
 		const { generateMemberToken } = await import('../utils/tokens');
-		const secret =
-			(c.get('adminPassword') as string | undefined) ||
-			process.env.ADMIN_PASSWORD ||
-			'';
+		const secret = process.env.ADMIN_PASSWORD || '';
 		const baseUrl = new URL(c.req.url).origin;
 		const now = Date.now();
 		const expiresAt = now + validityDays * 24 * 60 * 60 * 1000;

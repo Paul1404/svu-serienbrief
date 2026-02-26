@@ -16,10 +16,7 @@ const update = new Hono();
 update.get('/:token', async (c) => {
 	try {
 		const token = c.req.param('token');
-		const secret =
-			(c.get('adminPassword') as string | undefined) ||
-			process.env.ADMIN_PASSWORD ||
-			'';
+		const secret = process.env.ADMIN_PASSWORD || '';
 
 		const memberId = await validateMemberToken(token, secret);
 
@@ -76,10 +73,7 @@ update.get('/:token', async (c) => {
 update.post('/:token', async (c) => {
 	try {
 		const token = c.req.param('token');
-		const secret =
-			(c.get('adminPassword') as string | undefined) ||
-			process.env.ADMIN_PASSWORD ||
-			'';
+		const secret = process.env.ADMIN_PASSWORD || '';
 
 		const memberId = await validateMemberToken(token, secret);
 

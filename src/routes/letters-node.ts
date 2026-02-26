@@ -87,10 +87,7 @@ letters.post('/generate-pdfs', async (c) => {
 		}
 
 		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
-		const secret =
-			(c.get('adminPassword') as string | undefined) ||
-			process.env.ADMIN_PASSWORD ||
-			'';
+		const secret = process.env.ADMIN_PASSWORD || '';
 
 		// Pre-fetch club logo once
 		let cachedLogoBytes: Uint8Array | null = null;
@@ -710,10 +707,7 @@ letters.get('/generate', async (c) => {
 		);
 
 		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
-		const secret =
-			(c.get('adminPassword') as string | undefined) ||
-			process.env.ADMIN_PASSWORD ||
-			'';
+		const secret = process.env.ADMIN_PASSWORD || '';
 
 		const letterData = await Promise.all(
 			(result.rows || []).map(async (member: any) => {
