@@ -26,7 +26,7 @@ update.get('/:token', async (c) => {
 
 		// Fetch member data
 		const member = await queryOne<any>(
-			`SELECT * FROM auswertung WHERE AdrNr = $1 OR MitglNr = $2`,
+			`SELECT * FROM auswertung WHERE "AdrNr" = $1 OR "MitglNr" = $2`,
 			[memberId, memberId]
 		);
 
@@ -103,7 +103,7 @@ update.post('/:token', async (c) => {
 		const commentField = 'aenderungskommentar';
 
 		const currentMember = await queryOne<any>(
-			`SELECT * FROM auswertung WHERE AdrNr = $1 OR MitglNr = $2`,
+			`SELECT * FROM auswertung WHERE "AdrNr" = $1 OR "MitglNr" = $2`,
 			[memberId, memberId]
 		);
 
@@ -251,9 +251,9 @@ update.post('/:token', async (c) => {
 		values.push(memberId);
 
 		await query(
-			`UPDATE auswertung SET ${setClause} WHERE AdrNr = $${
+			`UPDATE auswertung SET ${setClause} WHERE "AdrNr" = $${
 				values.length
-			} OR MitglNr = $${values.length}`,
+			} OR "MitglNr" = $${values.length}`,
 			[...values, memberId]
 		);
 

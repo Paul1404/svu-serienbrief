@@ -55,7 +55,7 @@ letters.post('/generate-pdfs', async (c) => {
 
 			// First query: lookup by AdrNr
 			const result1 = await query<any>(
-				`SELECT * FROM auswertung WHERE AdrNr IN (${placeholders})`,
+				`SELECT * FROM auswertung WHERE "AdrNr" IN (${placeholders})`,
 				batchIds
 			);
 
@@ -69,7 +69,7 @@ letters.post('/generate-pdfs', async (c) => {
 
 			// Second query: lookup by MitglNr (for any not found by AdrNr)
 			const result2 = await query<any>(
-				`SELECT * FROM auswertung WHERE MitglNr IN (${placeholders})`,
+				`SELECT * FROM auswertung WHERE "MitglNr" IN (${placeholders})`,
 				batchIds
 			);
 
@@ -703,7 +703,7 @@ function createZipFromPdfFiles(
 letters.get('/generate', async (c) => {
 	try {
 		const result = await query<any>(
-			`SELECT * FROM auswertung ORDER BY AdrNr`
+			`SELECT * FROM auswertung ORDER BY "AdrNr"`
 		);
 
 		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');

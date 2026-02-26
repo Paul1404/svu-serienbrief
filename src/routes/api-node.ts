@@ -85,7 +85,7 @@ api.get('/search', async (c) => {
 		}
 
 		const startTime = Date.now();
-		const sql = `SELECT * FROM auswertung WHERE ${sanitizeIdentifier(column)} LIKE $1 LIMIT 100`;
+		const sql = `SELECT * FROM auswertung WHERE "${sanitizeIdentifier(column)}" LIKE $1 LIMIT 100`;
 		const result = await query<any>(sql, [`%${q}%`]);
 		const duration = Date.now() - startTime;
 
@@ -159,7 +159,7 @@ api.get('/change-history', async (c) => {
 				a.Nachname,
 				a.EMail
 			FROM member_changes_log c
-			LEFT JOIN auswertung a ON (c.member_id = a.AdrNr OR c.member_id = a.MitglNr)
+			LEFT JOIN auswertung a ON (c.member_id = a."AdrNr" OR c.member_id = a."MitglNr")
 			ORDER BY c.changed_at DESC
 			LIMIT 1000
 		`);
