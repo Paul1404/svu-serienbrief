@@ -311,6 +311,23 @@ function convertColumnDef(definition: string): { columnName: string; columnStmt:
 	return { columnName: column, columnStmt: `"${column}" ${norm}`, isAutoInc: false };
 }
 
+/** Strip datetime to date-only (YYYY-MM-DD) for MySQL datetime values */
+function normalizeDateValue(val: string): string {
+	const trimmed = val.trim();
+	if (!trimmed || trimmed.toUpperCase() === 'NULL') return val;
+	// Match YYYY-MM-DD optionally followed by time (HH:MM:SS...)
+	const m = trimmed.match(/^'?(\d{4}-\d{2}-\d{2})(?:\s+\d{1,2}:\d{2}:\d{2}[^']*)?'?$/);
+	if (m) {
+		return `'${m[1]}'`;
+	}
+	// Also match unquoted datetime
+	const m2 = trimmed.match(/^(\d{4}-\d{2}-\d{2})(?:\s+\d{1,2}:\d{2}:\d{2}.*)?$/);
+	if (m2) {
+		return `'${m2[1]}'`;
+	}
+	return val;
+}
+
 function normalizeInsert(
 	table: string,
 	statement: string,
@@ -365,7 +382,11 @@ function normalizeInsert(
 		const orderedValues: string[] = [];
 		for (const targetCol of kept) {
 			const sourceCol = targetToSource[targetCol] || targetCol;
-			orderedValues.push(rowMap[sourceCol] ?? 'NULL');
+			let val = rowMap[sourceCol] ?? 'NULL';
+			if (val !== 'NULL' && typeof val === 'string') {
+				val = normalizeDateValue(val);
+			}
+			orderedValues.push(val);
 		}
 
 		inserts.push(`INSERT INTO "${TARGET_TABLE}" (${targetCols.join(', ')}) VALUES (${orderedValues.join(', ')})`);
