@@ -75,7 +75,8 @@ export function convertMysqlDumpToPostgres(content: string): ConvertResult {
 			i += statement.lineCount;
 			const table = matchTableName(DROP_TABLE_RE, statement.text);
 			if (table && !tableInScope(table)) continue;
-			schemaStatements.push(statement.text.trim());
+			// Postgres uses double quotes; MySQL uses backticks
+			schemaStatements.push(statement.text.trim().replace(/`/g, '"'));
 			continue;
 		}
 
