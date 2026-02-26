@@ -960,7 +960,6 @@ export function renderDashboard(): string {
                     <option value="365">1 Jahr</option>
                 </select>
             </div>
-            <a href="/letters/preview/demo" class="action-btn secondary" target="_blank">${icons.link} Demo-Vorschau</a>
             <button id="refreshBtn" class="action-btn secondary icon" title="Tabelle aktualisieren">
                 ${icons.refresh}
             </button>
