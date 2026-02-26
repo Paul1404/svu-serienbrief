@@ -3,15 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "tail": "wrangler tail"
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241127.0",
     "@types/node": "^22.10.2",
     "@hono/node-server": "^1.13.5",
-    "wrangler": "^4.54.0"
+    "typescript": "^5.7.2"
   },
   "dependencies": {
     "pg": "^8.13.1",
