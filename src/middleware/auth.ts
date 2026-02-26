@@ -253,13 +253,15 @@ export async function authMiddleware(c: Context, next: Next) {
 		return c.redirect(`/login${queryString ? '?' + queryString : ''}`);
 	}
 
-	console.log({
-		event: 'auth_success',
-		session_id: sessionId.substring(0, 8) + '...',
-		path: url.pathname,
-		method: c.req.method,
-		ip: ipAddress
-	});
+	if (sessionId) {
+		console.log({
+			event: 'auth_success',
+			session_id: sessionId.substring(0, 8) + '...',
+			path: url.pathname,
+			method: c.req.method,
+			ip: ipAddress
+		});
+	}
 
 	await next();
 }
