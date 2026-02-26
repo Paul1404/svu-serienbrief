@@ -1,7 +1,0 @@
-{
-  "input": "linear-in/Auswertungsgenerator.CSV",
-  "output_dir": "d1-output",
-  "chunk_size": 50,
-  "database_name": "svu_prod01",
-  "table_name": "auswertung"
-}

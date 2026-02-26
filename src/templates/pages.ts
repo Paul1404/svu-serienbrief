@@ -838,6 +838,24 @@ export function renderDashboard(): string {
         </div>
 
         <div class="content" style="margin-top: 30px;">
+            <h2 style="margin-bottom: 20px;">Datenimport</h2>
+            <div id="importInfo" class="info">
+                <strong>MySQL-Dump Import</strong> - Laden Sie Ihren MySQL-Dump (z.B. <code>datesicherung.sql</code> aus der Vereinsverwaltung) hoch. Die App konvertiert die Tabelle <code>adresse</code> automatisch in <code>auswertung</code> und importiert alle Daten – ohne lokale Konvertierung oder Chunk-Dateien.
+            </div>
+            <form id="importSqlForm" style="display: flex; flex-direction: column; gap: 15px; max-width: 500px;">
+                <div>
+                    <label for="mysqlDump" style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary);">MySQL-Dump (.sql)</label>
+                    <input type="file" id="mysqlDump" name="mysqlDump" accept=".sql" 
+                        style="padding: 10px; border: 2px solid var(--border-color); border-radius: 6px; background: var(--bg-input); color: var(--text-primary); width: 100%;">
+                </div>
+                <button type="submit" id="importSqlBtn" class="action-btn" disabled>
+                    Import starten
+                </button>
+            </form>
+            <div id="importResult" style="margin-top: 15px; display: none;"></div>
+        </div>
+
+        <div class="content" style="margin-top: 30px;">
             <h2 style="margin-bottom: 20px;">Token Status</h2>
             <div id="tokenInfo" class="info">Lade Token-Informationen...</div>
             <div class="action-bar" style="margin: 15px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -1607,6 +1625,61 @@ export function renderDashboard(): string {
                 showToast('PDFs erfolgreich generiert und heruntergeladen! (Token gültig für ' + validityDays + ' Tage)', 'success');
             } catch (error) {
                 hideLoading();
+                showToast('Fehler: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+
+        // MySQL dump import form
+        const mysqlDumpInput = document.getElementById('mysqlDump');
+        const importSqlBtn = document.getElementById('importSqlBtn');
+        const importSqlForm = document.getElementById('importSqlForm');
+        const importResult = document.getElementById('importResult');
+
+        mysqlDumpInput.addEventListener('change', function() {
+            importSqlBtn.disabled = !this.files || this.files.length === 0;
+        });
+
+        importSqlForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const file = mysqlDumpInput.files && mysqlDumpInput.files[0];
+            if (!file) {
+                showToast('Bitte wählen Sie eine MySQL-Dump-Datei aus.', 'warning');
+                return;
+            }
+
+            const btn = importSqlBtn;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Importiere...';
+            importResult.style.display = 'none';
+
+            try {
+                const formData = new FormData();
+                formData.append('mysqlDump', file);
+
+                const response = await fetch('/api/import-sql', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Import fehlgeschlagen');
+                }
+
+                importResult.style.display = 'block';
+                importResult.innerHTML = '<div class="info" style="border-left-color: #28a745;"><strong>Import erfolgreich</strong> - ' + (data.message || '') + '</div>';
+                importResult.className = '';
+
+                showToast(data.message || 'Import abgeschlossen', 'success');
+                await init();
+            } catch (error) {
+                importResult.style.display = 'block';
+                importResult.innerHTML = '<div style="background: var(--danger-bg); color: #dc3545; padding: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>Fehler</strong> - ' + error.message + '</div>';
                 showToast('Fehler: ' + error.message, 'error');
             } finally {
                 btn.disabled = false;

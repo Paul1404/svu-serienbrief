@@ -6,6 +6,7 @@
 import { Hono } from 'hono';
 import { sanitizeIdentifier, jsonResponse, jsonError } from '../utils/helpers';
 import { query, queryOne, withTransaction } from '../db';
+import { convertMysqlDumpToPostgres } from '../utils/mysqlToPostgres';
 
 const api = new Hono();
 
@@ -44,6 +45,19 @@ api.get('/data', async (c) => {
 			limit,
 		});
 	} catch (error: any) {
+		if (error.code === '42P01') {
+			// auswertung table missing - treat as empty dataset for graceful bootstrapping
+			console.log({
+				event: 'api_data_table_missing',
+				table: 'auswertung'
+			});
+			return jsonResponse({
+				data: [],
+				page,
+				limit,
+			});
+		}
+
 		console.log({
 			event: 'api_data_error',
 			error: error.message,
@@ -153,6 +167,14 @@ api.get('/change-history', async (c) => {
 			changes: result.rows || []
 		});
 	} catch (error: any) {
+		if (error.code === '42P01') {
+			console.log({
+				event: 'api_change_history_table_missing',
+				table: 'auswertung'
+			});
+			return jsonResponse({ changes: [] });
+		}
+
 		console.log({
 			event: 'api_change_history_error',
 			error: error.message
@@ -227,10 +249,18 @@ api.get('/stats', async (c) => {
 			changeRate
 		});
 	} catch (error: any) {
-		console.log({
-			event: 'api_stats_error',
-			error: error.message
-		});
+		if (error.code === '42P01') {
+			console.log({
+				event: 'api_stats_table_missing',
+				table: 'auswertung'
+			});
+		} else {
+			console.log({
+				event: 'api_stats_error',
+				error: error.message
+			});
+		}
+
 		return jsonResponse({
 			totalMembers: 0,
 			membersWithAccess: 0,
@@ -427,6 +457,67 @@ api.post('/bulk-delete-tokens', async (c) => {
 			error: error.message
 		});
 		return jsonError(error.message, 500);
+	}
+});
+
+// MySQL dump import: convert + load in one flow (full D1-Import-SQL logic in UI)
+api.post('/import-sql', async (c) => {
+	try {
+		const formData = await c.req.formData();
+		const file = formData.get('mysqlDump') as { text?: () => Promise<string> } | null;
+
+		if (!file || typeof (file as any)?.text !== 'function') {
+			return jsonError('Bitte eine MySQL-Dump-Datei (.sql) hochladen', 400);
+		}
+
+		const content = await (file as any).text();
+		if (!content || content.trim().length === 0) {
+			return jsonError('Die Datei ist leer', 400);
+		}
+
+		const { schemaStatements, dataStatements } = convertMysqlDumpToPostgres(content);
+		const allStatements = [...schemaStatements, ...dataStatements];
+		const totalStatements = allStatements.length;
+
+		if (totalStatements === 0) {
+			return jsonError('Keine gültigen Tabellen oder Daten in der Datei gefunden (erwarte Tabelle "adresse")', 400);
+		}
+
+		let executedStatements = 0;
+		await withTransaction(async (client) => {
+			for (let i = 0; i < allStatements.length; i++) {
+				const stmt = allStatements[i];
+				try {
+					await client.query(stmt);
+					executedStatements++;
+				} catch (err: any) {
+					const msg = err.message || String(err);
+					throw new Error(`Anweisung ${i + 1}/${totalStatements}: ${msg}`);
+				}
+			}
+		});
+
+		console.log({
+			event: 'mysql_import_complete',
+			schemaCount: schemaStatements.length,
+			dataCount: dataStatements.length,
+			executedStatements,
+			ip: c.req.header('x-forwarded-for') || c.req.header('cf-connecting-ip')
+		});
+
+		return jsonResponse({
+			success: true,
+			message: `${executedStatements} Anweisungen ausgeführt (${schemaStatements.length} Schema, ${dataStatements.length} Daten)`,
+			totalStatements: executedStatements,
+			rowsImported: dataStatements.filter(s => /^INSERT\s+INTO/i.test(s)).length
+		});
+	} catch (error: any) {
+		console.log({
+			event: 'mysql_import_error',
+			error: error.message,
+			stack: error.stack
+		});
+		return jsonError(error.message || 'Import fehlgeschlagen', 500);
 	}
 });
 
