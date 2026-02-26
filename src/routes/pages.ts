@@ -1,13 +1,14 @@
 /**
  * Page routes (HTML responses)
+ * Ported from Cloudflare D1 to Postgres/Neon.
  */
 
 import { Hono } from 'hono';
-import type { Env } from '../types';
 import { renderLoginPage, renderDashboard } from '../templates/pages';
 import { createSession } from '../middleware/auth';
+import { query } from '../db';
 
-const pages = new Hono<{ Bindings: Env }>();
+const pages = new Hono();
 
 // Login page
 pages.get('/login', (c) => {
@@ -22,9 +23,11 @@ pages.post('/login', async (c) => {
 		const password = formData.get('password');
 		const clientIP = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
 		const userAgent = c.req.header('user-agent') || 'unknown';
-		const country = c.req.raw.cf?.country || 'unknown';
+		const country = (c.req.raw as any)?.cf?.country || 'unknown';
 
-		if (!c.env.ADMIN_PASSWORD) {
+		const adminPassword = (c.get('adminPassword') as string | undefined) || process.env.ADMIN_PASSWORD || '';
+
+		if (!adminPassword) {
 			console.log({
 				event: 'login_error',
 				reason: 'missing_admin_password_config',
@@ -33,7 +36,7 @@ pages.post('/login', async (c) => {
 			return c.html(renderLoginPage({ error: 'Server configuration error' }), 500);
 		}
 
-		if (password !== c.env.ADMIN_PASSWORD) {
+		if (password !== adminPassword) {
 			console.log({
 				event: 'login_failed',
 				reason: 'invalid_password',
@@ -45,7 +48,7 @@ pages.post('/login', async (c) => {
 			return c.html(renderLoginPage({ error: 'Ungültiges Passwort' }), 401);
 		}
 
-		const { sessionId, expires } = await createSession(c.env.svu_prod01, clientIP, userAgent);
+		const { sessionId, expires } = await createSession(clientIP, userAgent);
 
 		console.log({
 			event: 'login_success',
@@ -85,8 +88,7 @@ pages.get('/logout', async (c) => {
 		);
 		const sessionId = cookies['session'];
 		if (sessionId) {
-			await c.env.svu_prod01.prepare('DELETE FROM admin_sessions WHERE session_id = ?')
-				.bind(sessionId).run();
+			await query('DELETE FROM admin_sessions WHERE session_id = $1', [sessionId]);
 			console.log({
 				event: 'logout',
 				session_id: sessionId.substring(0, 8) + '...'

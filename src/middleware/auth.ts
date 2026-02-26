@@ -1,10 +1,10 @@
 /**
  * Authentication middleware with improved session management
- * Sessions are stored in D1 database for persistence across Worker invocations
+ * Ported from Cloudflare D1 to Postgres (Neon) via the shared DB helper.
  */
 
 import type { Context, Next } from 'hono';
-import type { Env } from '../types';
+import { query, queryOne } from '../db';
 
 interface Session {
 	session_id: string;
@@ -19,18 +19,19 @@ const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 hours
 const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes of inactivity
 const MAX_SESSIONS_PER_IP = 5; // Prevent session flooding
 
-export async function cleanupSessions(db: D1Database) {
+export async function cleanupSessions() {
 	const now = Date.now();
-	
-	const result = await db.prepare(`
-		DELETE FROM admin_sessions 
-		WHERE expires < ? OR (? - last_activity) > ?
-	`).bind(now, now, IDLE_TIMEOUT).run();
-	
-	if (result.meta.changes > 0) {
+
+	const result = await query(
+		`DELETE FROM admin_sessions 
+		 WHERE expires < $1 OR ($2 - last_activity) > $3`,
+		[now, now, IDLE_TIMEOUT]
+	);
+
+	if (result.rowCount && result.rowCount > 0) {
 		console.log({
 			event: 'sessions_cleaned',
-			count: result.meta.changes
+			count: result.rowCount
 		});
 	}
 }
@@ -49,43 +50,45 @@ export function getSessionId(request: Request): string | null {
 	return cookies['session'] || null;
 }
 
-export async function createSession(db: D1Database, ipAddress: string, userAgent: string): Promise<{ sessionId: string; expires: number }> {
+export async function createSession(ipAddress: string, userAgent: string): Promise<{ sessionId: string; expires: number }> {
 	// Cleanup old sessions first
-	await cleanupSessions(db);
-	
+	await cleanupSessions();
+
 	// Check for too many sessions from same IP
-	const ipSessionCount = await db.prepare(
-		'SELECT COUNT(*) as count FROM admin_sessions WHERE ip_address = ?'
-	).bind(ipAddress).first();
-	
-	if ((ipSessionCount as any)?.count >= MAX_SESSIONS_PER_IP) {
+	const ipSessionCount = await queryOne<{ count: string }>(
+		'SELECT COUNT(*) as count FROM admin_sessions WHERE ip_address = $1',
+		[ipAddress]
+	);
+
+	if (Number(ipSessionCount?.count ?? 0) >= MAX_SESSIONS_PER_IP) {
 		// Remove oldest session for this IP
-		const oldestSession = await db.prepare(
-			'SELECT session_id FROM admin_sessions WHERE ip_address = ? ORDER BY created_at ASC LIMIT 1'
-		).bind(ipAddress).first();
-		
+		const oldestSession = await queryOne<{ session_id: string }>(
+			'SELECT session_id FROM admin_sessions WHERE ip_address = $1 ORDER BY created_at ASC LIMIT 1',
+			[ipAddress]
+		);
+
 		if (oldestSession) {
-			await db.prepare('DELETE FROM admin_sessions WHERE session_id = ?')
-				.bind((oldestSession as any).session_id).run();
+			await query('DELETE FROM admin_sessions WHERE session_id = $1', [oldestSession.session_id]);
 			console.log({
 				event: 'session_limit_reached',
 				ip: ipAddress,
 				action: 'removed_oldest',
-				removed_session_id: (oldestSession as any).session_id.substring(0, 8) + '...'
+				removed_session_id: oldestSession.session_id.substring(0, 8) + '...'
 			});
 		}
 	}
-	
+
 	const sessionId = crypto.randomUUID();
 	const now = Date.now();
 	const expires = now + SESSION_DURATION;
 	const truncatedUA = userAgent.substring(0, 255);
-	
-	await db.prepare(`
-		INSERT INTO admin_sessions (session_id, expires, created_at, last_activity, ip_address, user_agent)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`).bind(sessionId, expires, now, now, ipAddress, truncatedUA).run();
-	
+
+	await query(
+		`INSERT INTO admin_sessions (session_id, expires, created_at, last_activity, ip_address, user_agent)
+		 VALUES ($1, $2, $3, $4, $5, $6)`,
+		[sessionId, expires, now, now, ipAddress, truncatedUA]
+	);
+
 	console.log({
 		event: 'session_created',
 		session_id: sessionId.substring(0, 8) + '...',
@@ -93,14 +96,15 @@ export async function createSession(db: D1Database, ipAddress: string, userAgent
 		user_agent_prefix: truncatedUA.substring(0, 50) + '...',
 		expires_in_hours: SESSION_DURATION / (60 * 60 * 1000)
 	});
-	
+
 	return { sessionId, expires };
 }
 
-export async function validateSession(db: D1Database, sessionId: string, ipAddress: string, userAgent: string): Promise<boolean> {
-	const session = await db.prepare(
-		'SELECT * FROM admin_sessions WHERE session_id = ?'
-	).bind(sessionId).first() as Session | null;
+export async function validateSession(sessionId: string, ipAddress: string, userAgent: string): Promise<boolean> {
+	const session = await queryOne<Session>(
+		'SELECT * FROM admin_sessions WHERE session_id = $1',
+		[sessionId]
+	);
 	
 	if (!session) {
 		console.log({
@@ -116,7 +120,7 @@ export async function validateSession(db: D1Database, sessionId: string, ipAddre
 	
 	// Check expiration
 	if (now > session.expires) {
-		await db.prepare('DELETE FROM admin_sessions WHERE session_id = ?').bind(sessionId).run();
+		await query('DELETE FROM admin_sessions WHERE session_id = $1', [sessionId]);
 		console.log({
 			event: 'session_validation_failed',
 			reason: 'expired',
@@ -128,7 +132,7 @@ export async function validateSession(db: D1Database, sessionId: string, ipAddre
 	
 	// Check idle timeout
 	if ((now - session.last_activity) > IDLE_TIMEOUT) {
-		await db.prepare('DELETE FROM admin_sessions WHERE session_id = ?').bind(sessionId).run();
+		await query('DELETE FROM admin_sessions WHERE session_id = $1', [sessionId]);
 		console.log({
 			event: 'session_validation_failed',
 			reason: 'idle_timeout',
@@ -160,7 +164,7 @@ export async function validateSession(db: D1Database, sessionId: string, ipAddre
 	}
 	
 	if (ipChanged && userAgentChanged) {
-		await db.prepare('DELETE FROM admin_sessions WHERE session_id = ?').bind(sessionId).run();
+		await query('DELETE FROM admin_sessions WHERE session_id = $1', [sessionId]);
 		console.log({
 			event: 'session_validation_failed',
 			reason: 'ip_and_useragent_mismatch',
@@ -172,8 +176,10 @@ export async function validateSession(db: D1Database, sessionId: string, ipAddre
 	}
 	
 	// Update last activity
-	await db.prepare('UPDATE admin_sessions SET last_activity = ? WHERE session_id = ?')
-		.bind(now, sessionId).run();
+	await query(
+		'UPDATE admin_sessions SET last_activity = $1 WHERE session_id = $2',
+		[now, sessionId]
+	);
 	
 	console.log({
 		event: 'session_validated',
@@ -188,10 +194,10 @@ export async function validateSession(db: D1Database, sessionId: string, ipAddre
 	return true;
 }
 
-export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
+export async function authMiddleware(c: Context, next: Next) {
 	// Run periodic cleanup (throttled - only every 100 requests)
 	if (Math.random() < 0.01) {
-		await cleanupSessions(c.env.svu_prod01);
+		await cleanupSessions();
 	}
 	
 	const sessionId = getSessionId(c.req.raw);
@@ -205,7 +211,7 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 	if (!sessionId) {
 		authFailReason = 'no_cookie';
 	} else {
-		const isValid = await validateSession(c.env.svu_prod01, sessionId, ipAddress, userAgent);
+		const isValid = await validateSession(sessionId, ipAddress, userAgent);
 		if (!isValid) {
 			authFailReason = 'expired';
 		}
