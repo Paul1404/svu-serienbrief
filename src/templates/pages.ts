@@ -853,6 +853,10 @@ export function renderDashboard(): string {
                 </button>
             </form>
             <div id="importResult" style="margin-top: 15px; display: none;"></div>
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                <p style="color: var(--text-secondary); margin-bottom: 10px; font-size: 14px;">Import rückgängig machen – löscht alle Mitgliederdaten und Token.</p>
+                <button type="button" id="clearMemberDataBtn" class="danger-btn">Daten löschen</button>
+            </div>
         </div>
 
         <div class="content" style="margin-top: 30px;">
@@ -1686,6 +1690,37 @@ export function renderDashboard(): string {
             } catch (error) {
                 importResult.style.display = 'block';
                 importResult.innerHTML = '<div style="background: var(--danger-bg); color: #dc3545; padding: 15px; border-radius: 4px; border-left: 4px solid #dc3545;"><strong>Fehler</strong> - ' + error.message + '</div>';
+                showToast('Fehler: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+
+        // Clear member data (undo import)
+        document.getElementById('clearMemberDataBtn').addEventListener('click', async function() {
+            const confirmed = await showConfirm(
+                'Daten löschen',
+                'Sind Sie sicher? Alle Mitgliederdaten und Token werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.'
+            );
+            if (!confirmed) return;
+
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Lösche...';
+
+            try {
+                const response = await fetch('/api/clear-member-data', { method: 'POST' });
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Fehler beim Löschen');
+                }
+
+                showToast(data.message || 'Daten gelöscht', 'success');
+                await init();
+            } catch (error) {
                 showToast('Fehler: ' + error.message, 'error');
             } finally {
                 btn.disabled = false;

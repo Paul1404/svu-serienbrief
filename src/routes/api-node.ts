@@ -276,6 +276,35 @@ api.get('/stats', async (c) => {
 	}
 });
 
+// Clear member data (undo import): auswertung + member_tokens
+api.post('/clear-member-data', async (c) => {
+	try {
+		await query('TRUNCATE TABLE member_tokens', []);
+		await query('TRUNCATE TABLE auswertung', []);
+
+		console.log({
+			event: 'member_data_cleared',
+			ip: c.req.header('x-forwarded-for') || c.req.header('cf-connecting-ip')
+		});
+
+		return jsonResponse({
+			message: 'Mitgliederdaten und Token erfolgreich gelöscht'
+		});
+	} catch (error: any) {
+		if (error.code === '42P01') {
+			// Table doesn't exist - treat as success
+			return jsonResponse({
+				message: 'Keine Mitgliederdaten vorhanden'
+			});
+		}
+		console.log({
+			event: 'clear_member_data_error',
+			error: error.message
+		});
+		return jsonError(error.message, 500);
+	}
+});
+
 // Clear change history and access logs
 api.post('/clear-history', async (c) => {
 	try {
