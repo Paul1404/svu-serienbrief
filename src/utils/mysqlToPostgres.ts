@@ -9,7 +9,7 @@ const COLUMN_ALLOWLISTS: Record<string, string[]> = {
 	adresse: [
 		'AdrNr', 'Vorname', 'Nachname', 'Strasse', 'PLZ', 'Ort', 'Telefon1', 'Telefon3',
 		'Geburtsdatum', 'Eintritt', 'Austritt', 'mandatsrefenz', 'IBAN1', 'BIC1', 'Bank1',
-		'Anrede', 'Firma1', 'LKZ', 'Aktiv', 'Mitglied'
+		'Anrede', 'Firma1', 'LKZ', 'Aktiv', 'MITGLNR'
 	]
 };
 
@@ -18,7 +18,7 @@ const COLUMN_ALLOWLISTS: Record<string, string[]> = {
 const TARGET_TABLE = 'auswertung';
 const COLUMN_MAPPING: Record<string, string> = {
 	AdrNr: 'AdrNr',
-	Mitglied: 'MitglNr',
+	MITGLNR: 'MitglNr',
 	Anrede: 'Anrede',
 	Vorname: 'Vorname',
 	Nachname: 'Nachname',
