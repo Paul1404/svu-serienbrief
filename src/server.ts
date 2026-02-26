@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { initDb, getDb } from './db';
+import { initDb, getDb, ensureCoreTables } from './db';
 import type { AppVariables } from './appContext';
 import pages from './routes/pages';
 import api from './routes/api-node';
 import letters from './routes/letters-node';
 import update from './routes/update-node';
 import { authMiddleware } from './middleware/auth';
-import { render404Page } from './templates/pages';
+import { render404Page, renderDashboard } from './templates/pages';
 
 type AppEnv = { Variables: AppVariables };
 
@@ -65,11 +65,12 @@ app.use('*', async (c, next) => {
 });
 
 // Public routes
-app.route('/', pages);
+app.route('/', pages);       // /login, /logout
 app.route('/update', update);
 
 // Protected routes (require authentication)
 app.use('/*', authMiddleware as any);
+app.get('/', (c) => c.html(renderDashboard()));
 app.route('/api', api);
 app.route('/letters', letters);
 
@@ -81,10 +82,19 @@ app.notFound((c) => {
 
 const port = Number(process.env.PORT) || 3000;
 
-console.log(`SVU Serienbrief Node server listening on port ${port}`);
+(async () => {
+	try {
+		await ensureCoreTables();
+		console.log('Core tables ensured in database');
+		console.log(`SVU Serienbrief Node server listening on port ${port}`);
 
-serve({
-	fetch: app.fetch,
-	port,
-});
+		serve({
+			fetch: app.fetch,
+			port,
+		});
+	} catch (err) {
+		console.error('Fatal startup error while ensuring core tables', err);
+		process.exit(1);
+	}
+})();
 

@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'hono';
-import { renderLoginPage, renderDashboard } from '../templates/pages';
+import { renderLoginPage } from '../templates/pages';
 import { createSession } from '../middleware/auth';
 import { query } from '../db';
 
@@ -98,11 +98,6 @@ pages.get('/logout', async (c) => {
 
 	c.header('Set-Cookie', 'session=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/');
 	return c.redirect('/login', 302);
-});
-
-// Dashboard (protected)
-pages.get('/', (c) => {
-	return c.html(renderDashboard());
 });
 
 export default pages;

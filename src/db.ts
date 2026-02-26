@@ -57,3 +57,67 @@ export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>)
 	}
 }
 
+// Ensure that core tables used by the app exist in the database.
+export async function ensureCoreTables(): Promise<void> {
+	// Admin sessions
+	await query(`
+		CREATE TABLE IF NOT EXISTS admin_sessions (
+			session_id TEXT PRIMARY KEY,
+			expires BIGINT NOT NULL,
+			created_at BIGINT NOT NULL,
+			last_activity BIGINT NOT NULL,
+			ip_address TEXT NOT NULL,
+			user_agent TEXT NOT NULL
+		)
+	`);
+
+	await query(`CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires ON admin_sessions(expires)`);
+	await query(`CREATE INDEX IF NOT EXISTS idx_admin_sessions_last_activity ON admin_sessions(last_activity)`);
+	await query(`CREATE INDEX IF NOT EXISTS idx_admin_sessions_ip ON admin_sessions(ip_address)`);
+
+	// Member tokens
+	await query(`
+		CREATE TABLE IF NOT EXISTS member_tokens (
+			member_id TEXT PRIMARY KEY,
+			token TEXT NOT NULL,
+			generated_at BIGINT NOT NULL,
+			expires_at BIGINT NOT NULL,
+			regenerated_count INTEGER NOT NULL DEFAULT 0
+		)
+	`);
+
+	await query(`CREATE INDEX IF NOT EXISTS idx_member_tokens_expires ON member_tokens(expires_at)`);
+
+	// Member access log
+	await query(`
+		CREATE TABLE IF NOT EXISTS member_access_log (
+			id BIGSERIAL PRIMARY KEY,
+			member_id TEXT NOT NULL,
+			accessed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+			ip_address TEXT,
+			user_agent TEXT
+		)
+	`);
+
+	await query(`CREATE INDEX IF NOT EXISTS idx_member_access_member_id ON member_access_log(member_id)`);
+	await query(`CREATE INDEX IF NOT EXISTS idx_member_access_accessed_at ON member_access_log(accessed_at)`);
+
+	// Member changes log
+	await query(`
+		CREATE TABLE IF NOT EXISTS member_changes_log (
+			id BIGSERIAL PRIMARY KEY,
+			member_id TEXT NOT NULL,
+			field_name TEXT NOT NULL,
+			old_value TEXT,
+			new_value TEXT,
+			changed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+			ip_address TEXT,
+			user_agent TEXT
+		)
+	`);
+
+	await query(`CREATE INDEX IF NOT EXISTS idx_member_changes_member_id ON member_changes_log(member_id)`);
+	await query(`CREATE INDEX IF NOT EXISTS idx_member_changes_changed_at ON member_changes_log(changed_at)`);
+}
+
+
