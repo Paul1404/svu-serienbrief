@@ -882,7 +882,8 @@ export function renderDashboard(): string {
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/2.3.6/js/dataTables.min.js"></script>
     <script>
-        const columnNames = ['MitglNr', 'Anrede', 'Vorname', 'Nachname', 'Firma', 'Strasse', 'PLZ', 'Ort', 'Telefon', 'Geburtsdatum', 'IBAN', 'BIC', 'Fax', 'Mobil', 'EMail', 'Nationalitaet', 'Geschlecht', 'Familienstand', 'Beruf', 'Bankbezeichnung', 'Eintritt', 'Austritt', 'Abteilung', 'Funktionen', 'MandatsNr', 'Alter', 'Kurzname'];
+        // Preferred column order; actual columns are derived from API data
+        const preferredColumnOrder = ['AdrNr', 'MitglNr', 'Anrede', 'Vorname', 'Nachname', 'Strasse', 'PLZ', 'Ort', 'Telefon', 'Mobil', 'EMail', 'Geburtsdatum', 'IBAN', 'BIC', 'Bankbezeichnung', 'Abteilung', 'Eintritt', 'funktion_rolle', 'eintrittsdatum'];
         let table = null;
         let changesTable = null;
         let selectedRows = new Set();
@@ -1037,7 +1038,12 @@ export function renderDashboard(): string {
                     };
                 });
 
-                // Build columns for DataTables
+                // Build columns from actual data keys (avoids "unknown parameter" for missing columns)
+                const dataKeys = enrichedData.length > 0
+                    ? Object.keys(enrichedData[0]).filter(k => !['Letzter_Zugriff', 'Zugriffe'].includes(k))
+                    : [];
+                const columnNames = [...new Set([...preferredColumnOrder.filter(c => dataKeys.includes(c)), ...dataKeys])];
+
                 const columns = [
                     {
                         title: '<input type="checkbox" id="selectAll">',
@@ -1055,9 +1061,9 @@ export function renderDashboard(): string {
                     ...columnNames.map(col => {
                         const config = {
                             title: col,
-                            data: col
+                            data: col,
+                            defaultContent: ''
                         };
-                        // Set minimum widths for specific columns
                         if (col === 'IBAN') config.width = '180px';
                         else if (col === 'BIC') config.width = '100px';
                         else if (col === 'EMail') config.width = '200px';
