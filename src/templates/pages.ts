@@ -1502,11 +1502,14 @@ export function renderDashboard(): string {
                             title: 'Erstellt',
                             data: 'generated_at',
                             render: function(data, type) {
-                                if (type === 'display' && data) {
-                                    const date = new Date(data);
-                                    return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+                                if (type === 'display' && data != null) {
+                                    const ts = Number(data);
+                                    if (!isNaN(ts)) {
+                                        const date = new Date(ts);
+                                        return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+                                    }
                                 }
-                                return data;
+                                return data || '-';
                             }
                         },
                         {
