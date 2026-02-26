@@ -2,14 +2,14 @@ FROM node:22-alpine AS base
 
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+COPY package.json ./
+RUN npm install --omit=dev
 
 FROM node:22-alpine AS build
 
 WORKDIR /app
-COPY package.json package-lock.json* tsconfig.json ./
-RUN npm ci
+COPY package.json tsconfig.json ./
+RUN npm install
 COPY src ./src
 RUN npx tsc
 
