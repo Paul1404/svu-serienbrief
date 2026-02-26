@@ -13,12 +13,5 @@
     "resolveJsonModule": true
   },
   "include": ["src/**/*"],
-  "exclude": [
-    "node_modules",
-    "src/routes/api.ts",
-    "src/routes/letters.ts",
-    "src/routes/update.ts",
-    "src/index.ts",
-    "src/types.ts"
-  ]
+  "exclude": ["node_modules"]
 }

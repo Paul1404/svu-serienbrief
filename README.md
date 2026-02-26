@@ -1,11 +1,11 @@
 # SVU Serienbrief
 ### Enterprise Member Management Platform
 
-> A production-grade, serverless member communication and data management system built for Sportverein 1945 Untereuerheim e.V., leveraging Cloudflare's edge computing infrastructure.
+> A production-grade member communication and data management system built for Sportverein 1945 Untereuerheim e.V., running on Node.js with Postgres (Neon).
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7.2-blue.svg)](https://www.typescriptlang.org/)
-[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange.svg)](https://workers.cloudflare.com/)
-[![D1 Database](https://img.shields.io/badge/Database-D1-blueviolet.svg)](https://developers.cloudflare.com/d1/)
+[![Node.js](https://img.shields.io/badge/Node.js-Hono-green.svg)](https://hono.dev/)
+[![Postgres](https://img.shields.io/badge/Database-Postgres-blue.svg)](https://www.postgresql.org/)
 
 ---
 
@@ -16,13 +16,13 @@ SVU Serienbrief is a comprehensive digital transformation solution that moderniz
 **Key Business Value:**
 - **99.9% Operational Efficiency**: Automated PDF generation for 474 members in seconds vs. hours of manual work
 - **Zero Infrastructure Costs**: Serverless architecture with pay-per-use pricing model
-- **Global Edge Deployment**: Sub-100ms response times via Cloudflare's network spanning 300+ cities
+- **Modern Stack**: Node.js + Hono + Postgres (Neon) for reliable, scalable deployment
 - **GDPR-Compliant**: Tokenized access control with comprehensive audit trails
 - **Self-Service Enabled**: 90-day secure update links reduce administrative overhead by 80%
 
 **Production Metrics:**
 - Database: 474 active member records with full historical tracking
-- Uptime: 99.9% SLA via Cloudflare Workers
+- Uptime: Deployable to Fly.io, Railway, or any Node.js host
 - Security: HMAC-SHA256 cryptographic tokens, IP-validated sessions, brute-force protection
 - Performance: <50ms median response time, zero cold starts
 
@@ -33,8 +33,8 @@ SVU Serienbrief is a comprehensive digital transformation solution that moderniz
 ### Technology Stack
 
 **Runtime & Infrastructure**
-- **Cloudflare Workers**: V8 isolate-based serverless compute, distributed globally
-- **Cloudflare D1**: SQLite-based edge database with automatic replication
+- **Node.js + Hono**: Fast, lightweight HTTP server with @hono/node-server
+- **Postgres (Neon)**: Managed PostgreSQL with connection pooling
 - **TypeScript 5.7.2**: Type-safe application layer with strict compilation
 
 **Frontend & UI**
@@ -49,7 +49,7 @@ SVU Serienbrief is a comprehensive digital transformation solution that moderniz
 
 **Security & Authentication**
 - **HMAC-SHA256**: Cryptographic signing for tamper-proof tokens
-- **D1-Backed Sessions**: Persistent session storage across worker invocations
+- **Postgres-Backed Sessions**: Persistent session storage in admin_sessions table
 - **Multi-Factor Validation**: IP address + User-Agent correlation
 
 ### Database Schema

@@ -1,5 +1,5 @@
 {
-  "name": "svu-serienbrief-worker",
+  "name": "svu-serienbrief",
   "version": "1.0.0",
   "private": true,
   "scripts": {
