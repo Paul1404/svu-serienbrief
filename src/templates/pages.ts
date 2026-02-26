@@ -991,8 +991,13 @@ export function renderDashboard(): string {
                 const data = await dataResponse.json();
                 const accessStats = statsResponse.ok ? await statsResponse.json() : {};
                 
-                document.getElementById('tableInfo').innerHTML = 
-                    '<strong>Mitgliederdatenbank</strong> - ' + data.data.length + ' Mitglieder';
+                if (!data.data || data.data.length === 0) {
+                    document.getElementById('tableInfo').innerHTML = 
+                        '<strong>Mitgliederdatenbank</strong> - Noch keine Mitgliederdaten importiert. Bitte importiere zunächst Daten in die Tabelle <code>auswertung</code>.';
+                } else {
+                    document.getElementById('tableInfo').innerHTML = 
+                        '<strong>Mitgliederdatenbank</strong> - ' + data.data.length + ' Mitglieder';
+                }
 
                 // Helper to normalize member ID (removes .0 from floats, handles missing IDs)
                 function normalizeMemberId(member) {
@@ -1004,7 +1009,7 @@ export function renderDashboard(): string {
                 }
 
                 // Enrich data with access information
-                const enrichedData = data.data.map(member => {
+                const enrichedData = (data.data || []).map(member => {
                     const memberId = normalizeMemberId(member);
                     const stats = accessStats[memberId];
                     return {
@@ -1200,6 +1205,13 @@ export function renderDashboard(): string {
                 if (!response.ok) throw new Error('Fehler beim Laden der Statistiken');
                 
                 const stats = await response.json();
+                
+                if (!stats || stats.totalMembers === 0) {
+                    document.getElementById('statsInfo').innerHTML =
+                        '<strong>Statistik Dashboard</strong> - Noch keine Daten vorhanden. Statistiken erscheinen, sobald Mitgliederdaten und Aktivitäten vorliegen.';
+                    document.getElementById('stats-dashboard').innerHTML = '';
+                    return;
+                }
                 
                 document.getElementById('statsInfo').style.display = 'none';
                 
