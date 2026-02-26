@@ -311,19 +311,19 @@ function convertColumnDef(definition: string): { columnName: string; columnStmt:
 	return { columnName: column, columnStmt: `"${column}" ${norm}`, isAutoInc: false };
 }
 
-/** Strip datetime to date-only (YYYY-MM-DD) for MySQL datetime values */
+/** Strip datetime to date-only, German format (DD.MM.YYYY) for MySQL datetime values */
 function normalizeDateValue(val: string): string {
 	const trimmed = val.trim();
 	if (!trimmed || trimmed.toUpperCase() === 'NULL') return val;
 	// Match YYYY-MM-DD optionally followed by time (HH:MM:SS...)
-	const m = trimmed.match(/^'?(\d{4}-\d{2}-\d{2})(?:\s+\d{1,2}:\d{2}:\d{2}[^']*)?'?$/);
+	const m = trimmed.match(/^'?(\d{4})-(\d{2})-(\d{2})(?:\s+\d{1,2}:\d{2}:\d{2}[^']*)?'?$/);
 	if (m) {
-		return `'${m[1]}'`;
+		return `'${m[3]}.${m[2]}.${m[1]}'`; // DD.MM.YYYY
 	}
 	// Also match unquoted datetime
-	const m2 = trimmed.match(/^(\d{4}-\d{2}-\d{2})(?:\s+\d{1,2}:\d{2}:\d{2}.*)?$/);
+	const m2 = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+\d{1,2}:\d{2}:\d{2}.*)?$/);
 	if (m2) {
-		return `'${m2[1]}'`;
+		return `'${m2[3]}.${m2[2]}.${m2[1]}'`; // DD.MM.YYYY
 	}
 	return val;
 }
