@@ -157,7 +157,7 @@ api.get('/change-history', async (c) => {
 				c.ip_address,
 				a."Vorname",
 				a."Nachname",
-				a."EMail"
+				a.email AS "EMail"
 			FROM member_changes_log c
 			LEFT JOIN auswertung a ON (c.member_id = a."AdrNr" OR c.member_id = a."MitglNr")
 			ORDER BY c.changed_at DESC
