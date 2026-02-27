@@ -118,6 +118,15 @@ export async function ensureCoreTables(): Promise<void> {
 
 	await query(`CREATE INDEX IF NOT EXISTS idx_member_changes_member_id ON member_changes_log(member_id)`);
 	await query(`CREATE INDEX IF NOT EXISTS idx_member_changes_changed_at ON member_changes_log(changed_at)`);
+
+	// Add funktionen JSONB column to auswertung if it doesn't exist (for multiple functions per member)
+	try {
+		await query(`
+			ALTER TABLE auswertung ADD COLUMN IF NOT EXISTS funktionen JSONB DEFAULT '[]'::jsonb
+		`);
+	} catch {
+		// auswertung may not exist yet if migrations haven't been run
+	}
 }
 
 

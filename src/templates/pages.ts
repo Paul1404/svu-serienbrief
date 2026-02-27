@@ -1047,7 +1047,7 @@ export function renderDashboard(): string {
         }
 
         // Preferred column order; actual columns are derived from API data
-        const preferredColumnOrder = ['AdrNr', 'MitglNr', 'Anrede', 'Vorname', 'Nachname', 'Strasse', 'PLZ', 'Ort', 'Telefon', 'Mobil', 'EMail', 'Geburtsdatum', 'IBAN', 'BIC', 'Bankbezeichnung', 'Abteilung', 'Eintritt', 'funktion_rolle', 'eintrittsdatum'];
+        const preferredColumnOrder = ['AdrNr', 'MitglNr', 'Anrede', 'Vorname', 'Nachname', 'Strasse', 'PLZ', 'Ort', 'Telefon', 'Mobil', 'EMail', 'Geburtsdatum', 'IBAN', 'BIC', 'Bankbezeichnung', 'Abteilung', 'Eintritt', 'funktionen', 'eintrittsdatum'];
         let table = null;
         let changesTable = null;
         let selectedRows = new Set();
@@ -1224,10 +1224,26 @@ export function renderDashboard(): string {
                     },
                     ...columnNames.map(col => {
                         const config = {
-                            title: col,
+                            title: col === 'funktionen' ? 'Funktionen' : col,
                             data: col,
                             defaultContent: ''
                         };
+                        if (col === 'funktionen') {
+                            config.render = function(data, type, row) {
+                                if (type !== 'display') return data;
+                                let arr = null;
+                                if (Array.isArray(data)) arr = data;
+                                else if (data && typeof data === 'string') { try { arr = JSON.parse(data); } catch { arr = []; } }
+                                if (!arr || arr.length === 0) {
+                                    return (row.funktion_rolle || '') ? escapeHtml(row.funktion_rolle) : '<span style="color: #999;">-</span>';
+                                }
+                                return arr.map(f => {
+                                    const rolle = escapeHtml(String(f.rolle || '-'));
+                                    const range = [f.beginn, f.ende].filter(Boolean).join(' – ') || '–';
+                                    return rolle + (range !== '–' ? ' (' + range + ')' : '');
+                                }).join(', ');
+                            };
+                        }
                         if (col === 'IBAN') config.width = '180px';
                         else if (col === 'BIC') config.width = '100px';
                         else if (col === 'EMail') config.width = '200px';
@@ -1463,6 +1479,19 @@ export function renderDashboard(): string {
             }
         }
         
+        function formatFunktionenForDisplay(data) {
+            if (!data) return '';
+            let arr = null;
+            if (Array.isArray(data)) arr = data;
+            else if (typeof data === 'string') { try { arr = JSON.parse(data); } catch { return data; } }
+            if (!arr || arr.length === 0) return '';
+            return arr.map(f => {
+                const rolle = escapeHtml(String(f.rolle || '-'));
+                const range = [f.beginn, f.ende].filter(Boolean).join(' – ') || '–';
+                return rolle + (range !== '–' ? ' (' + range + ')' : '');
+            }).join(', ');
+        }
+
         function renderChangesTable(changes) {
             // Destroy existing table if it exists
             if (changesTable) {
@@ -1520,6 +1549,7 @@ export function renderDashboard(): string {
                                 // Translate field names to German
                                 const fieldNames = {
                                     'Geburtsdatum': 'Geburtsdatum',
+                                    'funktionen': 'Funktionen',
                                     'funktion_rolle': 'Funktion',
                                     'funktion_beginn': 'Funktion Beginn',
                                     'funktion_ende': 'Funktion Ende',
@@ -1539,6 +1569,7 @@ export function renderDashboard(): string {
                         render: function(data, type, row) {
                             if (type === 'display') {
                                 if (row.field_name === 'aenderungskommentar') return '<em style="color: #999;">-</em>';
+                                if (row.field_name === 'funktionen') return formatFunktionenForDisplay(data) || '<span style="color: #999;">&lt;leer&gt;</span>';
                                 return data || '<span style="color: #999;">&lt;leer&gt;</span>';
                             }
                             return data;
@@ -1552,6 +1583,7 @@ export function renderDashboard(): string {
                                 if (row.field_name === 'aenderungskommentar') {
                                     return '<div class="comment-text" title="' + (data || '').replace(/"/g, '&quot;') + '">' + (data || '') + '</div>';
                                 }
+                                if (row.field_name === 'funktionen') return formatFunktionenForDisplay(data) || '<span style="color: #999;">&lt;leer&gt;</span>';
                                 return data || '<span style="color: #999;">&lt;leer&gt;</span>';
                             }
                             return data;

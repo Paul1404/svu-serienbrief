@@ -95,10 +95,7 @@ update.post('/:token', async (c) => {
 			'IBAN',
 			'BIC',
 			'Bankbezeichnung',
-			'Geburtsdatum',
-			'funktion_rolle',
-			'funktion_beginn',
-			'funktion_ende'
+			'Geburtsdatum'
 		];
 
 		const commentField = 'aenderungskommentar';
@@ -231,6 +228,56 @@ update.post('/:token', async (c) => {
 			}
 		}
 
+		// Parse and validate funktionen (multiple functions)
+		const funktionenRaw = formData.get('funktionen');
+		if (funktionenRaw !== null) {
+			let funktionen: Array<{ rolle: string; beginn: string; ende: string }> = [];
+			try {
+				const parsed = JSON.parse(funktionenRaw.toString());
+				if (Array.isArray(parsed)) {
+					funktionen = parsed.map((f: any) => ({
+						rolle: String(f?.rolle ?? '').trim(),
+						beginn: String(f?.beginn ?? '').trim(),
+						ende: String(f?.ende ?? '').trim()
+					}));
+				}
+			} catch {
+				// ignore invalid JSON
+			}
+			const monthRegex = /^\d{4}-\d{2}$/;
+			for (const f of funktionen) {
+				if (f.beginn && !monthRegex.test(f.beginn)) {
+					return c.html(
+						renderErrorPage(
+							'Ungültiges Format für Funktionsbeginn (JJJJ-MM erwartet)'
+						),
+						400
+					);
+				}
+				if (f.ende && !monthRegex.test(f.ende)) {
+					return c.html(
+						renderErrorPage(
+							'Ungültiges Format für Funktionsende (JJJJ-MM erwartet)'
+						),
+						400
+					);
+				}
+			}
+			const oldFunktionen = getMemberFunktionen(currentMember);
+			const oldJson = JSON.stringify(oldFunktionen);
+			const newJson = JSON.stringify(funktionen);
+			if (oldJson !== newJson) {
+				updates.funktionen = funktionen;
+				actualChanges.funktionen = { old: oldJson, new: newJson };
+				hasChanges = true;
+				// Sync first function to legacy columns for admin display
+				const first = funktionen[0];
+				updates.funktion_rolle = first?.rolle ?? '';
+				updates.funktion_beginn = first?.beginn ?? '';
+				updates.funktion_ende = first?.ende ?? '';
+			}
+		}
+
 		if (Object.keys(updates).length === 0 && !hasComment) {
 			return c.html(renderErrorPage('Keine Daten übermittelt'), 400);
 		}
@@ -244,17 +291,35 @@ update.post('/:token', async (c) => {
 		}
 
 		const changedFields = Object.keys(actualChanges);
-		const setClause = changedFields
-			.map((key, idx) => `"${key}" = $${idx + 1}`)
-			.join(', ');
-
-		const values = changedFields.map((key) => updates[key]);
+		const setParts: string[] = [];
+		const values: any[] = [];
+		let paramIdx = 1;
+		for (const key of changedFields) {
+			if (key === 'funktionen') {
+				setParts.push(`"funktionen" = $${paramIdx}::jsonb`);
+				values.push(JSON.stringify(updates.funktionen));
+				paramIdx++;
+				// Sync legacy columns for admin display
+				setParts.push(`"funktion_rolle" = $${paramIdx}`);
+				values.push(updates.funktion_rolle ?? '');
+				paramIdx++;
+				setParts.push(`"funktion_beginn" = $${paramIdx}`);
+				values.push(updates.funktion_beginn ?? '');
+				paramIdx++;
+				setParts.push(`"funktion_ende" = $${paramIdx}`);
+				values.push(updates.funktion_ende ?? '');
+				paramIdx++;
+			} else {
+				setParts.push(`"${key}" = $${paramIdx}`);
+				values.push(updates[key]);
+				paramIdx++;
+			}
+		}
+		const setClause = setParts.join(', ');
 		values.push(memberId);
 
 		await query(
-			`UPDATE auswertung SET ${setClause} WHERE "AdrNr" = $${
-				values.length
-			} OR "MitglNr" = $${values.length}`,
+			`UPDATE auswertung SET ${setClause} WHERE "AdrNr" = $${paramIdx} OR "MitglNr" = $${paramIdx}`,
 			[...values, memberId]
 		);
 
@@ -298,9 +363,54 @@ update.post('/:token', async (c) => {
 	}
 });
 
+// Render a single function row for the form
+function renderFunktionRow(f: { rolle: string; beginn: string; ende: string }, index: number): string {
+	const canRemove = index > 0;
+	return `
+		<div class="funktion-row" data-index="${index}">
+			<div class="form-row" style="align-items: flex-end;">
+				<div class="form-group" style="flex: 2;">
+					<label>Funktion</label>
+					<input type="text" class="funktion-rolle" placeholder="z.B. Trainer, Vorstand" value="${escapeHtml(f.rolle)}">
+				</div>
+				<div class="form-group" style="flex: 1;">
+					<label>Beginn</label>
+					<input type="month" class="funktion-beginn" value="${escapeHtml(f.beginn)}" title="JJJJ-MM">
+				</div>
+				<div class="form-group" style="flex: 1;">
+					<label>Ende</label>
+					<input type="month" class="funktion-ende" value="${escapeHtml(f.ende)}" placeholder="leer = bis heute" title="Leer = noch aktiv">
+				</div>
+				${canRemove ? '<div class="form-group" style="flex: 0;"><button type="button" class="remove-funktion-btn" title="Entfernen">×</button></div>' : ''}
+			</div>
+		</div>`;
+}
+
+// Parse member functions: from funktionen JSON array or legacy single fields
+function getMemberFunktionen(member: any): Array<{ rolle: string; beginn: string; ende: string }> {
+	if (member.funktionen && Array.isArray(member.funktionen) && member.funktionen.length > 0) {
+		return member.funktionen.map((f: any) => ({
+			rolle: String(f?.rolle ?? '').trim(),
+			beginn: String(f?.beginn ?? '').trim(),
+			ende: String(f?.ende ?? '').trim()
+		}));
+	}
+	// Legacy: single funktion_rolle, funktion_beginn, funktion_ende
+	const rolle = String(member.funktion_rolle ?? '').trim();
+	if (rolle || member.funktion_beginn || member.funktion_ende) {
+		return [{
+			rolle,
+			beginn: String(member.funktion_beginn ?? '').trim(),
+			ende: String(member.funktion_ende ?? '').trim()
+		}];
+	}
+	return [];
+}
+
 // Below: HTML rendering helpers copied from original implementation
 
 function renderUpdateForm(member: any, token: string): string {
+	const funktionen = getMemberFunktionen(member);
 	return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -506,6 +616,41 @@ function renderUpdateForm(member: any, token: string): string {
 			margin-bottom: 20px;
 			display: none;
 		}
+		.funktion-row {
+			margin-bottom: 15px;
+			padding: 12px;
+			background: #f8f9fa;
+			border-radius: 8px;
+			border: 1px solid #e9ecef;
+		}
+		.add-row-btn {
+			width: auto !important;
+			padding: 10px 16px !important;
+			background: #6c757d !important;
+			font-size: 14px !important;
+			margin-top: 0 !important;
+		}
+		.add-row-btn:hover {
+			background: #5a6268 !important;
+		}
+		.remove-funktion-btn {
+			width: 36px;
+			height: 36px;
+			padding: 0;
+			background: #dc3545;
+			color: white;
+			border: none;
+			border-radius: 6px;
+			font-size: 20px;
+			line-height: 1;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.remove-funktion-btn:hover {
+			background: #c82333;
+		}
 	</style>
 </head>
 <body>
@@ -601,27 +746,16 @@ function renderUpdateForm(member: any, token: string): string {
 					</div>
 				</div>
 
-				<!-- Function/Role Section -->
+				<!-- Function/Role Section (multiple functions) -->
 				<div class="form-section">
-					<div class="section-title">Funktion im Verein</div>
+					<div class="section-title">Funktionen im Verein</div>
+					<p class="hint" style="margin-bottom: 15px;">Sie können mehrere Funktionen angeben, z.B. Trainer, Vorstand, Abteilungsleiter.</p>
 					
-					<div class="form-group${!member.funktion_rolle ? ' is-empty' : ''}">
-						<label for="funktion_rolle">Aktuelle Funktion${!member.funktion_rolle ? '<span class="empty-badge">LEER</span>' : ''}</label>
-						<input type="text" id="funktion_rolle" name="funktion_rolle" value="${escapeHtml(member.funktion_rolle || '')}" placeholder="z.B. Trainer, Vorstand, Abteilungsleiter">
+					<div id="funktionenContainer">
+						${funktionen.length > 0 ? funktionen.map((f, i) => renderFunktionRow(f, i)).join('') : renderFunktionRow({ rolle: '', beginn: '', ende: '' }, 0)}
 					</div>
-
-					<div class="form-row">
-						<div class="form-group${!member.funktion_beginn ? ' is-empty' : ''}">
-							<label for="funktion_beginn">Beginn${!member.funktion_beginn ? '<span class="empty-badge">LEER</span>' : ''}</label>
-							<input type="month" id="funktion_beginn" name="funktion_beginn" value="${escapeHtml(member.funktion_beginn || '')}">
-							<div class="hint">Format: JJJJ-MM</div>
-						</div>
-						<div class="form-group">
-							<label for="funktion_ende">Ende (leer = bis heute)</label>
-							<input type="month" id="funktion_ende" name="funktion_ende" value="${escapeHtml(member.funktion_ende || '')}">
-							<div class="hint">Leer lassen wenn noch aktiv</div>
-						</div>
-					</div>
+					
+					<button type="button" id="addFunktionBtn" class="add-row-btn">+ Weitere Funktion hinzufügen</button>
 				</div>
 
 				<!-- Bank Section -->
@@ -683,11 +817,51 @@ function renderUpdateForm(member: any, token: string): string {
 			});
 		});
 
+		// Multiple functions: add row
+		document.getElementById('addFunktionBtn').addEventListener('click', function() {
+			const container = document.getElementById('funktionenContainer');
+			const rows = container.querySelectorAll('.funktion-row');
+			const index = rows.length;
+			const row = document.createElement('div');
+			row.className = 'funktion-row';
+			row.dataset.index = String(index);
+			row.innerHTML = '<div class="form-row" style="align-items: flex-end;">' +
+				'<div class="form-group" style="flex: 2;"><label>Funktion</label><input type="text" class="funktion-rolle" placeholder="z.B. Trainer, Vorstand"></div>' +
+				'<div class="form-group" style="flex: 1;"><label>Beginn</label><input type="month" class="funktion-beginn" title="JJJJ-MM"></div>' +
+				'<div class="form-group" style="flex: 1;"><label>Ende</label><input type="month" class="funktion-ende" title="Leer = noch aktiv"></div>' +
+				'<div class="form-group" style="flex: 0;"><button type="button" class="remove-funktion-btn" title="Entfernen">×</button></div>' +
+				'</div>';
+			container.appendChild(row);
+			row.querySelector('.remove-funktion-btn').addEventListener('click', function() {
+				row.remove();
+			});
+		});
+
+		// Multiple functions: remove row
+		document.querySelectorAll('.remove-funktion-btn').forEach(btn => {
+			btn.addEventListener('click', function() {
+				this.closest('.funktion-row').remove();
+			});
+		});
+
 		document.getElementById('updateForm').addEventListener('submit', async (e) => {
 			e.preventDefault();
 			
 			const form = e.target;
 			const formData = new FormData(form);
+			
+			// Collect funktionen from dynamic rows
+			const funktionen = [];
+			document.querySelectorAll('.funktion-row').forEach(row => {
+				const rolle = (row.querySelector('.funktion-rolle')?.value || '').trim();
+				const beginn = (row.querySelector('.funktion-beginn')?.value || '').trim();
+				const ende = (row.querySelector('.funktion-ende')?.value || '').trim();
+				if (rolle || beginn || ende) {
+					funktionen.push({ rolle, beginn, ende });
+				}
+			});
+			formData.set('funktionen', JSON.stringify(funktionen));
+			
 			const successMsg = document.getElementById('successMessage');
 			const errorMsg = document.getElementById('errorMessage');
 			

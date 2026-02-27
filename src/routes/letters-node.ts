@@ -19,6 +19,30 @@ const SQL_BATCH_SIZE = 50;
 const PDF_BATCH_SIZE = 10;
 
 /**
+ * Format member functions for display (from funktionen JSON or legacy single fields)
+ */
+function formatFunktionen(member: any): string {
+	let arr: Array<{ rolle?: string; beginn?: string; ende?: string }> = [];
+	if (member.funktionen && Array.isArray(member.funktionen) && member.funktionen.length > 0) {
+		arr = member.funktionen;
+	} else if (member.funktion_rolle || member.funktion_beginn || member.funktion_ende) {
+		arr = [{
+			rolle: String(member.funktion_rolle ?? ''),
+			beginn: String(member.funktion_beginn ?? ''),
+			ende: String(member.funktion_ende ?? '')
+		}];
+	}
+	if (arr.length === 0) return '';
+	return arr
+		.map((f) => {
+			const rolle = (f.rolle || '').trim() || '-';
+			const range = [f.beginn, f.ende].filter(Boolean).join(' – ') || '–';
+			return range !== '–' ? `${rolle} (${range})` : rolle;
+		})
+		.join(', ');
+}
+
+/**
  * Normalize member ID - removes .0 from floats, handles missing IDs
  */
 function normalizeMemberId(member: any): string | null {
@@ -474,6 +498,7 @@ async function generateLetterPDF(
 		['Anrede:', member.Anrede ? String(member.Anrede) : ''],
 		['Vorname:', member.Vorname ? String(member.Vorname) : ''],
 		['Nachname:', member.Nachname ? String(member.Nachname) : ''],
+		['Geburtsdatum:', member.Geburtsdatum ? String(member.Geburtsdatum) : ''],
 		['Straße:', member.Strasse ? String(member.Strasse) : ''],
 		['PLZ:', member.PLZ ? String(member.PLZ) : ''],
 		['Ort:', member.Ort ? String(member.Ort) : ''],
@@ -481,8 +506,11 @@ async function generateLetterPDF(
 		['Mobil:', member.Mobil ? String(member.Mobil) : ''],
 		['E-Mail:', member.EMail ? String(member.EMail) : ''],
 		['IBAN:', member.IBAN ? String(member.IBAN) : ''],
+		['BIC:', member.BIC ? String(member.BIC) : ''],
 		['Bank:', member.Bankbezeichnung ? String(member.Bankbezeichnung) : ''],
-		['Abteilung:', member.Abteilung ? String(member.Abteilung) : '']
+		['Abteilung:', member.Abteilung ? String(member.Abteilung) : ''],
+		['Funktion(en):', formatFunktionen(member)],
+		['Mitteilung/Kommentar:', '']  // empty for member to fill in by hand
 	];
 
 	const labelWidth = 120;
