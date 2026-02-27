@@ -22,24 +22,37 @@ const PDF_BATCH_SIZE = 10;
  * Format member functions for display (from funktionen JSON or legacy single fields)
  */
 function formatFunktionen(member: any): string {
-	let arr: Array<{ rolle?: string; beginn?: string; ende?: string }> = [];
-	if (member.funktionen && Array.isArray(member.funktionen) && member.funktionen.length > 0) {
-		arr = member.funktionen;
-	} else if (member.funktion_rolle || member.funktion_beginn || member.funktion_ende) {
-		arr = [{
-			rolle: String(member.funktion_rolle ?? ''),
-			beginn: String(member.funktion_beginn ?? ''),
-			ende: String(member.funktion_ende ?? '')
-		}];
+	try {
+		let arr: Array<{ rolle?: string; beginn?: string; ende?: string }> = [];
+		const fn = member?.funktionen;
+		if (fn && Array.isArray(fn) && fn.length > 0) {
+			arr = fn;
+		} else if (typeof fn === 'string') {
+			try {
+				const parsed = JSON.parse(fn);
+				arr = Array.isArray(parsed) ? parsed : [];
+			} catch {
+				arr = [];
+			}
+		}
+		if (arr.length === 0 && (member?.funktion_rolle || member?.funktion_beginn || member?.funktion_ende)) {
+			arr = [{
+				rolle: String(member.funktion_rolle ?? ''),
+				beginn: String(member.funktion_beginn ?? ''),
+				ende: String(member.funktion_ende ?? '')
+			}];
+		}
+		if (arr.length === 0) return '';
+		return arr
+			.map((f) => {
+				const rolle = String(f?.rolle ?? '').trim() || '-';
+				const range = [f?.beginn, f?.ende].filter(Boolean).join(' – ') || '–';
+				return range !== '–' ? `${rolle} (${range})` : rolle;
+			})
+			.join(', ');
+	} catch {
+		return '';
 	}
-	if (arr.length === 0) return '';
-	return arr
-		.map((f) => {
-			const rolle = (f.rolle || '').trim() || '-';
-			const range = [f.beginn, f.ende].filter(Boolean).join(' – ') || '–';
-			return range !== '–' ? `${rolle} (${range})` : rolle;
-		})
-		.join(', ');
 }
 
 /**
@@ -113,12 +126,16 @@ letters.post('/generate-pdfs', async (c) => {
 		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
 		const secret = process.env.ADMIN_PASSWORD || '';
 
-		// Pre-fetch club logo once
+		// Pre-fetch club logo once (with timeout to avoid hanging)
 		let cachedLogoBytes: Uint8Array | null = null;
 		try {
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 15000);
 			const logoResponse = await fetch(
-				'https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png'
+				'https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png',
+				{ signal: controller.signal }
 			);
+			clearTimeout(timeoutId);
 			if (logoResponse.ok) {
 				cachedLogoBytes = new Uint8Array(await logoResponse.arrayBuffer());
 			}
@@ -126,52 +143,74 @@ letters.post('/generate-pdfs', async (c) => {
 			console.warn('Could not pre-fetch club logo:', e);
 		}
 
+		console.log({
+			event: 'pdf_generation_start',
+			member_count: allMembers.length,
+			batches: Math.ceil(allMembers.length / PDF_BATCH_SIZE)
+		});
+
 		const pdfFiles: Array<{ filename: string; data: Uint8Array }> = [];
 
 		for (let i = 0; i < allMembers.length; i += PDF_BATCH_SIZE) {
 			const batch = allMembers.slice(i, i + PDF_BATCH_SIZE);
+			const batchNum = Math.floor(i / PDF_BATCH_SIZE) + 1;
+			const totalBatches = Math.ceil(allMembers.length / PDF_BATCH_SIZE);
+			console.log({
+				event: 'pdf_batch_start',
+				batch: batchNum,
+				total_batches: totalBatches,
+				members_in_batch: batch.length
+			});
 
 			const batchResults = await Promise.all(
 				batch.map(async (member: any) => {
-					const memberId = normalizeMemberId(member);
-					if (!memberId) {
-						console.warn(
-							'Skipping member without ID:',
-							member.Vorname,
-							member.Nachname
+					try {
+						const memberId = normalizeMemberId(member);
+						if (!memberId) {
+							console.warn(
+								'Skipping member without ID:',
+								member.Vorname,
+								member.Nachname
+							);
+							return null;
+						}
+
+						const token = await generateMemberToken(memberId, secret);
+						const updateUrl = `${baseUrl}/update/${token}`;
+
+						const now = Date.now();
+						const expiresAt = now + tokenValidityDays * 24 * 60 * 60 * 1000;
+
+						await query(
+							`INSERT INTO member_tokens (member_id, token, generated_at, expires_at, regenerated_count)
+							 VALUES ($1, $2, $3, $4, 0)
+							 ON CONFLICT (member_id) DO UPDATE SET
+							 	token = EXCLUDED.token,
+							 	generated_at = EXCLUDED.generated_at,
+							 	expires_at = EXCLUDED.expires_at,
+							 	regenerated_count = member_tokens.regenerated_count + 1`,
+							[memberId, token, now, expiresAt]
 						);
+
+						const pdfBytes = await generateLetterPDF(
+							member,
+							updateUrl,
+							cachedLogoBytes
+						);
+
+						const filename = `Brief_${member.Nachname}_${member.Vorname}_${memberId}.pdf`.replace(
+							/[^a-zA-Z0-9_.-]/g,
+							'_'
+						);
+
+						return { filename, data: pdfBytes };
+					} catch (err: any) {
+						console.error('PDF generation failed for member:', {
+							member_id: normalizeMemberId(member),
+							error: err?.message ?? String(err)
+						});
 						return null;
 					}
-
-					const token = await generateMemberToken(memberId, secret);
-					const updateUrl = `${baseUrl}/update/${token}`;
-
-					const now = Date.now();
-					const expiresAt = now + tokenValidityDays * 24 * 60 * 60 * 1000;
-
-					await query(
-						`INSERT INTO member_tokens (member_id, token, generated_at, expires_at, regenerated_count)
-						 VALUES ($1, $2, $3, $4, 0)
-						 ON CONFLICT (member_id) DO UPDATE SET
-						 	token = EXCLUDED.token,
-						 	generated_at = EXCLUDED.generated_at,
-						 	expires_at = EXCLUDED.expires_at,
-						 	regenerated_count = member_tokens.regenerated_count + 1`,
-						[memberId, token, now, expiresAt]
-					);
-
-					const pdfBytes = await generateLetterPDF(
-						member,
-						updateUrl,
-						cachedLogoBytes
-					);
-
-					const filename = `Brief_${member.Nachname}_${member.Vorname}_${memberId}.pdf`.replace(
-						/[^a-zA-Z0-9_.-]/g,
-						'_'
-					);
-
-					return { filename, data: pdfBytes };
 				})
 			);
 
@@ -180,9 +219,18 @@ letters.post('/generate-pdfs', async (c) => {
 					(r): r is { filename: string; data: Uint8Array } => r !== null
 				)
 			);
+
+			console.log({
+				event: 'pdf_batch_done',
+				batch: batchNum,
+				total_batches: totalBatches,
+				pdf_files_so_far: pdfFiles.length
+			});
 		}
 
+		console.log({ event: 'pdf_generation_creating_zip', file_count: pdfFiles.length });
 		const zipContent = createZipFromPdfFiles(pdfFiles);
+		console.log({ event: 'pdf_generation_complete', zip_bytes: zipContent.length });
 
 		const now = new Date();
 		const pad = (num: number) => num.toString().padStart(2, '0');
@@ -232,9 +280,13 @@ async function generateLetterPDF(
 		if (cachedLogoBytes) {
 			clubLogo = await pdfDoc.embedPng(cachedLogoBytes);
 		} else {
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 10000);
 			const logoResponse = await fetch(
-				'https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png'
+				'https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png',
+				{ signal: controller.signal }
 			);
+			clearTimeout(timeoutId);
 			const logoImageBytes = await logoResponse.arrayBuffer();
 			clubLogo = await pdfDoc.embedPng(new Uint8Array(logoImageBytes));
 		}
@@ -504,7 +556,7 @@ async function generateLetterPDF(
 		['Ort:', member.Ort ? String(member.Ort) : ''],
 		['Telefon:', member.Telefon ? String(member.Telefon) : ''],
 		['Mobil:', member.Mobil ? String(member.Mobil) : ''],
-		['E-Mail:', member.EMail ? String(member.EMail) : ''],
+		['E-Mail:', (member.EMail ?? member.email) ? String(member.EMail ?? member.email) : ''],
 		['IBAN:', member.IBAN ? String(member.IBAN) : ''],
 		['BIC:', member.BIC ? String(member.BIC) : ''],
 		['Bank:', member.Bankbezeichnung ? String(member.Bankbezeichnung) : ''],
