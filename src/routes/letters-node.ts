@@ -69,8 +69,12 @@ function normalizeMemberId(member: any): string | null {
  * Generate PDFs for selected members and return as ZIP
  */
 letters.post('/generate-pdfs', async (c) => {
+	// Log immediately so we know the request reached this handler (stderr flushes faster)
+	process.stderr.write('[PDF] generate-pdfs request received\n');
 	try {
+		process.stderr.write('[PDF] parsing request body\n');
 		const { memberIds, validityDays = 90 } = await c.req.json();
+		process.stderr.write(`[PDF] parsed: ${memberIds?.length ?? 0} memberIds\n`);
 
 		if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
 			return jsonError('Keine Mitglieder-IDs angegeben', 400);
@@ -120,9 +124,11 @@ letters.post('/generate-pdfs', async (c) => {
 		}
 
 		if (allMembers.length === 0) {
+			process.stderr.write('[PDF] no members found, returning 404\n');
 			return jsonError('Keine Mitglieder gefunden', 404);
 		}
 
+		process.stderr.write(`[PDF] fetched ${allMembers.length} members, fetching logo\n`);
 		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
 		const secret = process.env.ADMIN_PASSWORD || '';
 
@@ -140,9 +146,10 @@ letters.post('/generate-pdfs', async (c) => {
 				cachedLogoBytes = new Uint8Array(await logoResponse.arrayBuffer());
 			}
 		} catch (e) {
-			console.warn('Could not pre-fetch club logo:', e);
+			process.stderr.write(`[PDF] logo fetch failed: ${(e as Error)?.message}\n`);
 		}
 
+		process.stderr.write(`[PDF] starting ${allMembers.length} PDFs in batches of ${PDF_BATCH_SIZE}\n`);
 		console.log({
 			event: 'pdf_generation_start',
 			member_count: allMembers.length,
@@ -250,6 +257,7 @@ letters.post('/generate-pdfs', async (c) => {
 			}
 		});
 	} catch (error: any) {
+		process.stderr.write(`[PDF] ERROR: ${error?.message ?? String(error)}\n`);
 		console.error('PDF generation error:', error);
 		return jsonError(error.message || 'Fehler beim Generieren der PDFs');
 	}

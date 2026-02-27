@@ -25,6 +25,15 @@ initDb({
 	ssl: true,
 });
 
+// Request logging for PDF generation (helps debug stuck requests)
+app.use('*', async (c, next) => {
+	const path = new URL(c.req.url).pathname;
+	if (path === '/letters/generate-pdfs' && c.req.method === 'POST') {
+		process.stderr.write(`[REQ] POST /letters/generate-pdfs received\n`);
+	}
+	return next();
+});
+
 // Attach db and admin password to context variables
 app.use('*', async (c, next) => {
 	const db = getDb();
