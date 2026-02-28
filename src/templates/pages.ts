@@ -745,12 +745,16 @@ export function renderDashboard(): string {
         .loading-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.7);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 10001;
-            backdrop-filter: blur(4px);
+            z-index: 2147483647;
+            backdrop-filter: blur(6px);
         }
         .loading-card {
             background: var(--bg-card);
@@ -1122,6 +1126,8 @@ export function renderDashboard(): string {
             
             loadingOverlay = document.createElement('div');
             loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.setAttribute('role', 'status');
+            loadingOverlay.setAttribute('aria-live', 'polite');
             loadingOverlay.innerHTML = 
                 '<div class="loading-card">' +
                     '<div class="loading-spinner"></div>' +
@@ -1765,13 +1771,15 @@ export function renderDashboard(): string {
             btn.innerHTML = '<span class="btn-spinner">' + icons.loader + '</span> Generiere...';
             
             // Always show loading overlay so user gets feedback (prevents "stuck" appearance)
-            const showProgressOverlay = true;
             showLoading(
                 'PDFs werden generiert',
                 'Sende Anfrage an Server...',
                 memberCount > 10
             );
             updateLoading('Sende Anfrage an Server...', 10, memberCount + ' Mitglieder ausgewählt');
+
+            // Yield to browser so overlay can paint before fetch blocks
+            await new Promise(r => { requestAnimationFrame(() => setTimeout(r, 50)); });
 
             try {
                 const memberIds = Array.from(selectedRows);
