@@ -1764,41 +1764,43 @@ export function renderDashboard(): string {
             btn.disabled = true;
             btn.innerHTML = '<span class="btn-spinner">' + icons.loader + '</span> Generiere...';
             
-            // Show loading overlay for larger operations
-            const showProgressOverlay = memberCount > 10;
-            if (showProgressOverlay) {
-                showLoading(
-                    'PDFs werden generiert',
-                    'Bereite ' + memberCount + ' Briefe vor...',
-                    true
-                );
-                updateLoading('Sende Anfrage an Server...', 10, memberCount + ' Mitglieder ausgewählt');
-            }
+            // Always show loading overlay so user gets feedback (prevents "stuck" appearance)
+            const showProgressOverlay = true;
+            showLoading(
+                'PDFs werden generiert',
+                'Sende Anfrage an Server...',
+                memberCount > 10
+            );
+            updateLoading('Sende Anfrage an Server...', 10, memberCount + ' Mitglieder ausgewählt');
 
             try {
                 const memberIds = Array.from(selectedRows);
                 const validityDays = parseInt(document.getElementById('validityDays').value, 10);
-                
-                if (showProgressOverlay) {
-                    updateLoading('Server generiert PDFs...', 30, 'Dies kann bei vielen Mitgliedern etwas dauern');
-                }
+
+                // Client-side timeout: 2 min for 1-10 members, 5 min for more
+                const timeoutMs = memberCount > 10 ? 300000 : 120000;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+                updateLoading('Server generiert PDFs...', 30, memberCount + ' Mitglieder – bitte warten');
 
                 const response = await fetch('/letters/generate-pdfs', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ memberIds, validityDays })
+                    body: JSON.stringify({ memberIds, validityDays }),
+                    signal: controller.signal
                 });
 
+                clearTimeout(timeoutId);
+
                 if (!response.ok) {
-                    const error = await response.json();
+                    const error = await response.json().catch(() => ({}));
                     throw new Error(error.error || 'Fehler beim Generieren der PDFs');
                 }
                 
-                if (showProgressOverlay) {
-                    updateLoading('PDFs generiert! Bereite Download vor...', 80, 'Fast fertig...');
-                }
+                updateLoading('PDFs generiert! Bereite Download vor...', 80, 'Fast fertig...');
 
                 // Get filename from Content-Disposition header (server provides detailed timestamp)
                 const contentDisposition = response.headers.get('Content-Disposition');
@@ -1812,10 +1814,7 @@ export function renderDashboard(): string {
 
                 // Download the ZIP file
                 const blob = await response.blob();
-                
-                if (showProgressOverlay) {
-                    updateLoading('Starte Download...', 95, 'ZIP-Datei: ' + (blob.size / 1024 / 1024).toFixed(1) + ' MB');
-                }
+                updateLoading('Starte Download...', 95, 'ZIP-Datei: ' + (blob.size / 1024 / 1024).toFixed(1) + ' MB');
                 
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1831,7 +1830,10 @@ export function renderDashboard(): string {
                 await init();
             } catch (error) {
                 hideLoading();
-                showToast('Fehler: ' + (error && error.message ? error.message : 'Unbekannter Fehler'), 'error');
+                const msg = error?.name === 'AbortError'
+                    ? 'Zeitüberschreitung – der Server hat nicht rechtzeitig geantwortet. Bitte versuchen Sie es mit weniger Mitgliedern oder später erneut.'
+                    : (error && error.message ? error.message : 'Unbekannter Fehler');
+                showToast('Fehler: ' + msg, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
