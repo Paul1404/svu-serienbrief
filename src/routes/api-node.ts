@@ -146,6 +146,7 @@ api.get('/access-stats', async (c) => {
 // Get member change history
 api.get('/change-history', async (c) => {
 	try {
+		// EMail column omitted - auswertung schema varies (MySQL import vs migration)
 		const result = await query<any>(`
 			SELECT 
 				c.id,
@@ -157,7 +158,7 @@ api.get('/change-history', async (c) => {
 				c.ip_address,
 				a."Vorname",
 				a."Nachname",
-				a.email AS "EMail"
+				NULL::text AS "EMail"
 			FROM member_changes_log c
 			LEFT JOIN auswertung a ON (c.member_id = a."AdrNr" OR c.member_id = a."MitglNr")
 			ORDER BY c.changed_at DESC
