@@ -1063,10 +1063,10 @@ export function renderDashboard(): string {
             document.querySelectorAll('.toast').forEach(t => t.remove());
             
             const toastIcons = {
-                success: icons.check,
-                error: icons.x,
-                warning: icons.warning,
-                info: icons.info
+                success: \`${icons.check}\`,
+                error: \`${icons.x}\`,
+                warning: \`${icons.warning}\`,
+                info: \`${icons.info}\`
             };
             
             const toast = document.createElement('div');
@@ -1136,7 +1136,7 @@ export function renderDashboard(): string {
                     (showProgress ? 
                         '<div class="loading-progress"><div class="loading-progress-bar" id="loadingProgressBar" style="width: 0%"></div></div>' +
                         '<div class="loading-stats" id="loadingStats"></div>' : '') +
-                    '<div class="loading-tip"><span class="loading-tip-icon">' + icons.lightbulb + '</span> Tipp: Bei vielen Mitgliedern kann dies einige Minuten dauern.</div>' +
+                    '<div class="loading-tip"><span class="loading-tip-icon">' + \`${icons.lightbulb}\` + '</span> Tipp: Bei vielen Mitgliedern kann dies einige Minuten dauern.</div>' +
                 '</div>';
             
             document.body.appendChild(loadingOverlay);
@@ -1768,7 +1768,7 @@ export function renderDashboard(): string {
             const memberCount = selectedRows.size;
             
             btn.disabled = true;
-            btn.innerHTML = '<span class="btn-spinner">' + icons.loader + '</span> Generiere...';
+            btn.innerHTML = '<span class="btn-spinner">' + \`${icons.loader}\` + '</span> Generiere...';
             
             // Always show loading overlay so user gets feedback (prevents "stuck" appearance)
             showLoading(
@@ -2092,7 +2092,7 @@ export function renderDashboard(): string {
         }
         
         function updateToggleIcon(theme) {
-            themeToggle.innerHTML = theme === 'dark' ? '${icons.sun}' : '${icons.moon}';
+            themeToggle.innerHTML = theme === 'dark' ? \`${icons.sun}\` : \`${icons.moon}\`;
             themeToggle.title = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
         }
         
