@@ -100,6 +100,7 @@ const port = Number(process.env.PORT) || 3000;
 		serve({
 			fetch: app.fetch,
 			port,
+			hostname: '0.0.0.0',
 		});
 	} catch (err) {
 		console.error('Fatal startup error while ensuring core tables', err);
