@@ -9,14 +9,11 @@ export interface DbConfig {
 }
 
 function withSslMode(url: string): string {
-	try {
-		const u = new URL(url);
-		if (u.searchParams.has('sslmode')) return url;
-		u.searchParams.set('sslmode', 'verify-full');
-		return u.toString();
-	} catch {
-		return url.includes('?') ? `${url}&sslmode=verify-full` : `${url}?sslmode=verify-full`;
+	const param = 'sslmode=verify-full';
+	if (url.includes('sslmode=')) {
+		return url.replace(/sslmode=[^&]+/, param);
 	}
+	return url.includes('?') ? `${url}&${param}` : `${url}?${param}`;
 }
 
 export function initDb(config: DbConfig): Pool {
