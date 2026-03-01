@@ -8,10 +8,22 @@ export interface DbConfig {
 	ssl?: boolean;
 }
 
+function withSslMode(url: string): string {
+	try {
+		const u = new URL(url);
+		if (u.searchParams.has('sslmode')) return url;
+		u.searchParams.set('sslmode', 'verify-full');
+		return u.toString();
+	} catch {
+		return url.includes('?') ? `${url}&sslmode=verify-full` : `${url}?sslmode=verify-full`;
+	}
+}
+
 export function initDb(config: DbConfig): Pool {
 	if (!pool) {
+		const connStr = config.ssl ? withSslMode(config.connectionString) : config.connectionString;
 		pool = new Pool({
-			connectionString: config.connectionString,
+			connectionString: connStr,
 			ssl: config.ssl ? { rejectUnauthorized: false } : undefined
 		});
 	}

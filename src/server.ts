@@ -46,10 +46,10 @@ app.use('*', async (c, next) => {
 });
 
 // Known route prefixes for early 404 handling
-const KNOWN_ROUTES = ['/', '/login', '/logout', '/logo.png', '/update', '/api', '/letters'];
+const KNOWN_ROUTES = ['/', '/login', '/logout', '/logo.png', '/health', '/update', '/api', '/letters'];
 
 function isKnownRoute(pathname: string): boolean {
-	if (pathname === '/' || pathname === '/login' || pathname === '/logout' || pathname === '/logo.png') {
+	if (pathname === '/' || pathname === '/login' || pathname === '/logout' || pathname === '/logo.png' || pathname === '/health') {
 		return true;
 	}
 	if (
@@ -74,6 +74,7 @@ app.use('*', async (c, next) => {
 });
 
 // Public routes
+app.get('/health', (c) => c.json({ ok: true }, 200));
 app.route('/', pages);       // /login, /logout
 app.route('/update', update);
 
@@ -91,20 +92,18 @@ app.notFound((c) => {
 
 const port = Number(process.env.PORT) || 3000;
 
-(async () => {
-	try {
-		await ensureCoreTables();
-		console.log('Core tables ensured in database');
-		console.log(`SVU Serienbrief Node server listening on port ${port}`);
+// Start server immediately so Fly health checks pass; run DB setup in background
+serve({
+	fetch: app.fetch,
+	port,
+	hostname: '0.0.0.0',
+});
+console.log(`SVU Serienbrief Node server listening on port ${port}`);
 
-		serve({
-			fetch: app.fetch,
-			port,
-			hostname: '0.0.0.0',
-		});
-	} catch (err) {
+ensureCoreTables()
+	.then(() => console.log('Core tables ensured in database'))
+	.catch((err) => {
 		console.error('Fatal startup error while ensuring core tables', err);
 		process.exit(1);
-	}
-})();
+	});
 
