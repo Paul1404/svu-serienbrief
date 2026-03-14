@@ -9,7 +9,9 @@ export interface DbConfig {
 }
 
 function withSslMode(url: string): string {
-	const param = 'sslmode=verify-full';
+	// Use 'require' (encryption) not 'verify-full' - allows Railway/self-signed certs
+	// verify-full overrides ssl.rejectUnauthorized and causes SELF_SIGNED_CERT_IN_CHAIN
+	const param = 'sslmode=require';
 	if (url.includes('sslmode=')) {
 		return url.replace(/sslmode=[^&]+/, param);
 	}
