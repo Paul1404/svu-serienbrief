@@ -401,7 +401,9 @@ The app runs on Node.js with Postgres and can be deployed to **Fly.io**, **Railw
 
 4. **Generate a domain** in the service settings (Settings → Networking → Generate Domain).
 
-5. **Health check**: The app exposes `/health`; Railway uses this by default via `railway.json`.
+5. **Target port**: In **Settings → Networking**, ensure **Target Port** matches the port your app listens on. Railway sets `PORT` (often 8080); the app uses it. If health checks fail with "service unavailable", set Target Port to `8080` or whatever `PORT` is in your deployment logs.
+
+6. **Health check**: The app exposes `/health`; Railway uses this by default via `railway.json`.
 
 ### Fly.io Deployment
 
