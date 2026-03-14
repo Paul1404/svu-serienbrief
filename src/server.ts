@@ -92,18 +92,20 @@ app.notFound((c) => {
 
 const port = Number(process.env.PORT) || 3000;
 
-// Start server immediately so Fly health checks pass; run DB setup in background
-serve({
-	fetch: app.fetch,
-	port,
-	hostname: '0.0.0.0',
-});
-console.log(`SVU Serienbrief Node server listening on port ${port}`);
-
-ensureCoreTables()
-	.then(() => console.log('Core tables ensured in database'))
-	.catch((err) => {
+(async () => {
+	try {
+		await ensureCoreTables();
+		console.log('Core tables ensured in database');
+	} catch (err) {
 		console.error('Fatal startup error while ensuring core tables', err);
 		process.exit(1);
+	}
+
+	serve({
+		fetch: app.fetch,
+		port,
+		hostname: '0.0.0.0',
 	});
+	console.log(`SVU Serienbrief Node server listening on port ${port}`);
+})();
 
