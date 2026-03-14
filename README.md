@@ -374,75 +374,50 @@ make
 
 ## Deployment Guide
 
-### Prerequisites
+The app runs on Node.js with Postgres and can be deployed to **Fly.io**, **Railway**, or any platform that supports Docker/Node.js.
 
-**1. Cloudflare Account**
-- Workers Paid plan (required for D1 database)
-- Domain with Cloudflare DNS (optional, for custom domain)
+### Environment Variables
 
-**2. Wrangler CLI**
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | Postgres connection string (e.g. Neon, Railway Postgres) |
+| `ADMIN_PASSWORD` | Yes | Admin dashboard password |
+| `PORT` | No | Server port (default: 3000; platforms set this automatically) |
+
+### Railway Deployment
+
+1. **Create a Railway project** and add a Postgres database (or connect Neon).
+
+2. **Deploy from GitHub** or use the Railway CLI:
+   ```bash
+   npx @railway/cli@latest login
+   npx @railway/cli@latest init
+   npx @railway/cli@latest up
+   ```
+
+3. **Set environment variables** in the Railway dashboard:
+   - `DATABASE_URL` – your Postgres connection string
+   - `ADMIN_PASSWORD` – secure admin password
+
+4. **Generate a domain** in the service settings (Settings → Networking → Generate Domain).
+
+5. **Health check**: The app exposes `/health`; Railway uses this by default via `railway.json`.
+
+### Fly.io Deployment
+
 ```bash
-npm install -g wrangler
-wrangler login
-```
-
-**3. Environment Secrets**
-```bash
-wrangler secret put ADMIN_PASSWORD
-# Enter secure password when prompted
-```
-
-### Database Setup
-
-```bash
-# Create D1 database
-wrangler d1 create svu_prod01
-
-# Apply schemas
-wrangler d1 execute svu_prod01 --remote --file=schema-admin-sessions.sql
-wrangler d1 execute svu_prod01 --remote --file=schema-member-tokens.sql
-
-# Import member data
-wrangler d1 execute svu_prod01 --remote --file=D1-output/schema.sql
-wrangler d1 execute svu_prod01 --remote --file=D1-output/data/chunk-001.sql
-# Repeat for all chunks...
+fly launch
+fly secrets set DATABASE_URL="postgresql://..." ADMIN_PASSWORD="..."
+fly deploy
 ```
 
 ### Local Development
 
 ```bash
-# Install dependencies
 npm install
-
-# Create local environment file
-echo "ADMIN_PASSWORD=dev-password" > .dev.vars
-
-# Start development server
-npm run dev
-
-# Access at http://localhost:8787
-```
-
-### Production Deployment
-
-```bash
-# Build and deploy to Cloudflare
-npm run deploy
-
-# Verify deployment
-curl https://your-worker.workers.dev/login
-```
-
-### Post-Deployment Configuration
-
-**Custom Domain** (optional):
-```bash
-wrangler domains add your-domain.com
-```
-
-**Monitoring**:
-```bash
-wrangler tail # Real-time logs
+export DATABASE_URL="postgresql://..." ADMIN_PASSWORD="dev-password"
+npm run build && npm start
+# Access at http://localhost:3000
 ```
 
 ---
