@@ -92,20 +92,18 @@ app.notFound((c) => {
 
 const port = Number(process.env.PORT) || 3000;
 
-(async () => {
-	try {
-		await ensureCoreTables();
-		console.log('Core tables ensured in database');
-	} catch (err) {
+// Start server immediately so Railway health check passes; DB setup runs in background
+serve({
+	fetch: app.fetch,
+	port,
+	hostname: '0.0.0.0',
+});
+console.log(`SVU Serienbrief Node server listening on port ${port}`);
+
+ensureCoreTables()
+	.then(() => console.log('Core tables ensured in database'))
+	.catch((err) => {
 		console.error('Fatal startup error while ensuring core tables', err);
 		process.exit(1);
-	}
-
-	serve({
-		fetch: app.fetch,
-		port,
-		hostname: '0.0.0.0',
 	});
-	console.log(`SVU Serienbrief Node server listening on port ${port}`);
-})();
 
