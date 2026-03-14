@@ -3,6 +3,8 @@
  * Ported from the original Cloudflare D1 implementation to Postgres/Neon.
  */
 
+const DATENSCHUTZ_URL = 'https://sv-untereuerheim.de/datenschutz/';
+
 import { Hono } from 'hono';
 import { validateMemberToken } from '../utils/tokens';
 import { jsonResponse, jsonError, escapeHtml } from '../utils/helpers';
@@ -600,6 +602,13 @@ function renderUpdateForm(member: any, token: string): string {
 			font-size: 12px;
 			color: #666;
 		}
+		.footer a {
+			color: #666;
+			text-decoration: none;
+		}
+		.footer a:hover {
+			text-decoration: underline;
+		}
 		.success-message {
 			background: #d4edda;
 			color: #155724;
@@ -799,7 +808,7 @@ function renderUpdateForm(member: any, token: string): string {
 		</div>
 
 		<div class="footer">
-			SV 1945 Untereuerheim e.V. • "Wir sind Untereuerheim"
+			SV 1945 Untereuerheim e.V. • "Wir sind Untereuerheim" • <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
 		</div>
 	</div>
 
@@ -947,6 +956,17 @@ function renderSuccessPage(message?: string): string {
 			line-height: 1.6;
 			margin-bottom: 15px;
 		}
+		.success-footer {
+			margin-top: 24px;
+			font-size: 12px;
+		}
+		.success-footer a {
+			color: #999;
+			text-decoration: none;
+		}
+		.success-footer a:hover {
+			text-decoration: underline;
+		}
 	</style>
 </head>
 <body>
@@ -955,6 +975,9 @@ function renderSuccessPage(message?: string): string {
 		<h1>Vielen Dank!</h1>
 		<p>${escapeHtml(displayMessage)}</p>
 		<p>Sie können dieses Fenster nun schließen.</p>
+		<div class="success-footer">
+			<a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
+		</div>
 	</div>
 </body>
 </html>`;
@@ -1052,6 +1075,13 @@ function renderErrorPage(message: string, isExpired: boolean = false): string {
 			font-size: 12px;
 			color: #999;
 		}
+		.footer a {
+			color: #999;
+			text-decoration: none;
+		}
+		.footer a:hover {
+			text-decoration: underline;
+		}
 	</style>
 </head>
 <body>
@@ -1082,7 +1112,7 @@ function renderErrorPage(message: string, isExpired: boolean = false): string {
 		}
 		
 		<div class="footer">
-			SV 1945 Untereuerheim e.V. • "Wir sind Untereuerheim"
+			SV 1945 Untereuerheim e.V. • "Wir sind Untereuerheim" • <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
 		</div>
 	</div>
 </body>

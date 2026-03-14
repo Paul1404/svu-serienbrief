@@ -5,6 +5,8 @@
 import { escapeHtml } from '../utils/helpers';
 import { icons } from '../utils/icons';
 
+const DATENSCHUTZ_URL = 'https://sv-untereuerheim.de/datenschutz/';
+
 export function renderLoginPage(options?: { error?: string; sessionExpired?: boolean }): string {
     const { error, sessionExpired } = options || {};
     
@@ -89,6 +91,19 @@ export function renderLoginPage(options?: { error?: string; sessionExpired?: boo
         button:hover {
             background: #990000;
         }
+        .login-footer {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+        .login-footer a {
+            color: #999;
+            text-decoration: none;
+        }
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
         .error {
             background: #ffe7e7;
             color: #c00;
@@ -144,6 +159,9 @@ export function renderLoginPage(options?: { error?: string; sessionExpired?: boo
             </div>
             <button type="submit">Anmelden</button>
         </form>
+        <div class="login-footer">
+            <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
+        </div>
     </div>
 </body>
 </html>`;
@@ -628,6 +646,19 @@ export function renderDashboard(): string {
             border-color: #c82333;
             transform: translateY(-1px);
         }
+        .app-footer {
+            margin-top: 32px;
+            padding-top: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .app-footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+        .app-footer a:hover {
+            text-decoration: underline;
+        }
         .toast {
             position: fixed;
             bottom: 20px;
@@ -1036,6 +1067,10 @@ export function renderDashboard(): string {
                 <p class="muted-note">Löscht alle Änderungen und Zugriffsprotokolle permanent. Diese Aktion kann nicht rückgängig gemacht werden.</p>
                 <button id="clearHistoryBtn" class="danger-btn">Verlauf und Statistiken löschen</button>
             </div>
+        </div>
+
+        <div class="app-footer">
+            <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
         </div>
     </div>
 
@@ -2285,6 +2320,13 @@ export function render404Page(stats: NotFoundStats): string {
             font-size: 13px;
             color: #999;
         }
+        .footer a {
+            color: #999;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -2353,7 +2395,7 @@ export function render404Page(stats: NotFoundStats): string {
         </div>
         
         <div class="footer">
-            SV 1945 Untereuerheim e.V.
+            SV 1945 Untereuerheim e.V. • <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
         </div>
     </div>
 </body>
