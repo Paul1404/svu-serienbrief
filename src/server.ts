@@ -8,6 +8,7 @@ import letters from './routes/letters-node.js';
 import update from './routes/update-node.js';
 import { authMiddleware } from './middleware/auth.js';
 import { render404Page, renderDashboard } from './templates/pages.js';
+import { isS3Configured, objectExists, putObject, LOGO_KEY } from './s3.js';
 
 type AppEnv = { Variables: AppVariables };
 
@@ -119,4 +120,34 @@ warmPool()
 		console.error('Fatal startup error while ensuring core tables', err);
 		process.exit(1);
 	});
+
+// Cache club logo in S3 on startup (if S3 is configured and logo not yet uploaded)
+if (isS3Configured()) {
+	(async () => {
+		try {
+			const exists = await objectExists(LOGO_KEY);
+			if (!exists) {
+				console.log('Uploading club logo to S3...');
+				const controller = new AbortController();
+				const timeoutId = setTimeout(() => controller.abort(), 15_000);
+				const resp = await fetch(
+					'https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png',
+					{ signal: controller.signal },
+				);
+				clearTimeout(timeoutId);
+				if (resp.ok) {
+					const bytes = new Uint8Array(await resp.arrayBuffer());
+					await putObject(LOGO_KEY, bytes, 'image/png');
+					console.log('Club logo cached in S3');
+				} else {
+					console.warn(`Logo fetch returned ${resp.status}`);
+				}
+			} else {
+				console.log('Club logo already cached in S3');
+			}
+		} catch (err) {
+			console.warn('Failed to cache club logo in S3 (non-fatal):', (err as Error).message);
+		}
+	})();
+}
 

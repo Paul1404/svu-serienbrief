@@ -1069,6 +1069,27 @@ export function renderDashboard(): string {
             </div>
         </div>
 
+        <div class="content" id="archiveSection">
+            <h2 class="section-title">Serienbrief-Archiv</h2>
+            <div id="archiveInfo" class="info">
+                <strong>PDF-Archiv</strong> - Alle generierten Serienbriefe werden automatisch in S3 archiviert und können hier erneut heruntergeladen werden.
+            </div>
+            <button id="refreshArchivesBtn" class="action-btn secondary" style="margin-bottom: 12px;">Archiv aktualisieren</button>
+            <div id="archiveList" style="margin-top: 8px;"></div>
+        </div>
+
+        <div class="content" id="backupSection">
+            <h2 class="section-title">Daten-Backup</h2>
+            <div id="backupInfo" class="info">
+                <strong>Backup / Export</strong> - Erstellen Sie ein vollständiges Backup aller Mitgliederdaten, Änderungsprotokolle und Zugriffsstatistiken als JSON-Datei in S3.
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px;">
+                <button id="createBackupBtn" class="action-btn">Backup jetzt erstellen</button>
+                <button id="refreshBackupsBtn" class="action-btn secondary">Liste aktualisieren</button>
+            </div>
+            <div id="backupList" style="margin-top: 8px;"></div>
+        </div>
+
         <div class="app-footer">
             <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
         </div>
@@ -2147,6 +2168,81 @@ export function renderDashboard(): string {
         
         // Initialize theme before other init
         initTheme();
+
+        // ── Archive & Backup UI ──────────────────────────────────
+        async function loadArchives() {
+            const list = document.getElementById('archiveList');
+            list.innerHTML = '<em>Lade Archive...</em>';
+            try {
+                const resp = await fetch('/letters/archives');
+                if (resp.status === 501) {
+                    document.getElementById('archiveSection').style.display = 'none';
+                    return;
+                }
+                const data = await resp.json();
+                if (!data.archives || data.archives.length === 0) {
+                    list.innerHTML = '<p style="color:var(--text-muted)">Noch keine Archive vorhanden. Archive werden automatisch beim Generieren von Serienbriefen erstellt.</p>';
+                    return;
+                }
+                list.innerHTML = '<table class="display" style="width:100%"><thead><tr><th>Dateiname</th><th>Größe</th><th>Erstellt</th><th>Aktion</th></tr></thead><tbody>' +
+                    data.archives.map(function(a) {
+                        var d = new Date(a.lastModified);
+                        return '<tr><td>' + escapeHtml(a.filename) + '</td><td>' + escapeHtml(a.sizeMB) + ' MB</td><td>' + escapeHtml(d.toLocaleString('de-DE')) + '</td><td><a href="/letters/archives/' + encodeURIComponent(a.filename) + '" class="action-btn secondary" style="padding:4px 10px;font-size:13px;text-decoration:none;">Herunterladen</a></td></tr>';
+                    }).join('') + '</tbody></table>';
+            } catch (e) {
+                list.innerHTML = '<p style="color:#CC0000">Fehler beim Laden der Archive.</p>';
+            }
+        }
+
+        async function loadBackups() {
+            var list = document.getElementById('backupList');
+            list.innerHTML = '<em>Lade Backups...</em>';
+            try {
+                var resp = await fetch('/api/export-backups');
+                if (resp.status === 501) {
+                    document.getElementById('backupSection').style.display = 'none';
+                    return;
+                }
+                var data = await resp.json();
+                if (!data.backups || data.backups.length === 0) {
+                    list.innerHTML = '<p style="color:var(--text-muted)">Noch keine Backups vorhanden.</p>';
+                    return;
+                }
+                list.innerHTML = '<table class="display" style="width:100%"><thead><tr><th>Dateiname</th><th>Größe</th><th>Erstellt</th><th>Aktion</th></tr></thead><tbody>' +
+                    data.backups.map(function(b) {
+                        var d = new Date(b.lastModified);
+                        return '<tr><td>' + escapeHtml(b.filename) + '</td><td>' + escapeHtml(b.sizeMB) + ' MB</td><td>' + escapeHtml(d.toLocaleString('de-DE')) + '</td><td><a href="/api/export-backups/' + encodeURIComponent(b.filename) + '" class="action-btn secondary" style="padding:4px 10px;font-size:13px;text-decoration:none;">Herunterladen</a></td></tr>';
+                    }).join('') + '</tbody></table>';
+            } catch (e) {
+                list.innerHTML = '<p style="color:#CC0000">Fehler beim Laden der Backups.</p>';
+            }
+        }
+
+        document.getElementById('refreshArchivesBtn').addEventListener('click', loadArchives);
+        document.getElementById('refreshBackupsBtn').addEventListener('click', loadBackups);
+
+        document.getElementById('createBackupBtn').addEventListener('click', async function() {
+            var btn = this;
+            var orig = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Erstelle Backup...';
+            try {
+                var resp = await fetch('/api/export-backup', { method: 'POST' });
+                var data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Backup fehlgeschlagen');
+                showToast('Backup erstellt: ' + data.filename + ' (' + data.sizeMB + ' MB)', 'success');
+                loadBackups();
+            } catch (e) {
+                showToast('Fehler: ' + (e.message || 'Unbekannter Fehler'), 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = orig;
+            }
+        });
+
+        // Load archive & backup lists on page load
+        loadArchives();
+        loadBackups();
 
         init();
     </script>

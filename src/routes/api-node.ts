@@ -7,6 +7,7 @@ import { Hono } from 'hono';
 import { sanitizeIdentifier, jsonResponse, jsonError } from '../utils/helpers.js';
 import { query, queryOne, withTransaction } from '../db.js';
 import { convertMysqlDumpToPostgres } from '../utils/mysqlToPostgres.js';
+import { isS3Configured, putObject, listObjects, getObject, EXPORT_PREFIX } from '../s3.js';
 
 const api = new Hono();
 
@@ -617,6 +618,123 @@ api.post('/bulk-regenerate-tokens', async (c) => {
 			error: error.message
 		});
 		return jsonError(error.message, 500);
+	}
+});
+
+// ── Data export / backup to S3 ─────────────────────────────────────────
+
+/** Create a full data export (members + change log + access log) and store in S3. */
+api.post('/export-backup', async (c) => {
+	if (!isS3Configured()) {
+		return jsonError('S3 ist nicht konfiguriert', 501);
+	}
+
+	try {
+		const [membersResult, changesResult, accessResult, tokensResult] = await Promise.all([
+			query<any>('SELECT * FROM auswertung ORDER BY "AdrNr"').catch(() => ({ rows: [] })),
+			query<any>('SELECT * FROM member_changes_log ORDER BY changed_at DESC').catch(() => ({ rows: [] })),
+			query<any>('SELECT * FROM member_access_log ORDER BY accessed_at DESC').catch(() => ({ rows: [] })),
+			query<any>('SELECT member_id, generated_at, expires_at, regenerated_count FROM member_tokens ORDER BY member_id').catch(() => ({ rows: [] })),
+		]);
+
+		const exportData = {
+			exportedAt: new Date().toISOString(),
+			members: { count: membersResult.rows.length, data: membersResult.rows },
+			changeLog: { count: changesResult.rows.length, data: changesResult.rows },
+			accessLog: { count: accessResult.rows.length, data: accessResult.rows },
+			tokens: { count: tokensResult.rows.length, data: tokensResult.rows },
+		};
+
+		const jsonBytes = new TextEncoder().encode(JSON.stringify(exportData, null, 2));
+
+		const now = new Date();
+		const pad = (n: number) => n.toString().padStart(2, '0');
+		const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+		const filename = `backup_${ts}.json`;
+		const key = `${EXPORT_PREFIX}${filename}`;
+
+		await putObject(key, jsonBytes, 'application/json');
+
+		console.log({
+			event: 'data_export_created',
+			key,
+			bytes: jsonBytes.length,
+			members: membersResult.rows.length,
+			changes: changesResult.rows.length,
+			accesses: accessResult.rows.length,
+			ip: c.req.header('x-forwarded-for') || c.req.header('cf-connecting-ip'),
+		});
+
+		return jsonResponse({
+			success: true,
+			filename,
+			key,
+			sizeMB: (jsonBytes.length / (1024 * 1024)).toFixed(2),
+			members: membersResult.rows.length,
+			changes: changesResult.rows.length,
+			accesses: accessResult.rows.length,
+			tokens: tokensResult.rows.length,
+			message: `Backup erfolgreich erstellt: ${filename}`,
+		});
+	} catch (err: any) {
+		console.error('Export backup error:', err);
+		return jsonError(err.message || 'Fehler beim Erstellen des Backups', 500);
+	}
+});
+
+/** List available backups in S3. */
+api.get('/export-backups', async (c) => {
+	if (!isS3Configured()) {
+		return jsonError('S3 ist nicht konfiguriert', 501);
+	}
+
+	try {
+		const objects = await listObjects(EXPORT_PREFIX);
+		const backups = objects
+			.sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime())
+			.map((obj) => ({
+				filename: obj.key.replace(EXPORT_PREFIX, ''),
+				key: obj.key,
+				size: obj.size,
+				sizeMB: (obj.size / (1024 * 1024)).toFixed(2),
+				lastModified: obj.lastModified.toISOString(),
+			}));
+		return jsonResponse({ backups });
+	} catch (err: any) {
+		console.error('List backups error:', err);
+		return jsonError(err.message || 'Fehler beim Abrufen der Backups');
+	}
+});
+
+/** Download a specific backup from S3. */
+api.get('/export-backups/:filename', async (c) => {
+	if (!isS3Configured()) {
+		return jsonError('S3 ist nicht konfiguriert', 501);
+	}
+
+	try {
+		const filename = c.req.param('filename');
+		if (!filename || filename.includes('..') || filename.includes('/')) {
+			return jsonError('Ungültiger Dateiname', 400);
+		}
+
+		const key = `${EXPORT_PREFIX}${filename}`;
+		const obj = await getObject(key);
+		if (!obj) {
+			return jsonError('Backup nicht gefunden', 404);
+		}
+
+		return new Response(obj.body, {
+			status: 200,
+			headers: {
+				'Content-Type': 'application/json',
+				'Content-Disposition': `attachment; filename="${filename}"`,
+				'Content-Length': obj.body.length.toString(),
+			},
+		});
+	} catch (err: any) {
+		console.error('Download backup error:', err);
+		return jsonError(err.message || 'Fehler beim Herunterladen des Backups', 500);
 	}
 });
 

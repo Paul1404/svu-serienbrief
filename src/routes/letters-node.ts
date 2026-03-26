@@ -10,6 +10,7 @@ import { zipSync } from 'fflate';
 import { PDFDocument, rgb, StandardFonts, PDFArray, PDFName } from 'pdf-lib';
 import { encode as encodeQR } from 'uqr';
 import { query } from '../db.js';
+import { isS3Configured, getObject, putObject, listObjects, LOGO_KEY, ARCHIVE_PREFIX } from '../s3.js';
 
 const letters = new Hono();
 
@@ -132,18 +133,27 @@ letters.post('/generate-pdfs', async (c) => {
 		const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
 		const secret = process.env.ADMIN_PASSWORD || '';
 
-		// Pre-fetch club logo once (with timeout to avoid hanging)
+		// Pre-fetch club logo: try S3 first, then fall back to external URL
 		let cachedLogoBytes: Uint8Array | null = null;
 		try {
-			const controller = new AbortController();
-			const timeoutId = setTimeout(() => controller.abort(), 15000);
-			const logoResponse = await fetch(
-				'https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png',
-				{ signal: controller.signal }
-			);
-			clearTimeout(timeoutId);
-			if (logoResponse.ok) {
-				cachedLogoBytes = new Uint8Array(await logoResponse.arrayBuffer());
+			if (isS3Configured()) {
+				const s3Logo = await getObject(LOGO_KEY);
+				if (s3Logo) {
+					cachedLogoBytes = new Uint8Array(s3Logo.body);
+					process.stderr.write('[PDF] logo loaded from S3\n');
+				}
+			}
+			if (!cachedLogoBytes) {
+				const controller = new AbortController();
+				const timeoutId = setTimeout(() => controller.abort(), 15000);
+				const logoResponse = await fetch(
+					'https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png',
+					{ signal: controller.signal }
+				);
+				clearTimeout(timeoutId);
+				if (logoResponse.ok) {
+					cachedLogoBytes = new Uint8Array(await logoResponse.arrayBuffer());
+				}
 			}
 		} catch (e) {
 			process.stderr.write(`[PDF] logo fetch failed: ${(e as Error)?.message}\n`);
@@ -247,6 +257,14 @@ letters.post('/generate-pdfs', async (c) => {
 			now.getMinutes()
 		)}-${pad(now.getSeconds())}`;
 		const filename = `serienbriefe_${timestamp}.zip`;
+
+		// Archive the ZIP to S3 in the background (non-blocking)
+		if (isS3Configured()) {
+			const archiveKey = `${ARCHIVE_PREFIX}${filename}`;
+			putObject(archiveKey, zipContent, 'application/zip')
+				.then(() => console.log({ event: 'pdf_archive_uploaded', key: archiveKey, bytes: zipContent.length }))
+				.catch((err) => console.warn('S3 archive upload failed (non-fatal):', (err as Error).message));
+		}
 
 		return new Response(zipContent, {
 			status: 200,
@@ -784,6 +802,64 @@ function createZipFromPdfFiles(
 		throw error;
 	}
 }
+
+/**
+ * List archived letter ZIPs stored in S3.
+ */
+letters.get('/archives', async (c) => {
+	if (!isS3Configured()) {
+		return jsonError('S3 ist nicht konfiguriert', 501);
+	}
+	try {
+		const objects = await listObjects(ARCHIVE_PREFIX);
+		const archives = objects
+			.sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime())
+			.map((obj) => ({
+				filename: obj.key.replace(ARCHIVE_PREFIX, ''),
+				key: obj.key,
+				size: obj.size,
+				sizeMB: (obj.size / (1024 * 1024)).toFixed(1),
+				lastModified: obj.lastModified.toISOString(),
+			}));
+		return jsonResponse({ archives });
+	} catch (err: any) {
+		console.error('Archive list error:', err);
+		return jsonError(err.message || 'Fehler beim Abrufen der Archive');
+	}
+});
+
+/**
+ * Download an archived letter ZIP from S3.
+ */
+letters.get('/archives/:filename', async (c) => {
+	if (!isS3Configured()) {
+		return jsonError('S3 ist nicht konfiguriert', 501);
+	}
+	try {
+		const filename = c.req.param('filename');
+		if (!filename || filename.includes('..') || filename.includes('/')) {
+			return jsonError('Ungültiger Dateiname', 400);
+		}
+
+		const key = `${ARCHIVE_PREFIX}${filename}`;
+		const obj = await getObject(key);
+		if (!obj) {
+			return jsonError('Archiv nicht gefunden', 404);
+		}
+
+		return new Response(obj.body, {
+			status: 200,
+			headers: {
+				'Content-Type': 'application/zip',
+				'Content-Disposition': `attachment; filename="${filename}"`,
+				'Content-Length': obj.body.length.toString(),
+			},
+		});
+	} catch (err: any) {
+		console.error('Archive download error:', err);
+		return jsonError(err.message || 'Fehler beim Herunterladen des Archivs');
+	}
+});
 
 /**
  * Generate letter data for all members (JSON)
