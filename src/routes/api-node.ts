@@ -4,9 +4,9 @@
  */
 
 import { Hono } from 'hono';
-import { sanitizeIdentifier, jsonResponse, jsonError } from '../utils/helpers';
-import { query, queryOne, withTransaction } from '../db';
-import { convertMysqlDumpToPostgres } from '../utils/mysqlToPostgres';
+import { sanitizeIdentifier, jsonResponse, jsonError } from '../utils/helpers.js';
+import { query, queryOne, withTransaction } from '../db.js';
+import { convertMysqlDumpToPostgres } from '../utils/mysqlToPostgres.js';
 
 const api = new Hono();
 
@@ -373,7 +373,7 @@ api.post('/regenerate-token/:memberId', async (c) => {
 
 		const secret = process.env.ADMIN_PASSWORD || '';
 
-		const { generateMemberToken } = await import('../utils/tokens');
+		const { generateMemberToken } = await import('../utils/tokens.js');
 
 		const token = await generateMemberToken(memberId, secret);
 		const now = Date.now();
@@ -567,7 +567,7 @@ api.post('/bulk-regenerate-tokens', async (c) => {
 			return jsonError('Keine Token-IDs angegeben', 400);
 		}
 
-		const { generateMemberToken } = await import('../utils/tokens');
+		const { generateMemberToken } = await import('../utils/tokens.js');
 		const secret = process.env.ADMIN_PASSWORD || '';
 		const baseUrl = new URL(c.req.url).origin;
 		const now = Date.now();

@@ -6,10 +6,10 @@
 const DATENSCHUTZ_URL = 'https://sv-untereuerheim.de/datenschutz/';
 
 import { Hono } from 'hono';
-import { validateMemberToken } from '../utils/tokens';
-import { jsonResponse, jsonError, escapeHtml } from '../utils/helpers';
-import { icons } from '../utils/icons';
-import { query, queryOne } from '../db';
+import { validateMemberToken } from '../utils/tokens.js';
+import { jsonResponse, jsonError, escapeHtml } from '../utils/helpers.js';
+import { icons } from '../utils/icons.js';
+import { query, queryOne } from '../db.js';
 
 const update = new Hono();
 

@@ -4,12 +4,12 @@
  */
 
 import { Hono } from 'hono';
-import { generateMemberToken } from '../utils/tokens';
-import { jsonResponse, jsonError } from '../utils/helpers';
+import { generateMemberToken } from '../utils/tokens.js';
+import { jsonResponse, jsonError } from '../utils/helpers.js';
 import { zipSync } from 'fflate';
 import { PDFDocument, rgb, StandardFonts, PDFArray, PDFName } from 'pdf-lib';
 import { encode as encodeQR } from 'uqr';
-import { query } from '../db';
+import { query } from '../db.js';
 
 const letters = new Hono();
 

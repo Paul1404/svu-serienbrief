@@ -2,8 +2,8 @@
  * HTML page templates
  */
 
-import { escapeHtml } from '../utils/helpers';
-import { icons } from '../utils/icons';
+import { escapeHtml } from '../utils/helpers.js';
+import { icons } from '../utils/icons.js';
 
 const DATENSCHUTZ_URL = 'https://sv-untereuerheim.de/datenschutz/';
 

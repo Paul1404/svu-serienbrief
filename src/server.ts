@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { initDb, getDb, ensureCoreTables } from './db';
-import type { AppVariables } from './appContext';
-import pages from './routes/pages';
-import api from './routes/api-node';
-import letters from './routes/letters-node';
-import update from './routes/update-node';
-import { authMiddleware } from './middleware/auth';
-import { render404Page, renderDashboard } from './templates/pages';
+import { initDb, getDb, ensureCoreTables } from './db.js';
+import type { AppVariables } from './appContext.js';
+import pages from './routes/pages.js';
+import api from './routes/api-node.js';
+import letters from './routes/letters-node.js';
+import update from './routes/update-node.js';
+import { authMiddleware } from './middleware/auth.js';
+import { render404Page, renderDashboard } from './templates/pages.js';
 
 type AppEnv = { Variables: AppVariables };
 
