@@ -4,7 +4,7 @@
  */
 
 import type { Context, Next } from 'hono';
-import { query, queryOne } from '../db';
+import { query, queryOne } from '../db.js';
 
 interface Session {
 	session_id: string;

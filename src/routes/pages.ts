@@ -5,9 +5,9 @@
 
 import crypto from 'crypto';
 import { Hono } from 'hono';
-import { renderLoginPage } from '../templates/pages';
-import { createSession } from '../middleware/auth';
-import { query } from '../db';
+import { renderLoginPage } from '../templates/pages.js';
+import { createSession } from '../middleware/auth.js';
+import { query } from '../db.js';
 
 function timingSafeEqual(a: string, b: string): boolean {
 	const bufA = Buffer.from(a, 'utf8');
