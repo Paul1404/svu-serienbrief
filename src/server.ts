@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { initDb, getDb, ensureCoreTables } from './db.js';
+import { initDb, getDb, ensureCoreTables, warmPool } from './db.js';
 import type { AppVariables } from './appContext.js';
 import pages from './routes/pages.js';
 import api from './routes/api-node.js';
@@ -74,7 +74,15 @@ app.use('*', async (c, next) => {
 });
 
 // Public routes
-app.get('/health', (c) => c.json({ ok: true }, 200));
+app.get('/health', async (c) => {
+	try {
+		const db = getDb();
+		await db.query('SELECT 1');
+		return c.json({ ok: true, db: 'connected' }, 200);
+	} catch {
+		return c.json({ ok: false, db: 'unavailable' }, 503);
+	}
+});
 app.route('/', pages);       // /login, /logout
 app.route('/update', update);
 
@@ -100,7 +108,12 @@ serve({
 });
 console.log(`SVU Serienbrief Node server listening on port ${port}`);
 
-ensureCoreTables()
+// Warm the connection pool first (absorbs serverless cold-start), then ensure tables.
+warmPool()
+	.then(() => {
+		console.log('Database connection pool warmed');
+		return ensureCoreTables();
+	})
 	.then(() => console.log('Core tables ensured in database'))
 	.catch((err) => {
 		console.error('Fatal startup error while ensuring core tables', err);

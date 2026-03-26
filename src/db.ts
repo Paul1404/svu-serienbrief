@@ -8,6 +8,98 @@ export interface DbConfig {
 	ssl?: boolean;
 }
 
+// ---------- Retry helpers for serverless cold-start resilience ----------
+
+/** Maximum number of automatic retries for transient DB errors. */
+const MAX_RETRIES = 3;
+
+/** Base delay (ms) for exponential back-off between retries. */
+const BASE_DELAY_MS = 300;
+
+/**
+ * PostgreSQL error codes (and Node-level codes) that indicate a transient /
+ * cold-start failure worth retrying.
+ */
+const TRANSIENT_ERROR_CODES = new Set([
+	// Connection exceptions (class 08)
+	'08000', // connection_exception
+	'08003', // connection_does_not_exist
+	'08006', // connection_failure
+	'08001', // sqlclient_unable_to_establish_sqlconnection
+	'08004', // sqlserver_rejected_establishment_of_sqlconnection
+	// Insufficient resources (class 53)
+	'53300', // too_many_connections
+	// Operator intervention (class 57)
+	'57P01', // admin_shutdown
+	'57P03', // cannot_connect_now  (Neon cold-start)
+]);
+
+/** Node / network-level error codes that are transient. */
+const TRANSIENT_NODE_CODES = new Set([
+	'ECONNRESET',
+	'ECONNREFUSED',
+	'EPIPE',
+	'ETIMEDOUT',
+	'EAI_AGAIN',
+]);
+
+function isTransientError(err: any): boolean {
+	if (!err) return false;
+	// PG error code
+	if (err.code && TRANSIENT_ERROR_CODES.has(err.code)) return true;
+	// Node network code
+	if (err.code && TRANSIENT_NODE_CODES.has(err.code)) return true;
+	// Nested cause (e.g. pool.connect wrapping a network error)
+	if (err.cause && isTransientError(err.cause)) return true;
+	// Message heuristics for Neon cold-start messages
+	const msg: string = (err.message || '').toLowerCase();
+	if (msg.includes('connection terminated unexpectedly') ||
+		msg.includes('could not connect to server') ||
+		msg.includes('the database system is starting up') ||
+		msg.includes('connection timed out') ||
+		msg.includes('cannot connect now')) {
+		return true;
+	}
+	return false;
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Run an async operation with exponential back-off retries for transient DB
+ * errors (such as Neon serverless cold-start timeouts).
+ */
+async function withRetry<T>(operation: () => Promise<T>, label = 'db'): Promise<T> {
+	let lastError: any;
+	for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+		try {
+			return await operation();
+		} catch (err: any) {
+			lastError = err;
+			if (attempt < MAX_RETRIES && isTransientError(err)) {
+				const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+				console.log({
+					event: 'db_retry',
+					label,
+					attempt: attempt + 1,
+					max: MAX_RETRIES,
+					delay_ms: delay,
+					error_code: err.code,
+					error_message: (err.message || '').substring(0, 120),
+				});
+				await sleep(delay);
+				continue;
+			}
+			throw err;
+		}
+	}
+	throw lastError; // unreachable, but satisfies TS
+}
+
+// ---------- Pool setup ----------
+
 function withSslMode(url: string): string {
 	// no-verify = SSL encryption without cert verification (Railway/self-signed certs)
 	// require/verify-full override ssl.rejectUnauthorized and cause SELF_SIGNED_CERT_IN_CHAIN
@@ -23,7 +115,20 @@ export function initDb(config: DbConfig): Pool {
 		const connStr = config.ssl ? withSslMode(config.connectionString) : config.connectionString;
 		pool = new Pool({
 			connectionString: connStr,
-			ssl: config.ssl ? { rejectUnauthorized: false } : undefined
+			ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
+			// Serverless-friendly pool settings
+			max: 5,                        // keep small – Neon free tier allows few connections
+			idleTimeoutMillis: 30_000,     // release idle connections after 30 s
+			connectionTimeoutMillis: 10_000, // give cold-starts up to 10 s to connect
+		});
+
+		// Log unexpected pool errors instead of crashing
+		pool.on('error', (err) => {
+			console.log({
+				event: 'pool_background_error',
+				error_code: (err as any).code,
+				error_message: (err.message || '').substring(0, 200),
+			});
 		});
 	}
 	return pool;
@@ -36,12 +141,14 @@ export function getDb(): Pool {
 	return pool;
 }
 
+// ---------- Query helpers (with automatic retry) ----------
+
 export async function query<T extends QueryResultRow = QueryResultRow>(
 	text: string,
 	params: any[] = []
 ): Promise<QueryResult<T>> {
 	const db = getDb();
-	return db.query<T>(text, params);
+	return withRetry(() => db.query<T>(text, params), 'query');
 }
 
 export async function queryOne<T extends QueryResultRow = QueryResultRow>(
@@ -54,18 +161,33 @@ export async function queryOne<T extends QueryResultRow = QueryResultRow>(
 
 export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
 	const db = getDb();
-	const client = await db.connect();
+
+	// Acquiring the client is the most likely cold-start failure point
+	const client = await withRetry(() => db.connect(), 'tx_connect');
+
 	try {
 		await client.query('BEGIN');
 		const result = await fn(client);
 		await client.query('COMMIT');
 		return result;
 	} catch (err) {
-		await client.query('ROLLBACK');
+		await client.query('ROLLBACK').catch(() => {});
 		throw err;
 	} finally {
 		client.release();
 	}
+}
+
+/**
+ * Warm up the connection pool by executing a lightweight query.
+ * Useful at startup to absorb the serverless cold-start latency before real
+ * requests arrive.
+ */
+export async function warmPool(): Promise<void> {
+	await withRetry(async () => {
+		const db = getDb();
+		await db.query('SELECT 1');
+	}, 'warm_pool');
 }
 
 // Ensure that core tables used by the app exist in the database.
