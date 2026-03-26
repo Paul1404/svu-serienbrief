@@ -2,7 +2,9 @@
   "name": "svu-serienbrief",
   "version": "1.0.0",
   "private": true,
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js"
@@ -13,6 +15,7 @@
     "typescript": "^6.0.2"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1018.0",
     "@hono/node-server": "^1.13.5",
     "fflate": "^0.8.2",
     "hono": "^4.11.2",
