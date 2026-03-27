@@ -4,8 +4,7 @@
 
 import { escapeHtml } from '../utils/helpers.js';
 import { icons } from '../utils/icons.js';
-
-const DATENSCHUTZ_URL = 'https://sv-untereuerheim.de/datenschutz/';
+import { ORG_NAME, ORG_SHORT_NAME, ORG_LOGO_URL, ORG_PRIVACY_URL, ORG_WEBSITE_URL, ORG_EMAIL, ORG_SLOGAN } from '../config.js';
 
 export function renderLoginPage(options?: { error?: string; sessionExpired?: boolean }): string {
     const { error, sessionExpired } = options || {};
@@ -15,8 +14,8 @@ export function renderLoginPage(options?: { error?: string; sessionExpired?: boo
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SV 1945 Untereuerheim - Login</title>
-    <link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
+    <title>${ORG_SHORT_NAME} - Login</title>
+    ${ORG_LOGO_URL ? `<link rel="icon" type="image/png" href="${ORG_LOGO_URL}">` : ''}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -137,9 +136,9 @@ export function renderLoginPage(options?: { error?: string; sessionExpired?: boo
 <body>
     <div class="login-container">
         <div class="logo">
-            <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SV Untereuerheim Logo" />
+            ${ORG_LOGO_URL ? `<img src="${ORG_LOGO_URL}" alt="${ORG_SHORT_NAME} Logo" />` : ''}
         </div>
-        <h1>SV 1945 Untereuerheim e.V.</h1>
+        <h1>${ORG_NAME}</h1>
         <div class="subtitle">Mitgliederverwaltung</div>
         
         ${sessionExpired ? `<div class="info"><span class="info-icon">${icons.clock}</span><span>Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.</span></div>` : ''}
@@ -160,7 +159,7 @@ export function renderLoginPage(options?: { error?: string; sessionExpired?: boo
             <button type="submit">Anmelden</button>
         </form>
         <div class="login-footer">
-            <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
+            ${ORG_PRIVACY_URL ? `<a href="${ORG_PRIVACY_URL}" target="_blank" rel="noopener">Datenschutz</a>` : ''}
         </div>
     </div>
 </body>
@@ -173,8 +172,8 @@ export function renderDashboard(): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SV 1945 Untereuerheim - Mitgliederverwaltung</title>
-    <link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
+    <title>${ORG_SHORT_NAME} - Mitgliederverwaltung</title>
+    ${ORG_LOGO_URL ? `<link rel="icon" type="image/png" href="${ORG_LOGO_URL}">` : ''}
     <link href="https://cdn.datatables.net/2.3.6/css/dataTables.dataTables.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -971,10 +970,10 @@ export function renderDashboard(): string {
     <div class="container">
         <div class="header">
             <div class="header-left">
-                <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SVU Logo" class="header-logo" />
+                ${ORG_LOGO_URL ? `<img src="${ORG_LOGO_URL}" alt="${ORG_SHORT_NAME} Logo" class="header-logo" />` : ''}
                 <div class="header-text">
-                    <h1>SV 1945 Untereuerheim e.V.</h1>
-                    <div class="subtitle">Mitgliederverwaltung • "Wir sind Untereuerheim"</div>
+                    <h1>${ORG_NAME}</h1>
+                    <div class="subtitle">Mitgliederverwaltung${ORG_SLOGAN ? ` • "${ORG_SLOGAN}"` : ''}</div>
                 </div>
             </div>
             <div class="header-actions">
@@ -1091,7 +1090,7 @@ export function renderDashboard(): string {
         </div>
 
         <div class="app-footer">
-            <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
+            ${ORG_PRIVACY_URL ? `<a href="${ORG_PRIVACY_URL}" target="_blank" rel="noopener">Datenschutz</a>` : ''}
         </div>
     </div>
 
@@ -2263,8 +2262,8 @@ export function render404Page(stats: NotFoundStats): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seite nicht gefunden | SV 1945 Untereuerheim</title>
-    <link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
+    <title>Seite nicht gefunden | ${ORG_SHORT_NAME}</title>
+    ${ORG_LOGO_URL ? `<link rel="icon" type="image/png" href="${ORG_LOGO_URL}">` : ''}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -2427,7 +2426,7 @@ export function render404Page(stats: NotFoundStats): string {
 </head>
 <body>
     <div class="container">
-        <img src="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png" alt="SV Untereuerheim Logo" class="logo">
+        ${ORG_LOGO_URL ? `<img src="${ORG_LOGO_URL}" alt="${ORG_SHORT_NAME} Logo" class="logo">` : ''}
         
         <div class="error-code">404</div>
         <h1>Seite nicht gefunden</h1>
@@ -2483,15 +2482,15 @@ export function render404Page(stats: NotFoundStats): string {
         </div>
         `}
         
-        <a href="https://sv-untereuerheim.de" class="btn">Zur Vereinswebsite</a>
-        
-        <div class="contact">
+        ${ORG_WEBSITE_URL ? `<a href="${ORG_WEBSITE_URL}" class="btn">Zur Vereinswebsite</a>` : ''}
+
+        ${ORG_EMAIL ? `<div class="contact">
             <p class="contact-text">Bei Fragen oder Problemen:</p>
-            <a href="mailto:info@sv-untereuerheim.de" class="contact-link">info@sv-untereuerheim.de</a>
-        </div>
-        
+            <a href="mailto:${ORG_EMAIL}" class="contact-link">${ORG_EMAIL}</a>
+        </div>` : ''}
+
         <div class="footer">
-            SV 1945 Untereuerheim e.V. • <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
+            ${ORG_NAME}${ORG_PRIVACY_URL ? ` • <a href="${ORG_PRIVACY_URL}" target="_blank" rel="noopener">Datenschutz</a>` : ''}
         </div>
     </div>
 </body>

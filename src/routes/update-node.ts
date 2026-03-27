@@ -3,9 +3,8 @@
  * Ported from the original Cloudflare D1 implementation to Postgres/Neon.
  */
 
-const DATENSCHUTZ_URL = 'https://sv-untereuerheim.de/datenschutz/';
-
 import { Hono } from 'hono';
+import { ORG_NAME, ORG_SHORT_NAME, ORG_LOGO_URL, ORG_PRIVACY_URL, ORG_SLOGAN } from '../config.js';
 import { validateMemberToken } from '../utils/tokens.js';
 import { jsonResponse, jsonError, escapeHtml } from '../utils/helpers.js';
 import { icons } from '../utils/icons.js';
@@ -418,8 +417,8 @@ function renderUpdateForm(member: any, token: string): string {
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Daten aktualisieren - SV Untereuerheim</title>
-	<link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
+	<title>Daten aktualisieren - ${ORG_SHORT_NAME}</title>
+	${ORG_LOGO_URL ? `<link rel="icon" type="image/png" href="${ORG_LOGO_URL}">` : ''}
 	<style>
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		body {
@@ -665,7 +664,7 @@ function renderUpdateForm(member: any, token: string): string {
 <body>
 	<div class="container">
 		<div class="header">
-			<h1>SV 1945 Untereuerheim e.V.</h1>
+			<h1>${ORG_NAME}</h1>
 			<p>Datenaktualisierung</p>
 		</div>
 
@@ -808,7 +807,7 @@ function renderUpdateForm(member: any, token: string): string {
 		</div>
 
 		<div class="footer">
-			SV 1945 Untereuerheim e.V. • "Wir sind Untereuerheim" • <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
+			${ORG_NAME}${ORG_SLOGAN ? ` • "${ORG_SLOGAN}"` : ''}${ORG_PRIVACY_URL ? ` • <a href="${ORG_PRIVACY_URL}" target="_blank" rel="noopener">Datenschutz</a>` : ''}
 		</div>
 	</div>
 
@@ -913,7 +912,7 @@ function renderSuccessPage(message?: string): string {
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Erfolgreich aktualisiert</title>
-	<link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
+	${ORG_LOGO_URL ? `<link rel="icon" type="image/png" href="${ORG_LOGO_URL}">` : ''}
 	<style>
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		body {
@@ -976,7 +975,7 @@ function renderSuccessPage(message?: string): string {
 		<p>${escapeHtml(displayMessage)}</p>
 		<p>Sie können dieses Fenster nun schließen.</p>
 		<div class="success-footer">
-			<a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
+			${ORG_PRIVACY_URL ? `<a href="${ORG_PRIVACY_URL}" target="_blank" rel="noopener">Datenschutz</a>` : ''}
 		</div>
 	</div>
 </body>
@@ -992,8 +991,8 @@ function renderErrorPage(message: string, isExpired: boolean = false): string {
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>${isExpired ? 'Link abgelaufen' : 'Fehler'} - SV Untereuerheim</title>
-	<link rel="icon" type="image/png" href="https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png">
+	<title>${isExpired ? 'Link abgelaufen' : 'Fehler'} - ${ORG_SHORT_NAME}</title>
+	${ORG_LOGO_URL ? `<link rel="icon" type="image/png" href="${ORG_LOGO_URL}">` : ''}
 	<style>
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		body {
@@ -1112,7 +1111,7 @@ function renderErrorPage(message: string, isExpired: boolean = false): string {
 		}
 		
 		<div class="footer">
-			SV 1945 Untereuerheim e.V. • "Wir sind Untereuerheim" • <a href="${DATENSCHUTZ_URL}" target="_blank" rel="noopener">Datenschutz</a>
+			${ORG_NAME}${ORG_SLOGAN ? ` • "${ORG_SLOGAN}"` : ''}${ORG_PRIVACY_URL ? ` • <a href="${ORG_PRIVACY_URL}" target="_blank" rel="noopener">Datenschutz</a>` : ''}
 		</div>
 	</div>
 </body>
