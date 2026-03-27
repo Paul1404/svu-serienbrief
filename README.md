@@ -1,27 +1,28 @@
-# SVU Serienbrief
-### Enterprise Member Management Platform
+# Serienbrief
+### Member Management & Mail Merge Platform
 
-> A production-grade member communication and data management system built for Sportverein 1945 Untereuerheim e.V., running on Node.js with Postgres (Neon).
+> A production-grade member communication and data management system for sports clubs and membership organizations, running on Node.js with Postgres.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7.2-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-Hono-green.svg)](https://hono.dev/)
 [![Postgres](https://img.shields.io/badge/Database-Postgres-blue.svg)](https://www.postgresql.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
 ## Executive Summary
 
-SVU Serienbrief is a comprehensive digital transformation solution that modernizes member communication and data management for sports clubs and membership organizations. The platform eliminates manual processes by automating personalized mail-merge operations, enabling secure self-service data updates, and providing real-time analytics through an intuitive administrative dashboard.
+Serienbrief is a comprehensive digital transformation solution that modernizes member communication and data management for sports clubs and membership organizations. The platform eliminates manual processes by automating personalized mail-merge operations, enabling secure self-service data updates, and providing real-time analytics through an intuitive administrative dashboard.
 
 **Key Business Value:**
-- **99.9% Operational Efficiency**: Automated PDF generation for 474 members in seconds vs. hours of manual work
+- **99.9% Operational Efficiency**: Automated PDF generation for hundreds of members in seconds vs. hours of manual work
 - **Zero Infrastructure Costs**: Serverless architecture with pay-per-use pricing model
 - **Modern Stack**: Node.js + Hono + Postgres (Neon) for reliable, scalable deployment
 - **GDPR-Compliant**: Tokenized access control with comprehensive audit trails
 - **Self-Service Enabled**: 90-day secure update links reduce administrative overhead by 80%
 
 **Production Metrics:**
-- Database: 474 active member records with full historical tracking
+- Database: Active member records with full historical tracking
 - Uptime: Deployable to Fly.io, Railway, or any Node.js host
 - Security: HMAC-SHA256 cryptographic tokens, IP-validated sessions, brute-force protection
 - Performance: <50ms median response time, zero cold starts
@@ -59,7 +60,7 @@ SVU Serienbrief is a comprehensive digital transformation solution that moderniz
 ```
 auswertung (Members)
 ├─ Primary Key: AdrNr/MitglNr
-├─ 474 Records
+├─ Member records
 └─ Fields: Personal data, contact info, banking details, department affiliation
 
 member_access_log (Audit Trail)
@@ -145,7 +146,7 @@ Access Log: INSERT INTO member_access_log (member_id, timestamp, ip, ua)
 ### 3. Administrative Dashboard
 
 **Data Visualization**
-- **Member Table**: 474 rows, 20+ columns, sortable, filterable, searchable
+- **Member Table**: 20+ columns, sortable, filterable, searchable
 - **Change History**: Real-time audit log with field-level granularity
 - **Token Status**: Expiry tracking with color-coded indicators (green/yellow/red)
 - **Statistics Dashboard**: Aggregated metrics with 7-day rolling windows
@@ -254,7 +255,7 @@ CREATE TABLE member_tokens (
 
 **GET /api/data?page=1&limit=10000**
 - **Returns**: Paginated member records from auswertung table
-- **Performance**: <100ms for 474 records
+- **Performance**: <100ms response time
 
 **GET /api/access-stats**
 - **Returns**: `{ member_id → { last_accessed, access_count } }`
@@ -378,11 +379,39 @@ The app runs on Node.js with Postgres and can be deployed to **Fly.io**, **Railw
 
 ### Environment Variables
 
+See [`.env.example`](.env.example) for a full example with all variables.
+
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | Postgres connection string (e.g. Neon, Railway Postgres) |
 | `ADMIN_PASSWORD` | Yes | Admin dashboard password |
 | `PORT` | No | Server port (default: 3000; platforms set this automatically) |
+
+**Organization Branding** (all optional — the app works with generic defaults):
+
+| Variable | Description |
+|----------|-------------|
+| `ORG_NAME` | Full organization name (e.g. `My Sports Club e.V.`) |
+| `ORG_SHORT_NAME` | Short name for page titles (defaults to `ORG_NAME`) |
+| `ORG_SLOGAN` | Tagline displayed in headers |
+| `ORG_LOGO_URL` | URL to the club logo (PNG) |
+| `ORG_WEBSITE_URL` | Club website URL |
+| `ORG_PRIVACY_URL` | Privacy policy URL |
+| `ORG_EMAIL` | Contact email address |
+| `ORG_PHONE` | Contact phone number |
+| `ORG_LOCATION` | Location name for letter date lines |
+| `ORG_ADDRESS_LINES` | Address for PDF letterhead (newline-separated, use `\n`) |
+| `ORG_FOOTER_LEGAL` | Legal footer text for PDFs (registry, tax ID, etc.) |
+
+**S3 Storage** (optional — enables logo caching and ZIP archival):
+
+| Variable | Description |
+|----------|-------------|
+| `AWS_ACCESS_KEY_ID` | S3 access key |
+| `AWS_SECRET_ACCESS_KEY` | S3 secret key |
+| `AWS_S3_BUCKET_NAME` | S3 bucket name |
+| `AWS_ENDPOINT_URL` | Custom S3 endpoint (for S3-compatible providers) |
+| `AWS_DEFAULT_REGION` | AWS region (default: `us-east-1`) |
 
 ### Railway Deployment
 
@@ -456,7 +485,7 @@ npm run build && npm start
 | **D1 Database Size** | 2 GB (Workers Paid) | Current: ~50 MB |
 | **Query Execution Time** | 30 seconds | Typical: <100ms |
 | **Concurrent Connections** | Unlimited | Connection pooling managed by Cloudflare |
-| **Rows Per Query** | 100,000 | Current: 474 members |
+| **Rows Per Query** | 100,000 | Typical: hundreds to thousands |
 
 ---
 
@@ -471,7 +500,7 @@ npm run build && npm start
 
 **PDF Generation**:
 - Single PDF: ~400ms (includes QR code fetch + rendering)
-- Batch (474 members): ~8 seconds (parallel generation)
+- Batch (500 members): ~8 seconds (parallel generation)
 - ZIP compression: ~200ms
 
 **Session Operations**:
@@ -481,7 +510,7 @@ npm run build && npm start
 
 **Database Query Performance**:
 - Member lookup by ID: <10ms (primary key index)
-- Full table scan (474 rows): 30ms
+- Full table scan (500 rows): 30ms
 - Aggregation queries: 80-120ms (GROUP BY, JOIN)
 
 ---

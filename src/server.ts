@@ -9,6 +9,7 @@ import update from './routes/update-node.js';
 import { authMiddleware } from './middleware/auth.js';
 import { render404Page, renderDashboard } from './templates/pages.js';
 import { isS3Configured, objectExists, putObject, LOGO_KEY } from './s3.js';
+import { ORG_LOGO_URL, ORG_SHORT_NAME } from './config.js';
 
 type AppEnv = { Variables: AppVariables };
 
@@ -107,7 +108,7 @@ serve({
 	port,
 	hostname: '0.0.0.0',
 });
-console.log(`SVU Serienbrief Node server listening on port ${port}`);
+console.log(`${ORG_SHORT_NAME} Serienbrief server listening on port ${port}`);
 
 // Warm the connection pool first (absorbs serverless cold-start), then ensure tables.
 warmPool()
@@ -125,25 +126,26 @@ warmPool()
 if (isS3Configured()) {
 	(async () => {
 		try {
-			const exists = await objectExists(LOGO_KEY);
-			if (!exists) {
-				console.log('Uploading club logo to S3...');
-				const controller = new AbortController();
-				const timeoutId = setTimeout(() => controller.abort(), 15_000);
-				const resp = await fetch(
-					'https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png',
-					{ signal: controller.signal },
-				);
-				clearTimeout(timeoutId);
-				if (resp.ok) {
-					const bytes = new Uint8Array(await resp.arrayBuffer());
-					await putObject(LOGO_KEY, bytes, 'image/png');
-					console.log('Club logo cached in S3');
-				} else {
-					console.warn(`Logo fetch returned ${resp.status}`);
-				}
+			if (!ORG_LOGO_URL) {
+				console.log('No ORG_LOGO_URL set, skipping S3 logo cache');
 			} else {
-				console.log('Club logo already cached in S3');
+				const exists = await objectExists(LOGO_KEY);
+				if (!exists) {
+					console.log('Uploading club logo to S3...');
+					const controller = new AbortController();
+					const timeoutId = setTimeout(() => controller.abort(), 15_000);
+					const resp = await fetch(ORG_LOGO_URL, { signal: controller.signal });
+					clearTimeout(timeoutId);
+					if (resp.ok) {
+						const bytes = new Uint8Array(await resp.arrayBuffer());
+						await putObject(LOGO_KEY, bytes, 'image/png');
+						console.log('Club logo cached in S3');
+					} else {
+						console.warn(`Logo fetch returned ${resp.status}`);
+					}
+				} else {
+					console.log('Club logo already cached in S3');
+				}
 			}
 		} catch (err) {
 			console.warn('Failed to cache club logo in S3 (non-fatal):', (err as Error).message);

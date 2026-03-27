@@ -6,6 +6,7 @@
 import { Hono } from 'hono';
 import { generateMemberToken } from '../utils/tokens.js';
 import { jsonResponse, jsonError } from '../utils/helpers.js';
+import { ORG_NAME, ORG_SHORT_NAME, ORG_LOGO_URL, ORG_EMAIL, ORG_PHONE, ORG_SLOGAN, ORG_ADDRESS_LINES, ORG_FOOTER_LEGAL, ORG_LOCATION } from '../config.js';
 import { zipSync } from 'fflate';
 import { PDFDocument, rgb, StandardFonts, PDFArray, PDFName } from 'pdf-lib';
 import { encode as encodeQR } from 'uqr';
@@ -143,13 +144,10 @@ letters.post('/generate-pdfs', async (c) => {
 					process.stderr.write('[PDF] logo loaded from S3\n');
 				}
 			}
-			if (!cachedLogoBytes) {
+			if (!cachedLogoBytes && ORG_LOGO_URL) {
 				const controller = new AbortController();
 				const timeoutId = setTimeout(() => controller.abort(), 15000);
-				const logoResponse = await fetch(
-					'https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png',
-					{ signal: controller.signal }
-				);
+				const logoResponse = await fetch(ORG_LOGO_URL, { signal: controller.signal });
 				clearTimeout(timeoutId);
 				if (logoResponse.ok) {
 					cachedLogoBytes = new Uint8Array(await logoResponse.arrayBuffer());
@@ -305,13 +303,10 @@ async function generateLetterPDF(
 	try {
 		if (cachedLogoBytes) {
 			clubLogo = await pdfDoc.embedPng(cachedLogoBytes);
-		} else {
+		} else if (ORG_LOGO_URL) {
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 10000);
-			const logoResponse = await fetch(
-				'https://sv-untereuerheim.de/wp-content/uploads/2024/11/logo_svu-241x300.png',
-				{ signal: controller.signal }
-			);
+			const logoResponse = await fetch(ORG_LOGO_URL, { signal: controller.signal });
 			clearTimeout(timeoutId);
 			const logoImageBytes = await logoResponse.arrayBuffer();
 			clubLogo = await pdfDoc.embedPng(new Uint8Array(logoImageBytes));
@@ -340,7 +335,7 @@ async function generateLetterPDF(
 	}
 
 	const headerX = clubLogo ? margin + 50 : margin;
-	page.drawText('SV 1945 Untereuerheim e.V.', {
+	page.drawText(ORG_NAME, {
 		x: headerX,
 		y: yPosition,
 		size: 12,
@@ -348,24 +343,24 @@ async function generateLetterPDF(
 	});
 	yPosition -= lineHeight + 5;
 
-	page.drawText('"Wir sind Untereuerheim"', {
-		x: headerX,
-		y: yPosition,
-		size: 10,
-		font,
-		color: rgb(0.4, 0.4, 0.4)
-	});
+	if (ORG_SLOGAN) {
+		page.drawText(`"${ORG_SLOGAN}"`, {
+			x: headerX,
+			y: yPosition,
+			size: 10,
+			font,
+			color: rgb(0.4, 0.4, 0.4)
+		});
+	}
 	yPosition -= lineHeight * 5;
 
 	const addressX = width - margin - 160;
 	let addressY = height - margin;
 	const addressLines = [
-		'Sportverein 1945 Untereuerheim e.V.',
-		'Triebweg 9',
-		'97508 Grettstadt/Untereuerheim',
-		'',
-		'Tel: 09729/432',
-		'info@sv-untereuerheim.de',
+		...ORG_ADDRESS_LINES,
+		...(ORG_ADDRESS_LINES.length > 0 ? [''] : []),
+		...(ORG_PHONE ? [`Tel: ${ORG_PHONE}`] : []),
+		...(ORG_EMAIL ? [ORG_EMAIL] : []),
 		''
 	];
 	addressLines.forEach((line) => {
@@ -518,7 +513,7 @@ async function generateLetterPDF(
 		month: 'long',
 		day: 'numeric'
 	});
-	page.drawText(`Untereuerheim, den ${dateStr}`, {
+	page.drawText(`${ORG_LOCATION ? ORG_LOCATION + ', den ' : ''}${dateStr}`, {
 		x: margin,
 		y: yPosition,
 		size: 10,
@@ -680,7 +675,7 @@ async function generateLetterPDF(
 		yPosition -= lineHeight;
 
 		page2.drawText(
-			'Der Vorstand des SV 1945 Untereuerheim e.V.',
+			`Der Vorstand des ${ORG_NAME}`,
 			{
 				x: margin,
 				y: yPosition,
@@ -690,7 +685,7 @@ async function generateLetterPDF(
 		);
 
 		const footerText =
-			'Sportverein 1945 Untereuerheim e.V. • Registergericht Schweinfurt • Steuer-ID: 249/111/20506';
+			ORG_FOOTER_LEGAL || ORG_NAME;
 		page2.drawText(footerText, {
 			x: margin,
 			y: 30,
@@ -737,7 +732,7 @@ async function generateLetterPDF(
 		yPosition -= lineHeight;
 
 		page.drawText(
-			'Der Vorstand des SV 1945 Untereuerheim e.V.',
+			`Der Vorstand des ${ORG_NAME}`,
 			{
 				x: margin,
 				y: yPosition,
@@ -747,7 +742,7 @@ async function generateLetterPDF(
 		);
 
 		const footerText =
-			'Sportverein 1945 Untereuerheim e.V. • Registergericht Schweinfurt • Steuer-ID: 249/111/20506';
+			ORG_FOOTER_LEGAL || ORG_NAME;
 		page.drawText(footerText, {
 			x: margin,
 			y: 30,
@@ -774,7 +769,7 @@ function createZipFromPdfFiles(
 
 	const encoder = new TextEncoder();
 	const readmeText =
-		'SV 1945 Untereuerheim - Serienbriefe\n\n' +
+		`${ORG_SHORT_NAME} - Serienbriefe\n\n` +
 		'Diese PDF-Dateien koennen Sie:\n' +
 		'1. Direkt ausdrucken und per Post versenden\n' +
 		'2. Per E-Mail an Mitglieder senden\n\n' +
