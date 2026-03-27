@@ -1,6 +1,6 @@
 # Serienbrief
 
-Member management and mail-merge platform for sports clubs and membership organizations. Built with Node.js, Hono, and Postgres.
+A tool for sports clubs and associations to collect up-to-date contact data from their members — via postal mail.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-Hono-green.svg)](https://hono.dev/)
@@ -9,13 +9,18 @@ Member management and mail-merge platform for sports clubs and membership organi
 
 ---
 
-## What It Does
+## The Problem
 
-- **Mail-merge PDF letters** — generate personalized DIN A4 letters with QR codes for hundreds of members, bundled as a ZIP download
-- **Self-service member portal** — members scan their QR code, review their data, and submit corrections through a validated form
-- **Admin dashboard** — sortable/filterable member table, change history, token status, and statistics
-- **Token-based access** — HMAC-SHA256 signed URLs with 90-day validity, no member accounts needed
-- **Audit trail** — every access and data change is logged with timestamps, IPs, and field-level diffs
+Many clubs — especially those using software like [Linear Vereinsverwaltung](https://linear.de/) — have member data that's years out of date: wrong addresses, old phone numbers, missing email addresses. And when you don't have current contact info, the only way to reach everyone is by post.
+
+## How It Works
+
+1. **Import your data** — Upload a MySQL dump from your Vereinsverwaltung (e.g. the `datensicherung.sql` from Linear). The app converts and imports it automatically.
+2. **Generate Serienbriefe** — Select members in the admin dashboard and generate personalized DIN A4 letters as a ZIP of PDFs, ready to print and mail. Each letter contains a QR code with a unique, time-limited link.
+3. **Members update their own data** — When a member scans their QR code (or types the URL), they see a pre-filled form with their current data and can correct it — address, phone, email, IBAN, etc.
+4. **Review the results** — The admin dashboard shows who accessed their link, what they changed, and what's still outstanding.
+
+That's it. It's designed as a one-shot operation: send out letters, collect corrections, done. No member accounts, no passwords — just a signed link that's valid for 90 days.
 
 ---
 
