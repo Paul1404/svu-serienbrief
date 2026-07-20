@@ -10,17 +10,17 @@
     "start": "node dist/server.js"
   },
   "devDependencies": {
-    "@types/node": "^26.0.0",
-    "@types/pg": "^8.11.10",
-    "typescript": "^6.0.2"
+    "@types/node": "^26.1.1",
+    "@types/pg": "^8.20.0",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1018.0",
-    "@hono/node-server": "^2.0.0",
-    "fflate": "^0.8.2",
-    "hono": "^4.11.2",
+    "@aws-sdk/client-s3": "^3.1091.0",
+    "@hono/node-server": "^2.0.10",
+    "fflate": "^0.8.3",
+    "hono": "^4.12.31",
     "pdf-lib": "^1.17.1",
-    "pg": "^8.13.1",
-    "uqr": "^0.1.2"
+    "pg": "^8.22.0",
+    "uqr": "^0.1.3"
   }
 }
